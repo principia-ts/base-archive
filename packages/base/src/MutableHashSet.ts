@@ -6,7 +6,7 @@ export class HashSet<A> {
   private hashMap: MHM.HashMap<A, boolean>
 
   constructor() {
-    this.hashMap = MHM.make()
+    this.hashMap = MHM.hashMap()
   }
 
   size(): number {
@@ -41,7 +41,7 @@ export class HashSet<A> {
 /**
  * Creates a new set
  */
-export function make<A>(): HashSet<A> {
+export function hashSet<A>(): HashSet<A> {
   return new HashSet()
 }
 

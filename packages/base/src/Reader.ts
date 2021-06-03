@@ -79,29 +79,6 @@ export function pure<A>(a: A): Reader<unknown, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
-}
-
-export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
-  return (fa) => cross_(fa, fb)
-}
-
-export function crossWith_<R, A, R1, B, C>(
-  fa: Reader<R, A>,
-  fb: Reader<R1, B>,
-  f: (a: A, b: B) => C
-): Reader<R & R1, C> {
-  return (r) => f(fa(r), fb(r))
-}
-
-export function crossWith<A, R1, B, C>(
-  fb: Reader<R1, B>,
-  f: (a: A, b: B) => C
-): <R>(fa: Reader<R, A>) => Reader<R & R1, C> {
-  return (fa) => crossWith_(fa, fb, f)
-}
-
 export function ap_<R, A, R1, B>(fab: Reader<R1, (a: A) => B>, fa: Reader<R, A>): Reader<R & R1, B> {
   return (r) => fab(r)(fa(r))
 }
@@ -124,6 +101,29 @@ export function apr_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R
 
 export function apr<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
   return (fa) => apr_(fa, fb)
+}
+
+export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
+  return crossWith_(fa, fb, P.tuple)
+}
+
+export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
+export function crossWith_<R, A, R1, B, C>(
+  fa: Reader<R, A>,
+  fb: Reader<R1, B>,
+  f: (a: A, b: B) => C
+): Reader<R & R1, C> {
+  return (r) => f(fa(r), fb(r))
+}
+
+export function crossWith<A, R1, B, C>(
+  fb: Reader<R1, B>,
+  f: (a: A, b: B) => C
+): <R>(fa: Reader<R, A>) => Reader<R & R1, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /* -------------------------------------------------------------------------------------------------

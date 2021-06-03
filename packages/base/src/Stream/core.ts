@@ -392,7 +392,7 @@ export function asyncOption<R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const output      = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
+      const output      = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
         M.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
@@ -463,7 +463,7 @@ export function effectAsyncInterruptEither<R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const output       = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
+      const output       = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
         M.effectTotal(() =>
@@ -708,7 +708,7 @@ export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Strea
 /**
  * Creates a stream from a `Queue` of values
  */
-export function fromChunkQueue<R, E, O>(queue: Queue.XQueue<never, R, unknown, E, never, Chunk<O>>): Stream<R, E, O> {
+export function fromChunkQueue<R, E, O>(queue: Queue.Queue<never, R, unknown, E, never, Chunk<O>>): Stream<R, E, O> {
   return repeatEffectChunkOption(
     I.catchAllCause_(queue.take, (c) =>
       I.bind_(queue.isShutdown, (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
@@ -720,7 +720,7 @@ export function fromChunkQueue<R, E, O>(queue: Queue.XQueue<never, R, unknown, E
  * Creates a stream from a `Queue` of values. The queue will be shutdown once the stream is closed.
  */
 export function fromChunkQueueWithShutdown<R, E, A>(
-  queue: Queue.XQueue<never, R, unknown, E, never, Chunk<A>>
+  queue: Queue.Queue<never, R, unknown, E, never, Chunk<A>>
 ): Stream<R, E, A> {
   return ensuringFirst_(fromChunkQueue(queue), queue.shutdown)
 }
@@ -728,7 +728,7 @@ export function fromChunkQueueWithShutdown<R, E, A>(
 /**
  * Creates a stream from an `XQueue` of values
  */
-export function fromQueue<R, E, A>(queue: Queue.XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> {
+export function fromQueue<R, E, A>(queue: Queue.Queue<never, R, unknown, E, never, A>): Stream<R, E, A> {
   return pipe(
     queue,
     Queue.takeBetween(1, Number.MAX_SAFE_INTEGER),
@@ -740,7 +740,7 @@ export function fromQueue<R, E, A>(queue: Queue.XQueue<never, R, unknown, E, nev
 /**
  * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
  */
-export function fromQueueWithShutdown<R, E, A>(queue: Queue.XQueue<never, R, unknown, E, never, A>): Stream<R, E, A> {
+export function fromQueueWithShutdown<R, E, A>(queue: Queue.Queue<never, R, unknown, E, never, A>): Stream<R, E, A> {
   return ensuringFirst_(fromQueue(queue), queue.shutdown)
 }
 
@@ -831,7 +831,7 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
 ): Stream<R & R1, E | E1, A> {
   return pipe(
     M.gen(function* (_) {
-      const output  = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
+      const output  = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
       const runtime = yield* _(I.runtime<R>())
       yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb))))
       const doneRef = yield* _(Ref.ref(false))
@@ -1799,7 +1799,7 @@ export function distributedWithDynamic_<R, E, A>(
   decide: (o: A) => I.UIO<(_: symbol) => boolean>,
   done: (_: Ex.Exit<O.Option<E>, never>) => I.UIO<any> = (_: any) => I.unit()
 ): M.Managed<R, never, I.UIO<readonly [symbol, Queue.Dequeue<Ex.Exit<O.Option<E>, A>>]>> {
-  const offer = (queuesRef: Ref.URef<ReadonlyMap<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>>) => (o: A) =>
+  const offer = (queuesRef: Ref.URef<ReadonlyMap<symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>>>) => (o: A) =>
     I.gen(function* (_) {
       const shouldProcess = yield* _(decide(o))
       const queues        = yield* _(queuesRef.get)
@@ -1827,7 +1827,7 @@ export function distributedWithDynamic_<R, E, A>(
   return M.gen(function* (_) {
     const queuesRef = yield* _(
       pipe(
-        Ref.ref(Map.empty<symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>>()),
+        Ref.ref(Map.empty<symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>>()),
         M.make((_) => I.bind_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
       )
     )
@@ -1835,9 +1835,9 @@ export function distributedWithDynamic_<R, E, A>(
       M.gen(function* (_) {
         const queuesLock = yield* _(Semaphore.make(1))
         const newQueue   = yield* _(
-          Ref.ref<I.UIO<readonly [symbol, Queue.Queue<Ex.Exit<O.Option<E>, A>>]>>(
+          Ref.ref<I.UIO<readonly [symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
-              const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
+              const queue = yield* _(Queue.boundedQueue<Ex.Exit<O.Option<E>, A>>(maximumLag))
               const id    = yield* _(I.effectTotal(() => Symbol()))
               yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
               return tuple(id, queue)
@@ -1848,7 +1848,7 @@ export function distributedWithDynamic_<R, E, A>(
           Semaphore.withPermit(queuesLock)(
             pipe(
               I.gen(function* (_) {
-                const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(1))
+                const queue = yield* _(Queue.boundedQueue<Ex.Exit<O.Option<E>, A>>(1))
                 yield* _(queue.offer(endTake))
                 const id = Symbol() as symbol
                 yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
@@ -2157,7 +2157,7 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
 
 function bufferSignal_<R, E, A>(
   ma: Stream<R, E, A>,
-  queue: Queue.Queue<[Take.Take<E, A>, P.Promise<never, void>]>
+  queue: Queue.UQueue<[Take.Take<E, A>, P.Promise<never, void>]>
 ): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<A>>> {
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
@@ -2223,7 +2223,7 @@ export function bufferSliding_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Stre
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Queue.makeSliding<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
+        I.toManaged_(Queue.slidingQueue<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2250,7 +2250,7 @@ export function bufferDropping_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Str
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Queue.makeDropping<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
+        I.toManaged_(Queue.droppingQueue<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2452,7 +2452,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
         const outQueue     = yield* _(
-          I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
+          I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
         )
         const permits      = yield* _(Semaphore.make(n))
         const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
@@ -2546,11 +2546,11 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
       M.withChildren((getChildren) =>
         M.gen(function* (_) {
           const outQueue     = yield* _(
-            I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
+            I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
           )
           const permits      = yield* _(Semaphore.make(n))
           const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
-          const cancelers    = yield* _(I.toManaged_(Queue.makeBounded<P.Promise<never, void>>(n), (q) => q.shutdown))
+          const cancelers    = yield* _(I.toManaged_(Queue.boundedQueue<P.Promise<never, void>>(n), (q) => q.shutdown))
           yield* _(
             pipe(
               ma,
@@ -3353,7 +3353,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
 
       const out = yield* _(
         pipe(
-          Queue.makeBounded<Ex.Exit<O.Option<E | E1>, readonly [K, Queue.Dequeue<Ex.Exit<O.Option<E | E1>, V>>]>>(
+          Queue.boundedQueue<Ex.Exit<O.Option<E | E1>, readonly [K, Queue.Dequeue<Ex.Exit<O.Option<E | E1>, V>>]>>(
             buffer
           ),
           I.toManaged((q) => q.shutdown)
@@ -3847,7 +3847,7 @@ export function interruptOn<E1>(p: P.Promise<E1, any>): <R, E, A>(ma: Stream<R, 
  */
 export function into_<R, E, A, R1, E1>(
   ma: Stream<R, E, A>,
-  queue: Queue.XQueue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
+  queue: Queue.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
 ): I.IO<R & R1, E | E1, void> {
   return M.use_(intoManaged_(ma, queue), () => I.unit())
 }
@@ -3857,7 +3857,7 @@ export function into_<R, E, A, R1, E1>(
  * signalled.
  */
 export function into<E, A, R1, E1>(
-  queue: Queue.XQueue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
+  queue: Queue.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
 ): <R>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
   return (ma) => into_(ma, queue)
 }
@@ -3868,7 +3868,7 @@ export function into<E, A, R1, E1>(
  */
 export function intoManaged_<R, E, A, R1, E1>(
   ma: Stream<R, E, A>,
-  queue: Queue.XQueue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
+  queue: Queue.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
 ): M.Managed<R & R1, E | E1, void> {
   return M.gen(function* (_) {
     const os = yield* _(ma.proc)
@@ -3895,7 +3895,7 @@ export function intoManaged_<R, E, A, R1, E1>(
  * composition.
  */
 export function intoManaged<E, A, R1, E1>(
-  queue: Queue.XQueue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
+  queue: Queue.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
 ): <R>(ma: Stream<R, E, A>) => M.Managed<R & R1, E | E1, void> {
   return (ma) => intoManaged_(ma, queue)
 }
@@ -4046,7 +4046,7 @@ export function mapMPar_(n: number) {
   return <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): Stream<R & R1, E | E1, B> =>
     new Stream(
       M.gen(function* (_) {
-        const out         = yield* _(Queue.makeBounded<I.IO<R1, Option<E | E1>, B>>(n))
+        const out         = yield* _(Queue.boundedQueue<I.IO<R1, Option<E | E1>, B>>(n))
         const errorSignal = yield* _(P.make<E1, never>())
         const permits     = yield* _(Semaphore.make(n))
         yield* _(
@@ -5103,7 +5103,7 @@ export function toQueue_<R, E, A>(
   capacity = 2
 ): M.Managed<R, never, Queue.Dequeue<Take.Take<E, A>>> {
   return M.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Queue.makeBounded<Take.Take<E, A>>(capacity), (q) => q.shutdown))
+    const queue = yield* _(I.toManaged_(Queue.boundedQueue<Take.Take<E, A>>(capacity), (q) => q.shutdown))
     yield* _(M.fork(intoManaged_(ma, queue)))
     return queue
   })
@@ -5125,7 +5125,7 @@ export function toQueue(
  */
 export function toQueueUnbounded<R, E, A>(ma: Stream<R, E, A>): M.Managed<R, never, Queue.Dequeue<Take.Take<E, A>>> {
   return M.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Queue.makeUnbounded<Take.Take<E, A>>(), (q) => q.shutdown))
+    const queue = yield* _(I.toManaged_(Queue.unboundedQueue<Take.Take<E, A>>(), (q) => q.shutdown))
     yield* _(M.fork(intoManaged_(ma, queue)))
     return queue
   })

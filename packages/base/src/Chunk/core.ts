@@ -1989,6 +1989,43 @@ export function splitAt(n: number): <A>(as: Chunk<A>) => readonly [Chunk<A>, Chu
   return (as) => splitAt_(as, n)
 }
 
+/**
+ * Splits this chunk on the first element that matches this predicate.
+ */
+export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [Chunk<A>, Chunk<A>] {
+  concrete(self)
+  const iterator = self.arrayIterator()
+  let next
+  let cont       = true
+  let i          = 0
+
+  while (cont && (next = iterator.next()) && !next.done) {
+    const array = next.value
+    const len   = array.length
+    let j       = 0
+    while (cont && j < len) {
+      const a = array[j]!
+      if (f(a)) {
+        cont = false
+      } else {
+        i++
+        j++
+      }
+    }
+  }
+
+  return splitAt_(self, i)
+}
+
+/**
+ * Splits this chunk on the first element that matches this predicate.
+ *
+ * @dataFirst splitWhere_
+ */
+export function splitWhere<A>(f: (a: A) => boolean): (self: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
+  return (self) => splitWhere_(self, f)
+}
+
 export function take_<A>(as: Chunk<A>, n: number): Chunk<A> {
   concrete(as)
   return as.take(n)
@@ -2033,43 +2070,6 @@ export function takeWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
 
 export function takeWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
   return (as) => takeWhile_(as, predicate)
-}
-
-/**
- * Splits this chunk on the first element that matches this predicate.
- */
-export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [Chunk<A>, Chunk<A>] {
-  concrete(self)
-  const iterator = self.arrayIterator()
-  let next
-  let cont       = true
-  let i          = 0
-
-  while (cont && (next = iterator.next()) && !next.done) {
-    const array = next.value
-    const len   = array.length
-    let j       = 0
-    while (cont && j < len) {
-      const a = array[j]!
-      if (f(a)) {
-        cont = false
-      } else {
-        i++
-        j++
-      }
-    }
-  }
-
-  return splitAt_(self, i)
-}
-
-/**
- * Splits this chunk on the first element that matches this predicate.
- *
- * @dataFirst splitWhere_
- */
-export function splitWhere<A>(f: (a: A) => boolean): (self: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
-  return (self) => splitWhere_(self, f)
 }
 
 export function unsafeGet_<A>(as: Chunk<A>, n: number): A {

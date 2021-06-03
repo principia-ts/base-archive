@@ -31,7 +31,7 @@ export type V = HKT.Auto
  * -------------------------------------------------------------------------------------------------
  */
 
-export function roseTree<A>(value: A, forest: Forest<A>): RoseTree<A> {
+export function roseTree<A>(value: A, forest: Forest<A> = []): RoseTree<A> {
   return {
     value,
     forest
@@ -46,7 +46,7 @@ export function roseTree<A>(value: A, forest: Forest<A>): RoseTree<A> {
  */
 export function unfoldTree<A, B>(b: B, f: (b: B) => [A, Array<B>]): RoseTree<A> {
   const [a, bs] = f(b)
-  return { value: a, forest: unfoldForest(bs, f) }
+  return roseTree(a, unfoldForest(bs, f))
 }
 
 /**
@@ -264,9 +264,8 @@ export function tap<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTr
  * -------------------------------------------------------------------------------------------------
  */
 
-const draw =
-  <A>(S: Show<A>) =>
-  (indentation: string, forest: Forest<A>): string => {
+function draw<A>(S: Show<A>): (indentation: string, forest: Forest<A>) => string {
+  return (indentation, forest) => {
     let r     = ''
     const len = forest.length
     let tree: RoseTree<A>
@@ -278,6 +277,7 @@ const draw =
     }
     return r
   }
+}
 
 export function drawForest<A>(S: Show<A>): (forest: Forest<A>) => string {
   return (forest) => draw(S)('\n', forest)

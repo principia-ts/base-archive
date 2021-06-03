@@ -2011,7 +2011,7 @@ export function read<In>(): Channel<unknown, unknown, In, unknown, O.None, never
   return readOrFail(O.none() as O.None)
 }
 
-export function fromHub<Err, Done, Elem>(hub: H.Hub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
+export function fromHub<Err, Done, Elem>(hub: H.UHub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
   return managed_(H.subscribe(hub), fromQueue)
 }
 
@@ -2044,7 +2044,7 @@ export function fromQueue<Err, Elem, Done>(
   )
 }
 
-export function toHub<Err, Done, Elem>(hub: H.Hub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
+export function toHub<Err, Done, Elem>(hub: H.UHub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
   return toQueue(H.toQueue(hub))
 }
 

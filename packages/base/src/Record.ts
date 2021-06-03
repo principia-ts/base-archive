@@ -35,6 +35,59 @@ type URI = [HKT.URI<RecordURI>]
  */
 
 /**
+ * @category Guards
+ * @since 1.0.0
+ */
+export function elem_<A>(E: Eq<A>): <N extends string>(r: Readonly<Record<N, A>>, a: A) => boolean {
+  return (r, a) => {
+    for (const k in r) {
+      if (E.equals(r[k])(a)) {
+        return true
+      }
+    }
+    return false
+  }
+}
+
+/**
+ * @category Guards
+ * @since 1.0.0
+ */
+export function elem<A>(E: Eq<A>): (a: A) => <N extends string>(r: Readonly<Record<N, A>>) => boolean {
+  return (a) => (r) => elem_(E)(r, a)
+}
+
+/**
+ * @category Guards
+ * @since 1.0.0
+ */
+export function every_<N extends string, A, B extends A>(
+  r: ReadonlyRecord<N, A>,
+  predicate: Refinement<A, B>
+): r is ReadonlyRecord<N, B>
+export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: Predicate<A>): boolean
+export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: Predicate<A>): boolean {
+  for (const k in r) {
+    if (!predicate(r[k])) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * @category Guards
+ * @since 1.0.0
+ */
+export function every<A, B extends A>(
+  predicate: Refinement<A, B>
+): <N extends string>(r: ReadonlyRecord<N, A>) => r is ReadonlyRecord<N, B>
+export function every<A>(predicate: Predicate<A>): <N extends string>(r: ReadonlyRecord<N, A>) => boolean
+export function every<A>(predicate: Predicate<A>): <N extends string>(r: ReadonlyRecord<N, A>) => boolean {
+  return (r) => every_(r, predicate)
+}
+
+/**
  * Test whether a given record contains the given key
  *
  * @category Guards
@@ -87,27 +140,6 @@ export function isSubrecord<A>(
  * @category Guards
  * @since 1.0.0
  */
-export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: Predicate<A>): boolean {
-  for (const k in r) {
-    if (!predicate(r[k])) {
-      return false
-    }
-  }
-  return true
-}
-
-/**
- * @category Guards
- * @since 1.0.0
- */
-export function every<A>(predicate: Predicate<A>): <N extends string>(r: Readonly<Record<N, A>>) => boolean {
-  return (r) => every_(r, predicate)
-}
-
-/**
- * @category Guards
- * @since 1.0.0
- */
 export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: (a: A) => boolean): boolean {
   for (const k in r) {
     if (predicate(r[k])) {
@@ -125,29 +157,6 @@ export function some<A>(predicate: (a: A) => boolean): <N extends string>(r: Rea
   return (r) => some_(r, predicate)
 }
 
-/**
- * @category Guards
- * @since 1.0.0
- */
-export function elem_<A>(E: Eq<A>): <N extends string>(r: Readonly<Record<N, A>>, a: A) => boolean {
-  return (r, a) => {
-    for (const k in r) {
-      if (E.equals(r[k])(a)) {
-        return true
-      }
-    }
-    return false
-  }
-}
-
-/**
- * @category Guards
- * @since 1.0.0
- */
-export function elem<A>(E: Eq<A>): (a: A) => <N extends string>(r: Readonly<Record<N, A>>) => boolean {
-  return (a) => (r) => elem_(E)(r, a)
-}
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
@@ -160,12 +169,12 @@ export function fromRecord<N extends string, A>(r: Record<N, A>): ReadonlyRecord
   return Object.assign({}, r)
 }
 
-export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N, A> {
-  return Object.assign({}, r)
-}
-
 export function singleton<A>(k: string, a: A): ReadonlyRecord<string, A> {
   return { [k]: a } as any
+}
+
+export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N, A> {
+  return Object.assign({}, r)
 }
 
 /*
@@ -841,32 +850,6 @@ export function collect<N extends string, A, B>(f: (k: N, a: A) => B): (r: Reado
   return (r) => collect_(r, f)
 }
 
-export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
-  if (!has_(r, k)) {
-    const mut_out = Object.assign({}, r) as Record<string, A>
-    mut_out[k]    = a
-    return O.some(mut_out)
-  }
-  return O.none()
-}
-
-export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
-  return (r) => insertAt_(r, k, a)
-}
-
-export function upsertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): ReadonlyRecord<string, A> {
-  if (has_(r, k) && r[k] === a) {
-    return r
-  }
-  const mut_out = Object.assign({}, r) as Record<string, A>
-  mut_out[k]    = a
-  return mut_out
-}
-
-export function upsertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
-  return (r) => upsertAt_(r, k, a)
-}
-
 export function deleteAt_<A>(r: ReadonlyRecord<string, A>, k: string): ReadonlyRecord<string, A> {
   if (!has_(r, k)) {
     return r
@@ -880,12 +863,25 @@ export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => Readon
   return (r) => deleteAt_(r, k)
 }
 
-export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
-  return modifyAt_(r, k, () => a)
+export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+  if (!has_(r, k)) {
+    const mut_out = Object.assign({}, r) as Record<string, A>
+    mut_out[k]    = a
+    return O.some(mut_out)
+  }
+  return O.none()
 }
 
-export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
-  return (r) => updateAt_(r, k, a)
+export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+  return (r) => insertAt_(r, k, a)
+}
+
+export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<A> {
+  return _hasOwnProperty.call(r, k) ? O.some(r[k]) : O.none()
+}
+
+export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<A> {
+  return (r) => lookup_(r, k)
 }
 
 export function modifyAt_<A>(
@@ -908,14 +904,6 @@ export function modifyAt<A>(
   return (r) => modifyAt_(r, k, f)
 }
 
-export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<A> {
-  return _hasOwnProperty.call(r, k) ? O.some(r[k]) : O.none()
-}
-
-export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<A> {
-  return (r) => lookup_(r, k)
-}
-
 export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
@@ -924,6 +912,27 @@ export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<reado
 
 export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   return (r) => pop_(r, k)
+}
+
+export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+  return modifyAt_(r, k, () => a)
+}
+
+export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+  return (r) => updateAt_(r, k, a)
+}
+
+export function upsertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): ReadonlyRecord<string, A> {
+  if (has_(r, k) && r[k] === a) {
+    return r
+  }
+  const mut_out = Object.assign({}, r) as Record<string, A>
+  mut_out[k]    = a
+  return mut_out
+}
+
+export function upsertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
+  return (r) => upsertAt_(r, k, a)
 }
 
 /*

@@ -18,7 +18,7 @@ import { bracket } from './bracket'
  */
 export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   const worker = (
-    q: Q.Queue<readonly [P.Promise<E, B>, A]>,
+    q: Q.UQueue<readonly [P.Promise<E, B>, A]>,
     pairs: Iterable<readonly [P.Promise<E, B>, A]>,
     ref: Ref.URef<number>
   ): I.URIO<R, void> =>
@@ -40,7 +40,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
     )
 
   return pipe(
-    Q.makeBounded<readonly [P.Promise<E, B>, A]>(n),
+    Q.boundedQueue<readonly [P.Promise<E, B>, A]>(n),
     bracket(
       (q) =>
         I.gen(function* (_) {

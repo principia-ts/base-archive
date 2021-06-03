@@ -153,7 +153,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
 /**
  * Creates a new map
  */
-export function make<K, V>() {
+export function hashMap<K, V>() {
   return new HashMap<K, V>()
 }
 

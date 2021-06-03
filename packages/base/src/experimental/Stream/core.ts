@@ -762,7 +762,7 @@ export function broadcastedQueues_<R, E, A>(
 ): M.Managed<R, never, C.Chunk<H.HubDequeue<unknown, never, Take.Take<E, A>>>> {
   return pipe(
     M.do,
-    M.bindS('hub', () => I.toManaged_(H.makeBounded<Take.Take<E, A>>(maximumLag))),
+    M.bindS('hub', () => I.toManaged_(H.boundedHub<Take.Take<E, A>>(maximumLag))),
     M.bindS('queues', ({ hub }) => M.collectAll(C.fill(n, () => H.subscribe(hub)))),
     M.tap(({ hub }) => M.fork(runIntoHubManaged_(self, hub))),
     M.map(({ queues }) => queues)
@@ -1430,7 +1430,7 @@ export function mapError<E, E1>(f: (e: E) => E1) {
  */
 export function runIntoHubManaged_<R, R1, E extends E1, E1, A>(
   self: Stream<R, E, A>,
-  hub: H.XHub<R1, never, never, unknown, Take.Take<E1, A>, any>
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
 ): M.Managed<R & R1, E | E1, void> {
   return runIntoManaged_(self, H.toQueue(hub))
 }
@@ -1439,7 +1439,7 @@ export function runIntoHubManaged_<R, R1, E extends E1, E1, A>(
  * Like `Stream#runIntoHub`, but provides the result as a `Managed` to allow for scope
  * composition.
  */
-export function runIntoHubManaged<R1, E1, A>(hub: H.XHub<R1, never, never, unknown, Take.Take<E1, A>, any>) {
+export function runIntoHubManaged<R1, E1, A>(hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>) {
   return <R, E extends E1>(self: Stream<R, E, A>) => runIntoHubManaged_(self, hub)
 }
 
@@ -1449,7 +1449,7 @@ export function runIntoHubManaged<R1, E1, A>(hub: H.XHub<R1, never, never, unkno
  */
 export function runIntoManaged_<R, R1, E extends E1, E1, A>(
   self: Stream<R, E, A>,
-  queue: Q.XQueue<R1, never, never, unknown, Take.Take<E1, A>, any>
+  queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
 ): M.Managed<R & R1, E | E1, void> {
   const writer: Ch.Channel<R, E, C.Chunk<A>, unknown, E, Take.Take<E | E1, A>, any> = Ch.readWithCause(
     (in_) => Ch.zipr_(Ch.write(Take.chunk(in_)), writer),
@@ -1470,7 +1470,7 @@ export function runIntoManaged_<R, R1, E extends E1, E1, A>(
  * Like `Stream#into`, but provides the result as a `Managed` to allow for scope
  * composition.
  */
-export function runIntoManaged<R1, E1, A>(queue: Q.XQueue<R1, never, never, unknown, Take.Take<E1, A>, any>) {
+export function runIntoManaged<R1, E1, A>(queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>) {
   return <R, E extends E1>(self: Stream<R, E, A>) => runIntoManaged_(self, queue)
 }
 
@@ -1552,10 +1552,10 @@ export const DEFAULT_CHUNK_SIZE = 4096
  * Converts the stream to a managed hub of chunks. After the managed hub is used,
  * the hub will never again produce values and should be discarded.
  */
-export function toHub_<R, E, A>(self: Stream<R, E, A>, capacity: number): M.Managed<R, never, H.Hub<Take.Take<E, A>>> {
+export function toHub_<R, E, A>(self: Stream<R, E, A>, capacity: number): M.Managed<R, never, H.UHub<Take.Take<E, A>>> {
   return pipe(
     M.do,
-    M.bindS('hub', () => I.toManaged_(H.makeBounded<Take.Take<E, A>>(capacity), (_) => H.shutdown(_))),
+    M.bindS('hub', () => I.toManaged_(H.boundedHub<Take.Take<E, A>>(capacity), (_) => H.shutdown(_))),
     M.tap(({ hub }) => M.fork(runIntoHubManaged_(self, hub))),
     M.map(({ hub }) => hub)
   )
@@ -1573,7 +1573,7 @@ export function toHub(capacity: number) {
  * Creates a stream from a `XQueue` of values
  */
 export function fromQueue_<R, E, O>(
-  queue: Q.XQueue<never, R, unknown, E, never, O>,
+  queue: Q.Queue<never, R, unknown, E, never, O>,
   maxChunkSize: number = DEFAULT_CHUNK_SIZE
 ): Stream<R, E, O> {
   return repeatEffectChunkOption(
@@ -1597,7 +1597,7 @@ export function fromQueue_<R, E, O>(
  * Creates a stream from a `XQueue` of values
  */
 export function fromQueue(maxChunkSize: number = DEFAULT_CHUNK_SIZE) {
-  return <R, E, O>(queue: Q.XQueue<never, R, unknown, E, never, O>) => fromQueue_(queue, maxChunkSize)
+  return <R, E, O>(queue: Q.Queue<never, R, unknown, E, never, O>) => fromQueue_(queue, maxChunkSize)
 }
 
 export function ensuring_<R, E, A, R1>(sa: Stream<R, E, A>, fin: I.IO<R1, never, any>): Stream<R & R1, E, A> {
@@ -1609,7 +1609,7 @@ export function ensuring<R1>(fin: I.IO<R1, never, any>): <R, E, A>(sa: Stream<R,
 }
 
 export function fromQueueWithShutdown_<R, E, A>(
-  queue: Q.XQueue<never, R, unknown, E, never, A>,
+  queue: Q.Queue<never, R, unknown, E, never, A>,
   maxChunkSize: number = DEFAULT_CHUNK_SIZE
 ): Stream<R, E, A> {
   return pipe(fromQueue_(queue, maxChunkSize), ensuring(queue.shutdown))
@@ -1617,7 +1617,7 @@ export function fromQueueWithShutdown_<R, E, A>(
 
 export function fromQueueWithShutdown(
   maxChunkSize: number = DEFAULT_CHUNK_SIZE
-): <R, E, A>(queue: Q.XQueue<never, R, unknown, E, never, A>) => Stream<R, E, A> {
+): <R, E, A>(queue: Q.Queue<never, R, unknown, E, never, A>) => Stream<R, E, A> {
   return (queue) => fromQueueWithShutdown_(queue, maxChunkSize)
 }
 
@@ -1723,7 +1723,7 @@ export function effectAsyncOption<R, E, A>(
 ): Stream<R, E, A> {
   return pipe(
     I.gen(function* (_) {
-      const output      = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
+      const output      = yield* _(Q.boundedQueue<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
         I.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
@@ -1791,10 +1791,10 @@ export function unfoldM<S>(s: S) {
  * Converts the stream to a managed queue of chunks. After the managed queue is used,
  * the queue will never again produce values and should be discarded.
  */
-export function toQueue_<R, E, A>(self: Stream<R, E, A>, capacity = 2): M.Managed<R, never, Q.Queue<Take.Take<E, A>>> {
+export function toQueue_<R, E, A>(self: Stream<R, E, A>, capacity = 2): M.Managed<R, never, Q.UQueue<Take.Take<E, A>>> {
   return pipe(
     M.do,
-    M.bindS('queue', () => I.toManaged_(Q.makeBounded<Take.Take<E, A>>(capacity), Q.shutdown)),
+    M.bindS('queue', () => I.toManaged_(Q.boundedQueue<Take.Take<E, A>>(capacity), Q.shutdown)),
     M.tap(({ queue }) => M.fork(runIntoManaged_(self, queue))),
     M.map(({ queue }) => queue)
   )
@@ -1812,10 +1812,10 @@ export function toQueue(capacity = 2) {
  * Converts the stream into an unbounded managed queue. After the managed queue
  * is used, the queue will never again produce values and should be discarded.
  */
-export function toQueueUnbounded<R, E, A>(self: Stream<R, E, A>): M.Managed<R, never, Q.Queue<Take.Take<E, A>>> {
+export function toQueueUnbounded<R, E, A>(self: Stream<R, E, A>): M.Managed<R, never, Q.UQueue<Take.Take<E, A>>> {
   return pipe(
     M.do,
-    M.bindS('queue', () => I.toManaged_(Q.makeUnbounded<Take.Take<E, A>>(), Q.shutdown)),
+    M.bindS('queue', () => I.toManaged_(Q.unboundedQueue<Take.Take<E, A>>(), Q.shutdown)),
     M.tap(({ queue }) => M.fork(runIntoManaged_(self, queue))),
     M.map(({ queue }) => queue)
   )
@@ -1831,7 +1831,7 @@ export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
 /**
  * Creates a stream from a subscription to a hub.
  */
-export function fromHub<R, E, A>(hub: H.XHub<never, R, unknown, E, never, A>): Stream<R, E, A> {
+export function fromHub<R, E, A>(hub: H.Hub<never, R, unknown, E, never, A>): Stream<R, E, A> {
   return bind_(managed(H.subscribe(hub)), fromQueue())
 }
 

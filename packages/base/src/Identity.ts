@@ -28,10 +28,9 @@ export const alt_: <A>(fa: A, that: () => A) => A = P.identity
 /**
  * @optimize identity
  */
-export const alt =
-  <A>(that: () => A) =>
-  (fa: A): A =>
-    alt_(fa, that)
+export function alt<A>(that: () => A): (fa: A) => A {
+  return (fa) => alt_(fa, that)
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -54,10 +53,9 @@ export function pure<A>(a: A): A {
 
 export const cross_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple
 
-export const cross =
-  <B>(fb: B) =>
-  <A>(fa: A): readonly [A, B] =>
-    cross_(fa, fb)
+export function cross<B>(fb: B): <A>(fa: A) => readonly [A, B] {
+  return (fa) => cross_(fa, fb)
+}
 
 export function ap_<A, B>(fab: (a: A) => B, fa: A): B {
   return fab(fa)

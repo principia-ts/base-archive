@@ -287,7 +287,7 @@ export function managedRefM<A>(a: A): UManaged<URefM<A>> {
 export function dequeueRefM<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
   return I.gen(function* (_) {
     const ref   = yield* _(refM(a))
-    const queue = yield* _(Q.makeUnbounded<A>())
+    const queue = yield* _(Q.unboundedQueue<A>())
     return P.tuple(
       P.pipe(
         ref,
