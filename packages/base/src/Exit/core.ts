@@ -28,22 +28,6 @@ export const ExitTag = {
   Failure: 'Failure'
 } as const
 
-export class Success<A> implements Hashable, Equatable {
-  readonly _E!: () => never
-  readonly _A!: () => A;
-
-  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
-  readonly _tag                     = ExitTag.Success
-  constructor(readonly value: A) {}
-
-  get [St.$hash](): number {
-    return St.hash(this.value)
-  }
-  [St.$equals](that: unknown): boolean {
-    return isExit(that) && isSuccess(that) && St.equals(this.value, that.value)
-  }
-}
-
 export class Failure<E> {
   readonly _E!: () => E
   readonly _A!: () => never;
@@ -60,6 +44,22 @@ export class Failure<E> {
   }
 }
 
+export class Success<A> implements Hashable, Equatable {
+  readonly _E!: () => never
+  readonly _A!: () => A;
+
+  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
+  readonly _tag                     = ExitTag.Success
+  constructor(readonly value: A) {}
+
+  get [St.$hash](): number {
+    return St.hash(this.value)
+  }
+  [St.$equals](that: unknown): boolean {
+    return isExit(that) && isSuccess(that) && St.equals(this.value, that.value)
+  }
+}
+
 export function isExit(u: unknown): u is Exit<unknown, unknown> {
   return isObject(u) && ExitTypeId in u
 }
@@ -70,24 +70,12 @@ export function isExit(u: unknown): u is Exit<unknown, unknown> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function succeed<E = never, A = never>(value: A): Exit<E, A> {
-  return new Success(value)
-}
-
-export function halt<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
-  return new Failure(cause)
+export function die(defect: unknown): Exit<never, never> {
+  return halt(C.die(defect))
 }
 
 export function fail<E = never, A = never>(e: E): Exit<E, A> {
   return halt(C.fail(e))
-}
-
-export function interrupt(id: FiberId) {
-  return halt(C.interrupt(id))
-}
-
-export function die(defect: unknown): Exit<never, never> {
-  return halt(C.die(defect))
 }
 
 export function fromEither<E, A>(e: E.Either<E, A>): Exit<E, A> {
@@ -102,15 +90,23 @@ export function fromOption<E>(onNone: () => E): <A>(fa: O.Option<A>) => Exit<E, 
   return (fa) => fromOption_(fa, onNone)
 }
 
+export function halt<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
+  return new Failure(cause)
+}
+
+export function interrupt(id: FiberId) {
+  return halt(C.interrupt(id))
+}
+
+export function succeed<E = never, A = never>(value: A): Exit<E, A> {
+  return new Success(value)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Guards
  * -------------------------------------------------------------------------------------------------
  */
-
-export function isSuccess<E, A>(exit: Exit<E, A>): exit is Success<A> {
-  return exit._tag === ExitTag.Success
-}
 
 export function isFailure<E, A>(exit: Exit<E, A>): exit is Failure<E> {
   return exit._tag === ExitTag.Failure
@@ -118,6 +114,10 @@ export function isFailure<E, A>(exit: Exit<E, A>): exit is Failure<E> {
 
 export function isInterrupt<E, A>(exit: Exit<E, A>): exit is Failure<E> {
   return isFailure(exit) ? C.interrupted(exit.cause) : false
+}
+
+export function isSuccess<E, A>(exit: Exit<E, A>): exit is Success<A> {
+  return exit._tag === ExitTag.Success
 }
 
 /*
@@ -185,22 +185,6 @@ export function pure<A>(a: A): Exit<never, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function cross_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
-  return crossWithCause_(fa, fb, tuple, C.then)
-}
-
-export function cross<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
-  return (fa) => cross_(fa, fb)
-}
-
-export function crossPar_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
-  return crossWithCause_(fa, fb, tuple, C.both)
-}
-
-export function crossPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
-  return (fa) => crossPar_(fa, fb)
-}
-
 export function ap_<E, A, G, B>(fab: Exit<G, (a: A) => B>, fa: Exit<E, A>): Exit<E | G, B> {
   return bind_(fab, (f) => map_(fa, (a) => f(a)))
 }
@@ -223,6 +207,38 @@ export function apr_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B>
 
 export function apr<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
   return (fa) => apr_(fa, fb)
+}
+
+export function aplPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
+  return crossWithCause_(fa, fb, (a, _) => a, C.both)
+}
+
+export function aplPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
+  return (fa) => aplPar_(fa, fb)
+}
+
+export function aprPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
+  return crossWithCause_(fa, fb, (_, b) => b, C.both)
+}
+
+export function aprPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => aprPar_(fa, fb)
+}
+
+export function cross_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
+  return crossWithCause_(fa, fb, tuple, C.then)
+}
+
+export function cross<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
+export function crossPar_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {
+  return crossWithCause_(fa, fb, tuple, C.both)
+}
+
+export function crossPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, readonly [A, B]> {
+  return (fa) => crossPar_(fa, fb)
 }
 
 export function crossWithCause_<E, A, G, B, C>(
@@ -272,27 +288,19 @@ export function crossWith<A, G, B, C>(fb: Exit<G, B>, f: (a: A, b: B) => C): <E>
   return (fa) => crossWith_(fa, fb, f)
 }
 
-export function aplPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
-  return crossWithCause_(fa, fb, (a, _) => a, C.both)
-}
-
-export function aplPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
-  return (fa) => aplPar_(fa, fb)
-}
-
-export function aprPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
-  return crossWithCause_(fa, fb, (_, b) => b, C.both)
-}
-
-export function aprPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => aprPar_(fa, fb)
-}
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Bifunctor
  * -------------------------------------------------------------------------------------------------
  */
+
+export function bimap_<E, A, G, B>(pab: Exit<E, A>, f: (e: E) => G, g: (a: A) => B): Exit<G, B> {
+  return isFailure(pab) ? mapError_(pab, f) : map_(pab, g)
+}
+
+export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Exit<E, A>) => Exit<G, B> {
+  return (pab) => bimap_(pab, f, g)
+}
 
 export function mapError_<E, A, G>(pab: Exit<E, A>, f: (e: E) => G): Exit<G, A> {
   return isFailure(pab) ? halt(C.map_(pab.cause, f)) : pab
@@ -310,27 +318,11 @@ export function mapErrorCause<E, G>(f: (e: C.Cause<E>) => C.Cause<G>): <A>(pab: 
   return (pab) => mapErrorCause_(pab, f)
 }
 
-export function bimap_<E, A, G, B>(pab: Exit<E, A>, f: (e: E) => G, g: (a: A) => B): Exit<G, B> {
-  return isFailure(pab) ? mapError_(pab, f) : map_(pab, g)
-}
-
-export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Exit<E, A>) => Exit<G, B> {
-  return (pab) => bimap_(pab, f, g)
-}
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Functor
  * -------------------------------------------------------------------------------------------------
  */
-
-export function map_<E, A, B>(fa: Exit<E, A>, f: (a: A) => B): Exit<E, B> {
-  return isFailure(fa) ? fa : succeed(f(fa.value))
-}
-
-export function map<A, B>(f: (a: A) => B): <E>(fa: Exit<E, A>) => Exit<E, B> {
-  return (fa) => map_(fa, f)
-}
 
 export function as_<E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> {
   return map_(fa, () => b)
@@ -338,6 +330,14 @@ export function as_<E, A, B>(fa: Exit<E, A>, b: B): Exit<E, B> {
 
 export function as<B>(b: B): <E, A>(fa: Exit<E, A>) => Exit<E, B> {
   return map(() => b)
+}
+
+export function map_<E, A, B>(fa: Exit<E, A>, f: (a: A) => B): Exit<E, B> {
+  return isFailure(fa) ? fa : succeed(f(fa.value))
+}
+
+export function map<A, B>(f: (a: A) => B): <E>(fa: Exit<E, A>) => Exit<E, B> {
+  return (fa) => map_(fa, f)
 }
 
 /*

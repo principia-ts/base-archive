@@ -137,7 +137,7 @@ class Memoize<A> extends Eval<A> {
   constructor(readonly ma: Eval<A>) {
     super()
   }
-  public result: O.Option<A> = O.None<A>()
+  public result: O.Option<A> = O.none<A>()
 
   get memoize() {
     return this
@@ -147,7 +147,7 @@ class Memoize<A> extends Eval<A> {
     return O.getOrElse_(this.result, () => {
       const a = evaluate(this)
       // eslint-disable-next-line functional/immutable-data
-      this.result = O.Some(a)
+      this.result = O.some(a)
       return a
     })
   }
@@ -160,15 +160,25 @@ class Memoize<A> extends Eval<A> {
  */
 
 /**
- * Construct an eager Eval instance.
+ * Construct a lazy Eval<A> instance.
  *
- * In some sense it is equivalent to using a `const` in a typical computation.
+ * This type can be used for "lazy" values. In some sense it is
+ * equivalent to using a thunked value.
  *
- * This type should be used when an A value is already in hand, or
- * when the computation to produce an A value is pure and very fast.
+ * This type will evaluate the computation every time the value is
+ * required. It should be avoided except when laziness is required and
+ * caching must be avoided. Generally, prefer `later`.
  */
-export function now<A>(a: A): Eval<A> {
-  return new Now(a)
+export function always<A>(thunk: () => A): Eval<A> {
+  return new Always(thunk)
+}
+
+/**
+ * Defer is a type of Eval that is used to defer computations
+ * which produce Eval.
+ */
+export function defer<A>(thunk: () => Eval<A>): Eval<A> {
+  return new Defer(thunk)
 }
 
 /**
@@ -191,25 +201,15 @@ export function later<A>(f: () => A): Eval<A> {
 }
 
 /**
- * Construct a lazy Eval<A> instance.
+ * Construct an eager Eval instance.
  *
- * This type can be used for "lazy" values. In some sense it is
- * equivalent to using a thunked value.
+ * In some sense it is equivalent to using a `const` in a typical computation.
  *
- * This type will evaluate the computation every time the value is
- * required. It should be avoided except when laziness is required and
- * caching must be avoided. Generally, prefer `later`.
+ * This type should be used when an A value is already in hand, or
+ * when the computation to produce an A value is pure and very fast.
  */
-export function always<A>(thunk: () => A): Eval<A> {
-  return new Always(thunk)
-}
-
-/**
- * Defer is a type of Eval that is used to defer computations
- * which produce Eval.
- */
-export function defer<A>(thunk: () => Eval<A>): Eval<A> {
-  return new Defer(thunk)
+export function now<A>(a: A): Eval<A> {
+  return new Now(a)
 }
 
 /*
@@ -307,7 +307,7 @@ export function evaluate<A>(e: Eval<A>): A {
     <A1>(m: Memoize<A1>) =>
     (a: A1): Eval<A1> => {
       // eslint-disable-next-line functional/immutable-data
-      m.result = O.Some(a)
+      m.result = O.some(a)
       return new Now(a)
     }
 

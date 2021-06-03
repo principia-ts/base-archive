@@ -10,5 +10,6 @@ import * as I from '../../IO/core'
  * "inner interruption" of this fiber, unlike interruption triggered by another
  * fiber, "inner interruption" can be caught and recovered.
  */
-export const join = <E, A>(fiber: Fiber<E, A>): FIO<E, A> =>
-  I.tap_(I.bind_(fiber.await, I.done), () => fiber.inheritRefs)
+export function join<E, A>(fiber: Fiber<E, A>): FIO<E, A> {
+  return I.tap_(I.bind_(fiber.await, I.done), () => fiber.inheritRefs)
+}

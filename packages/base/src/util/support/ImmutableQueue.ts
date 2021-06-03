@@ -19,9 +19,9 @@ export class ImmutableQueue<A> {
 
   dequeue() {
     if (A.isNonEmpty(this.backing)) {
-      return O.Some([NA.head(this.backing), new ImmutableQueue(NA.tail(this.backing))] as const)
+      return O.some([NA.head(this.backing), new ImmutableQueue(NA.tail(this.backing))] as const)
     } else {
-      return O.None()
+      return O.none()
     }
   }
 

@@ -22,7 +22,7 @@ export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.F
     traceFrom(trace, ({ restore }) =>
       pipe(
         Fiber.fiberName,
-        FiberRef.set(O.Some(name)),
+        FiberRef.set(O.some(name)),
         bind(() => fork(restore(ma)))
       )
     )

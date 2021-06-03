@@ -93,7 +93,7 @@ export function tryGetHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.O
   while (true) {
     switch (node._tag) {
       case 'LeafNode': {
-        return keyEq(node.key, key) ? node.value : O.None()
+        return keyEq(node.key, key) ? node.value : O.none()
       }
       case 'CollisionNode': {
         if (hash === node.hash) {
@@ -103,7 +103,7 @@ export function tryGetHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.O
             if ('key' in child && keyEq(child.key, key)) return child.value
           }
         }
-        return O.None()
+        return O.none()
       }
       case 'IndexedNode': {
         const frag = hashFragment(shift, hash)
@@ -113,7 +113,7 @@ export function tryGetHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.O
           shift += SIZE
           break
         }
-        return O.None()
+        return O.none()
       }
       case 'ArrayNode': {
         node = node.children[hashFragment(shift, hash)]
@@ -121,10 +121,10 @@ export function tryGetHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.O
           shift += SIZE
           break
         }
-        return O.None()
+        return O.none()
       }
       default:
-        return O.None()
+        return O.none()
     }
   }
 }
@@ -229,7 +229,7 @@ export function modify<K, V>(key: K, f: UpdateFn<V>) {
  * Store `value` for `key` in `map` using internal hash function.
  */
 export function set_<K, V>(map: HashMap<K, V>, key: K, value: V) {
-  return modify_(map, key, constant(O.Some(value)))
+  return modify_(map, key, constant(O.some(value)))
 }
 
 /**
@@ -245,7 +245,7 @@ export function set<K, V>(key: K, value: V) {
  *  Remove the entry for `key` in `map` using internal hash.
  */
 export function remove_<K, V>(map: HashMap<K, V>, key: K) {
-  return modify_(map, key, constant(O.None()))
+  return modify_(map, key, constant(O.none()))
 }
 
 /**
@@ -295,7 +295,7 @@ export type Cont<K, V, A> =
   | undefined
 
 export function applyCont<K, V, A>(cont: Cont<K, V, A>) {
-  return cont ? visitLazyChildren(cont[0], cont[1], cont[2], cont[3], cont[4]) : O.None()
+  return cont ? visitLazyChildren(cont[0], cont[1], cont[2], cont[3], cont[4]) : O.none()
 }
 
 export function visitLazyChildren<K, V, A>(
@@ -333,7 +333,7 @@ export function visitLazy<K, V, A>(
   switch (node._tag) {
     case 'LeafNode': {
       return O.isSome(node.value)
-        ? O.Some({
+        ? O.some({
             value: f(tuple(node.key, node.value.value)),
             cont
           })

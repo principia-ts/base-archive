@@ -15,7 +15,7 @@ export type Option<A> = None | Some<A>
 /**
  * @internal
  */
-export function Some<A>(a: A): Option<A> {
+export function some<A>(a: A): Option<A> {
   return {
     _tag: 'Some',
     value: a
@@ -25,7 +25,7 @@ export function Some<A>(a: A): Option<A> {
 /**
  * @internal
  */
-export function None<A = never>(): Option<A> {
+export function none<A = never>(): Option<A> {
   return {
     _tag: 'None'
   }
@@ -41,7 +41,7 @@ export function None<A = never>(): Option<A> {
 export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-  return predicate(a) ? None() : Some(a)
+  return predicate(a) ? none() : some(a)
 }
 
 /**
@@ -58,7 +58,7 @@ export function fromPredicate<A>(predicate: Predicate<A>): (a: A) => Option<A> {
 }
 
 export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
-  return a == null ? None() : Some(a as NonNullable<A>)
+  return a == null ? none() : some(a as NonNullable<A>)
 }
 
 /**

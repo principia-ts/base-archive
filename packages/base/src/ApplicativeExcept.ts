@@ -219,5 +219,5 @@ export interface AttemptFn<F extends HKT.URIS, C = HKT.Auto> {
 
 export function attemptF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): AttemptFn<F, C> {
   const pure = pureF(F)
-  return (fa) => F.catchAll_(F.map_(fa, E.Right), (e) => pure(E.Left(e)))
+  return (fa) => F.catchAll_(F.map_(fa, E.right), (e) => pure(E.left(e)))
 }

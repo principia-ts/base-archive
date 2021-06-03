@@ -100,7 +100,11 @@ function coordinateCrossWithPar<E, E2>() {
             () => I.halt(cw)
           )
         ),
-      (x) => I.map_(join(loser), traceAs(f, (y) => f(x, y)))
+      (x) =>
+        I.map_(
+          join(loser),
+          traceAs(f, (y) => f(x, y))
+        )
     )
   }
 }
@@ -111,7 +115,11 @@ function coordinateCrossWithPar<E, E2>() {
  */
 export function apPar_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.IO<R1, E1, A>): I.IO<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(fab, fa, traceFrom(trace, (f, a) => f(a)))
+  return crossWithPar_(
+    fab,
+    fa,
+    traceFrom(trace, (f, a) => f(a))
+  )
 }
 
 /**
@@ -128,7 +136,11 @@ export function apPar<R, E, A>(fa: I.IO<R, E, A>): <Q, D, B>(fab: I.IO<Q, D, (a:
  */
 export function aplPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return crossWithPar_(fa, fb, traceFrom(trace, (a, _) => a))
+  return crossWithPar_(
+    fa,
+    fb,
+    traceFrom(trace, (a, _) => a)
+  )
 }
 
 /**
@@ -145,7 +157,11 @@ export function aplPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E,
  */
 export function aprPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(fa, fb, traceFrom(trace, (_, b) => b))
+  return crossWithPar_(
+    fa,
+    fb,
+    traceFrom(trace, (_, b) => b)
+  )
 }
 
 /**

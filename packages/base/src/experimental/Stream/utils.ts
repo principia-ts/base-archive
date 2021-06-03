@@ -14,8 +14,8 @@ export function zipChunks_<A, B, C>(
   }
 
   if (fa.length > fb.length) {
-    return tuple(fc, E.Left(C.drop_(fa, fb.length)))
+    return tuple(fc, E.left(C.drop_(fa, fb.length)))
   }
 
-  return tuple(fc, E.Right(C.drop_(fb, fa.length)))
+  return tuple(fc, E.right(C.drop_(fb, fa.length)))
 }

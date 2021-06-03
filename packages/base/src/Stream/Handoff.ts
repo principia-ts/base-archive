@@ -2,7 +2,7 @@ import type { Option } from '../Option'
 
 import { pipe } from '../function'
 import * as I from '../IO'
-import { None, Some } from '../Option'
+import { none, some } from '../Option'
 import * as P from '../Promise'
 import * as Ref from '../Ref'
 import { matchTag } from '../util/match'
@@ -104,12 +104,12 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
         h.ref,
         Ref.modify<I.UIO<Option<A>>, State<A>>(
           matchTag({
-            Empty: (s) => [I.succeed(None()), s] as const,
+            Empty: (s) => [I.succeed(none()), s] as const,
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
                   notifyProducer.succeed(undefined),
-                  I.as(() => Some(a))
+                  I.as(() => some(a))
                 ),
                 new Empty(p)
               ] as const

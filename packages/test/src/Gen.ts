@@ -85,7 +85,7 @@ export const exponential: Gen<Has<Random>, number> = map_(uniform, (n) => -Math.
 
 export const printableChar = char(33, 126)
 
-export const none: Gen<unknown, O.Option<never>> = constant(O.None())
+export const none: Gen<unknown, O.Option<never>> = constant(O.none())
 
 export const unit: Gen<unknown, void> = constant(undefined)
 
@@ -297,7 +297,7 @@ export function stringN<R>(char: Gen<R, string>, n: number): Gen<R, string> {
 }
 
 export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {
-  return map_(gen, O.Some)
+  return map_(gen, O.some)
 }
 
 export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
@@ -349,14 +349,14 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
 export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A, b: B) => C): Gen<R & R1, C> {
   const left: Stream<R, never, E.Either<Sample<R, A>, Sample<R, A>>>     = pipe(
     fa.sample,
-    S.map(E.Right),
-    S.concat(pipe(fa.sample, S.map(E.Left))),
+    S.map(E.right),
+    S.concat(pipe(fa.sample, S.map(E.left))),
     S.forever
   )
   const right: Stream<R1, never, E.Either<Sample<R1, B>, Sample<R1, B>>> = pipe(
     fb.sample,
-    S.map(E.Right),
-    S.concat(pipe(fb.sample, S.map(E.Left))),
+    S.map(E.right),
+    S.concat(pipe(fb.sample, S.map(E.left))),
     S.forever
   )
   return new Gen(
@@ -365,20 +365,20 @@ export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A
       S.zipAllWithExec(
         right,
         sequential,
-        (l) => tuple(O.Some(l), O.None()),
-        (r) => tuple(O.None(), O.Some(r)),
-        (l, r) => tuple(O.Some(l), O.Some(r))
+        (l) => tuple(O.some(l), O.none()),
+        (r) => tuple(O.none(), O.some(r)),
+        (l, r) => tuple(O.some(l), O.some(r))
       ),
       S.collectWhile(([x, y]) =>
         O.isSome(x) && O.isSome(y)
           ? E.isRight(x.value) && E.isRight(y.value)
-            ? O.Some(Sa.zipWith_(x.value.right, y.value.right, f))
+            ? O.some(Sa.zipWith_(x.value.right, y.value.right, f))
             : E.isRight(x.value) && E.isLeft(y.value)
-            ? O.Some(Sa.zipWith_(x.value.right, y.value.left, f))
+            ? O.some(Sa.zipWith_(x.value.right, y.value.left, f))
             : E.isLeft(x.value) && E.isRight(y.value)
-            ? O.Some(Sa.zipWith_(x.value.left, y.value.right, f))
-            : O.None()
-          : O.None()
+            ? O.some(Sa.zipWith_(x.value.left, y.value.right, f))
+            : O.none()
+          : O.none()
       )
     )
   )

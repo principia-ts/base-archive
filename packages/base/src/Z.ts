@@ -832,8 +832,8 @@ export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, 
 export function attempt<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, never, E.Either<E, A>> {
   return matchM_(
     fa,
-    (e) => succeed(E.Left(e)),
-    (a) => succeed(E.Right(a))
+    (e) => succeed(E.left(e)),
+    (a) => succeed(E.right(a))
   )
 }
 
@@ -1171,7 +1171,7 @@ export function repeatUntilEquals<A>(
  * @since 1.0.0
  */
 export function either<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S1 | S2, R, never, E.Either<E, A>> {
-  return match_(fa, E.Left, E.Right)
+  return match_(fa, E.left, E.right)
 }
 
 export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
@@ -1200,8 +1200,8 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
 ): Z<W, S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> {
   return matchM_(
     fa,
-    () => map_(that, E.Right),
-    (a) => succeed(E.Left(a))
+    () => map_(that, E.right),
+    (a) => succeed(E.left(a))
   )
 }
 
@@ -1565,10 +1565,10 @@ export function runAll_<W, S1, S2, E, A>(
   }
 
   if (failed) {
-    return [log, E.Left(result)]
+    return [log, E.left(result)]
   }
 
-  return [log, E.Right([s0, result])]
+  return [log, E.right([s0, result])]
 }
 
 /**

@@ -488,7 +488,7 @@ export function absolve<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async
 }
 
 export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
-  return match_(async, E.Left, E.Right)
+  return match_(async, E.left, E.right)
 }
 
 /*

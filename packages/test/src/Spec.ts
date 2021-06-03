@@ -106,8 +106,8 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
   return matchTag_(spec.caseValue, {
     Suite: (s) =>
       f(s.label)
-        ? O.Some(suite(s.label, s.specs, s.exec))
-        : O.Some(
+        ? O.some(suite(s.label, s.specs, s.exec))
+        : O.some(
             suite(
               s.label,
               M.map_(
@@ -123,7 +123,7 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
               s.exec
             )
           ),
-    Test: (t) => (f(t.label) ? O.Some(test(t.label, t.test, t.annotations)) : O.None())
+    Test: (t) => (f(t.label) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
   })
 }
 
@@ -134,7 +134,7 @@ export function filterAnnotations_<R, E, T, V>(
 ): Option<Spec<R, E, T>> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
-      O.Some(
+      O.some(
         suite(
           label,
           M.map_(
@@ -144,7 +144,7 @@ export function filterAnnotations_<R, E, T, V>(
           exec
         )
       ),
-    Test: (t) => (f(t.annotations.get(key)) ? O.Some(test(t.label, t.test, t.annotations)) : O.None())
+    Test: (t) => (f(t.annotations.get(key)) ? O.some(test(t.label, t.test, t.annotations)) : O.none())
   })
 }
 
@@ -155,7 +155,7 @@ export function filterTags_<R, E, T>(spec: Spec<R, E, T>, f: (tag: string) => bo
 export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R, E> {
   const filtered = A.isEmpty(args.testSearchTerms)
     ? A.isEmpty(args.tagSearchTerms)
-      ? O.None()
+      ? O.none()
       : filterTags_(spec, (tag) => A.elem_(Str.Eq)(args.tagSearchTerms, tag))
     : A.isEmpty(args.tagSearchTerms)
     ? filterLabels_(spec, (label) =>

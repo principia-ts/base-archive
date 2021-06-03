@@ -52,7 +52,7 @@ export function Filterable<F>(F: FilterableMin<HKT.UHKT<F>>): Filterable<HKT.UHK
     partition_ = F.partition_
   } else {
     partition_ = <A>(fa: HKT.HKT<F, A>, predicate: Predicate<A>): readonly [HKT.HKT<F, A>, HKT.HKT<F, A>] =>
-      partitionMap_(fa, (a) => (predicate(a) ? E.Right(a) : E.Left(a)))
+      partitionMap_(fa, (a) => (predicate(a) ? E.right(a) : E.left(a)))
   }
 
   return HKT.instance<Filterable<HKT.UHKT<F>>>({
@@ -62,9 +62,15 @@ export function Filterable<F>(F: FilterableMin<HKT.UHKT<F>>): Filterable<HKT.UHK
     partitionMap_,
     partitionMap: (f) => (fa) => partitionMap_(fa, f),
     filter_,
-    filter: <A>(f: Predicate<A>) => (fa: HKT.HKT<F, A>) => filter_(fa, f),
+    filter:
+      <A>(f: Predicate<A>) =>
+      (fa: HKT.HKT<F, A>) =>
+        filter_(fa, f),
     partition_,
-    partition: <A>(f: Predicate<A>) => (fa: HKT.HKT<F, A>) => partition_(fa, f)
+    partition:
+      <A>(f: Predicate<A>) =>
+      (fa: HKT.HKT<F, A>) =>
+        partition_(fa, f)
   })
 }
 

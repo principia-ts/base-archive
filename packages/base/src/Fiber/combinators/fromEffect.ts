@@ -1,9 +1,11 @@
-import type { SyntheticFiber } from '../core'
+import type { Fiber } from '../core'
 
 import { done } from '../core'
 import * as I from '../internal/io'
 
 /**
- * Lifts an `Task` into a `Fiber`.
+ * Lifts an `IO` into a `Fiber`.
  */
-export const fromEffect = <E, A>(effect: I.FIO<E, A>): I.UIO<SyntheticFiber<E, A>> => I.map_(I.result(effect), done)
+export function fromEffect<E, A>(effect: I.FIO<E, A>): I.UIO<Fiber<E, A>> {
+  return I.map_(I.result(effect), done)
+}

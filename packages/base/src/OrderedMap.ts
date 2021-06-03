@@ -199,7 +199,7 @@ export function get_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
     const d = cmp(key, n.key)
     switch (d) {
       case 0: {
-        return O.Some(n.value)
+        return O.some(n.value)
       }
       case -1: {
         n = n.left
@@ -211,7 +211,7 @@ export function get_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
       }
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -227,11 +227,11 @@ export function get<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
 export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.None<V>()
+  let lastValue = O.none<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d <= 0) {
-      lastValue = O.Some(n.value)
+      lastValue = O.some(n.value)
       n         = n.left
     } else {
       if (lastValue._tag === 'Some') {
@@ -256,11 +256,11 @@ export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
 export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.None<V>()
+  let lastValue = O.none<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d < 0) {
-      lastValue = O.Some(n.value)
+      lastValue = O.some(n.value)
       n         = n.left
     } else {
       if (lastValue._tag === 'Some') {
@@ -285,7 +285,7 @@ export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
 export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.None<V>()
+  let lastValue = O.none<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d > 0) {
@@ -294,7 +294,7 @@ export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
       }
       n = n.right
     } else {
-      lastValue = O.Some(n.value)
+      lastValue = O.some(n.value)
       n         = n.left
     }
   }
@@ -314,11 +314,11 @@ export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
 export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.None<V>()
+  let lastValue = O.none<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d > 0) {
-      lastValue = O.Some(n.value)
+      lastValue = O.some(n.value)
     }
     if (d <= 0) {
       n = n.left
@@ -356,7 +356,7 @@ export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (key: K, value: V
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -366,7 +366,7 @@ export function iforEach_<K, V>(m: OrderedMap<K, V>, visit: (key: K, value: V) =
   if (m.root) {
     visitFull(m, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -396,7 +396,7 @@ export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
   if (m.root) {
     visitLte(m, max, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -409,7 +409,7 @@ export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
   if (m.root) {
     visitLt(m, max, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -422,7 +422,7 @@ export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
   if (m.root) {
     visitGte(m, min, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -435,7 +435,7 @@ export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
   if (m.root) {
     visitGt(m, min, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -448,7 +448,7 @@ export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit
   if (m.root) {
     visitBetween(m, min, max, (k, v) => {
       visit(k, v)
-      return O.None()
+      return O.none()
     })
   }
 }
@@ -481,7 +481,7 @@ export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
@@ -508,7 +508,7 @@ export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
@@ -538,7 +538,7 @@ export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
@@ -568,7 +568,7 @@ export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 export function visitBetween<K, V, A>(
@@ -604,7 +604,7 @@ export function visitBetween<K, V, A>(
       done = true
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /*
@@ -1098,9 +1098,9 @@ class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get key(): O.Option<K> {
     if (this.isEmpty) {
-      return O.None()
+      return O.none()
     }
-    return O.Some(this.node!.key)
+    return O.some(this.node!.key)
   }
 
   /**
@@ -1108,9 +1108,9 @@ class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get value(): O.Option<V> {
     if (this.isEmpty) {
-      return O.None()
+      return O.none()
     }
-    return O.Some(this.node!.value)
+    return O.some(this.node!.value)
   }
 
   /**
@@ -1118,9 +1118,9 @@ class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
    */
   get entry(): O.Option<readonly [K, V]> {
     if (this.isEmpty) {
-      return O.None()
+      return O.none()
     }
-    return O.Some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
+    return O.some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
   }
 
   /**
@@ -1340,24 +1340,24 @@ export function blackHeight<K, V>(root: RBNode<K, V>): number {
 
 function headNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   if (root === Leaf) {
-    return O.None()
+    return O.none()
   }
   let n: Node<K, V> = root
   while (n.left) {
     n = n.left
   }
-  return O.Some(n)
+  return O.some(n)
 }
 
 function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
   if (root === Leaf) {
-    return O.None()
+    return O.none()
   }
   let n: Node<K, V> = root
   while (n.right) {
     n = n.right
   }
-  return O.Some(n)
+  return O.some(n)
 }
 
 type Color = 0 | 1

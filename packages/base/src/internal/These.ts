@@ -16,21 +16,21 @@ export interface Right<A> {
 
 export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
-export function Left<E, A = never>(e: E): These<E, A> {
+export function left<E, A = never>(e: E): These<E, A> {
   return {
     _tag: 'Left',
     left: e
   }
 }
 
-export function Right<E = never, A = never>(a: A): These<E, A> {
+export function right<E = never, A = never>(a: A): These<E, A> {
   return {
     _tag: 'Right',
     right: a
   }
 }
 
-export function Both<E, A>(e: E, a: A): These<E, A> {
+export function both<E, A>(e: E, a: A): These<E, A> {
   return {
     _tag: 'Both',
     left: e,

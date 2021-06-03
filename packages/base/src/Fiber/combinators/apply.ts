@@ -6,6 +6,36 @@ import { crossWithPar_ } from '../../IO/combinators/apply-par'
 import * as O from '../../Option'
 import * as I from '../internal/io'
 
+export function apl_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+  return crossWith_(fa, fb, (a, _) => a)
+}
+
+export function apl<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
+  return (fa) => apl_(fa, fb)
+}
+
+export function apr_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+  return crossWith_(fa, fb, (_, b) => b)
+}
+
+export function apr<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
+  return (fa) => apr_(fa, fb)
+}
+
+/**
+ * Zips this fiber and the specified fiber together, producing a tuple of their output.
+ */
+export function cross_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+  return crossWith_(fa, fb, (a, b) => [a, b])
+}
+
+/**
+ * Zips this fiber and the specified fiber together, producing a tuple of their output.
+ */
+export function cross<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, (B | A)[]> {
+  return (fa) => cross_(fa, fb)
+}
+
 /**
  * Zips this fiber with the specified fiber, combining their results using
  * the specified combiner function. Both joins and interruptions are performed
@@ -39,34 +69,4 @@ export function crossWith<A, D, B, C>(
   f: (a: A, b: B) => C
 ): <E>(fa: Fiber<E, A>) => SyntheticFiber<D | E, C> {
   return (fa) => crossWith_(fa, fb, f)
-}
-
-/**
- * Zips this fiber and the specified fiber together, producing a tuple of their output.
- */
-export function cross_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return crossWith_(fa, fb, (a, b) => [a, b])
-}
-
-/**
- * Zips this fiber and the specified fiber together, producing a tuple of their output.
- */
-export function cross<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, (B | A)[]> {
-  return (fa) => cross_(fa, fb)
-}
-
-export function apl_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return crossWith_(fa, fb, (a, _) => a)
-}
-
-export function apl<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
-  return (fa) => apl_(fa, fb)
-}
-
-export function apr_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
-  return crossWith_(fa, fb, (_, b) => b)
-}
-
-export function apr<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
-  return (fa) => apr_(fa, fb)
 }

@@ -119,7 +119,7 @@ interface Empty<K, V> extends ModifyFn<K, V> {
 export const Empty: Empty<any, any> = {
   _tag: 'Empty',
   modify(edit, keyEq, shift, f, hash, key, size) {
-    const v = f(O.None())
+    const v = f(O.none())
     if (O.isNone(v)) return Empty
     ++size.value
     return LeafNode(edit, hash, key, v)
@@ -189,7 +189,7 @@ function LeafNode__modify<K, V>(
     }
     return LeafNode(edit, hash, key, v)
   }
-  const v = f(O.None())
+  const v = f(O.none())
   if (O.isNone(v)) return this
   ++size.value
   return mergeLeaves(edit, shift, this.hash, this, hash, LeafNode(edit, hash, key, v))
@@ -229,7 +229,7 @@ function CollisionNode__modify<K, V>(
 
     return list.length > 1 ? CollisionNode(edit, this.hash, list) : list[0] // collapse single element collision list
   }
-  const v = f(O.None())
+  const v = f(O.none())
   if (O.isNone(v)) return this
   ++size.value
   return mergeLeaves(edit, shift, this.hash, this, hash, LeafNode(edit, hash, key, v))
@@ -260,7 +260,7 @@ function updateCollisionList<K, V>(
     }
   }
 
-  const newValue = f(O.None())
+  const newValue = f(O.none())
   if (O.isNone(newValue)) return list
   ++size.value
   return arrayUpdate(mutate, len, LeafNode(edit, hash, key, newValue), list)

@@ -117,7 +117,7 @@ export function append<B>(last: B): <A>(init: ReadonlyArray<A>) => NonEmptyArray
  * @since 1.0.0
  */
 export function fromArray<A>(as: ReadonlyArray<A>): O.Option<NonEmptyArray<A>> {
-  return _.isNonEmpty(as) ? O.Some(as) : O.None()
+  return _.isNonEmpty(as) ? O.some(as) : O.none()
 }
 
 /**
@@ -253,19 +253,19 @@ export function alignWith_<A, B, C>(
 ): NonEmptyArray<C> {
   const minlen  = Math.min(fa.length, fb.length)
   const maxlen  = Math.max(fa.length, fb.length)
-  const mut_ret = allocWithHead(f(Th.Both(head(fa), head(fb))), maxlen)
+  const mut_ret = allocWithHead(f(Th.both(head(fa), head(fb))), maxlen)
   for (let i = 1; i < minlen; i++) {
-    mut_ret[i] = f(Th.Both(fa[i], fb[i]))
+    mut_ret[i] = f(Th.both(fa[i], fb[i]))
   }
   if (minlen === maxlen) {
     return mut_ret
   } else if (fa.length > fb.length) {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.Left(fa[i]))
+      mut_ret[i] = f(Th.left(fa[i]))
     }
   } else {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.Right(fb[i]))
+      mut_ret[i] = f(Th.right(fb[i]))
     }
   }
   return mut_ret
@@ -1022,7 +1022,7 @@ export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => Reado
  * @since 1.0.0
  */
 export function insertAt_<A>(as: NonEmptyArray<A>, i: number, a: A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeInsertAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeInsertAt_(as, i, a))
 }
 
 /**
@@ -1057,7 +1057,7 @@ export function intersperce<A>(a: A): (as: NonEmptyArray<A>) => NonEmptyArray<A>
  * @since 1.0.0
  */
 export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeModifyAt_(as, i, f))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeModifyAt_(as, i, f))
 }
 
 /**
@@ -1170,7 +1170,7 @@ export function splitAt(n: number): <A>(as: NonEmptyArray<A>) => readonly [NonEm
 }
 
 export function updateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeUpdateAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, a))
 }
 
 export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {

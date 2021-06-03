@@ -21,15 +21,15 @@ export function fromQueue<E, A>(d: Q.Dequeue<Take.Take<E, A>>): I.FIO<O.Option<E
 }
 
 export function fail<E>(e: E): I.FIO<O.Option<E>, never> {
-  return I.fail(O.Some(e))
+  return I.fail(O.some(e))
 }
 
 export function halt<E>(c: Ca.Cause<E>): I.FIO<O.Option<E>, never> {
-  return I.mapError_(I.halt(c), O.Some)
+  return I.mapError_(I.halt(c), O.some)
 }
 
 export function empty<A>(): I.FIO<never, C.Chunk<A>> {
   return I.succeed(C.empty<A>())
 }
 
-export const end: I.FIO<O.Option<never>, never> = I.fail(O.None())
+export const end: I.FIO<O.Option<never>, never> = I.fail(O.none())

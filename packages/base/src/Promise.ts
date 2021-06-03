@@ -128,11 +128,11 @@ export class Promise<E, A> {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
-          return E.Right(state.value)
+          return E.right(state.value)
         }
         case 'Pending': {
           this.state.set(new Pending([k, ...state.joiners]))
-          return E.Left(this.interruptJoiner(k))
+          return E.left(this.interruptJoiner(k))
         }
       }
     }, this.blockingOn)
@@ -156,10 +156,10 @@ export class Promise<E, A> {
 
       switch (state._tag) {
         case 'Done': {
-          return O.Some(state.value)
+          return O.some(state.value)
         }
         case 'Pending': {
-          return O.None()
+          return O.none()
         }
       }
     })

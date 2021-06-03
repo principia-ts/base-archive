@@ -83,11 +83,11 @@ export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
           return tuple(
-            I.as_(P.succeed_(s.notifyConsumer, undefined), () => O.Some(s.a)),
+            I.as_(P.succeed_(s.notifyConsumer, undefined), () => O.some(s.a)),
             new Empty(p)
           )
         } else {
-          return tuple(I.succeed(O.None()), s)
+          return tuple(I.succeed(O.none()), s)
         }
       }),
       I.flatten

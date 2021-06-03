@@ -125,7 +125,7 @@ export function foreachChunk<R, E, I>(f: (chunk: Chunk<I>) => I.IO<R, E, any>): 
       () => Push.emit(undefined, C.empty()),
       (is) =>
         I.apr_(
-          I.mapError_(f(is), (e) => [E.Left(e), C.empty()]),
+          I.mapError_(f(is), (e) => [E.left(e), C.empty()]),
           Push.more
         )
     )
@@ -176,7 +176,7 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
   return new Sink(
     M.succeed(
       O.match(
-        () => Push.emit(O.None(), C.empty()),
+        () => Push.emit(O.none(), C.empty()),
         (is) => (C.isEmpty(is) ? Push.more : Push.emit(C.head(is), C.drop_(is, 1)))
       )
     )
@@ -186,7 +186,7 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
   return new Sink(
     M.map_(
-      M.fromEffect(Ref.makeRef<O.Option<I>>(O.None())),
+      M.fromEffect(Ref.makeRef<O.Option<I>>(O.none())),
       (state) => (is: O.Option<Chunk<I>>) =>
         pipe(
           state.get,
@@ -198,7 +198,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
                 C.last,
                 O.match(
                   () => Push.more,
-                  (l) => I.apr_(state.set(O.Some(l)), Push.more)
+                  (l) => I.apr_(state.set(O.some(l)), Push.more)
                 )
               )
             )
@@ -258,7 +258,7 @@ export function foldChunksWhileM<R, E, I, Z>(
               pipe(
                 state.get,
                 I.bind((s) => f(s, is)),
-                I.mapError((e) => tuple(E.Left(e), C.empty<I>())),
+                I.mapError((e) => tuple(E.left(e), C.empty<I>())),
                 I.bind((s) => {
                   if (cont(s)) {
                     return pipe(state.set(s), I.apr(Push.more))
@@ -322,7 +322,7 @@ export function foldWhileM<R, E, I, Z>(
     len: number
   ): I.IO<R, readonly [E, Chunk<I>], readonly [Z, O.Option<Chunk<I>>]> => {
     if (i === len) {
-      return I.succeed(tuple(z, O.None()))
+      return I.succeed(tuple(z, O.none()))
     } else {
       return pipe(
         f(z, chunk[i]),
@@ -332,7 +332,7 @@ export function foldWhileM<R, E, I, Z>(
             if (cont(s)) {
               return foldChunk(s, chunk, i + 1, len)
             } else {
-              return I.succeed(tuple(s, O.Some(C.drop_(chunk, i + 1))))
+              return I.succeed(tuple(s, O.some(C.drop_(chunk, i + 1))))
             }
           }
         )
@@ -386,13 +386,13 @@ export function foldWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) =
     const go = (z: Z, chunk: Chunk<I>, i: number, len: number): Ev.Eval<readonly [Z, O.Option<Chunk<I>>]> =>
       Ev.gen(function* (_) {
         if (i === len) {
-          return tuple(z, O.None())
+          return tuple(z, O.none())
         } else {
           const z1 = f(z, chunk[i])
           if (cont(z1)) {
             return yield* _(go(z1, chunk, i + 1, len))
           } else {
-            return tuple(z1, O.Some(C.drop_(chunk, i + 1)))
+            return tuple(z1, O.some(C.drop_(chunk, i + 1)))
           }
         }
       })
@@ -635,14 +635,14 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                           O.Option<readonly [Z, Chunk<L>]>
                         >,
                       (z) =>
-                        I.succeed(O.Some([z, l] as const)) as I.IO<
+                        I.succeed(O.some([z, l] as const)) as I.IO<
                           R & R1,
                           [E.Either<E | E1, Z2>, Chunk<L | L1>],
                           O.Option<readonly [Z, Chunk<L>]>
                         >
                     ),
                   (_) =>
-                    I.succeed(O.None()) as I.IO<
+                    I.succeed(O.none()) as I.IO<
                       R & R1,
                       [E.Either<E | E1, Z2>, Chunk<L | L1>],
                       O.Option<readonly [Z, Chunk<L>]>
@@ -664,14 +664,14 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                           O.Option<readonly [Z1, Chunk<L1>]>
                         >,
                       (z) =>
-                        I.succeed(O.Some([z, l] as const)) as I.IO<
+                        I.succeed(O.some([z, l] as const)) as I.IO<
                           R & R1,
                           [E.Either<E | E1, never>, Chunk<L | L1>],
                           O.Option<readonly [Z1, Chunk<L1>]>
                         >
                     ),
                   (_) =>
-                    I.succeed(O.None()) as I.IO<
+                    I.succeed(O.none()) as I.IO<
                       R & R1,
                       [E.Either<E | E1, never>, Chunk<L | L1>],
                       O.Option<readonly [Z1, Chunk<L1>]>
@@ -689,7 +689,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                     if (O.isSome(rr)) {
                       const [z1, l1] = rr.value
 
-                      return I.fail([E.Right(f(z, z1)), l.length > l1.length ? l1 : l] as const)
+                      return I.fail([E.right(f(z, z1)), l.length > l1.length ? l1 : l] as const)
                     } else {
                       return I.succeed(new LeftDone(z))
                     }
@@ -861,12 +861,12 @@ export function contramapChunksM_<R, R1, E, E1, I, I2, L, Z>(
       return (input: O.Option<Chunk<I2>>) =>
         O.match_(
           input,
-          () => push(O.None()),
+          () => push(O.none()),
           (value) =>
             pipe(
               f(value),
-              I.mapError((e: E | E1) => [E.Left(e), C.empty<L>()] as const),
-              I.bind((is) => push(O.Some(is)))
+              I.mapError((e: E | E1) => [E.left(e), C.empty<L>()] as const),
+              I.bind((is) => push(O.some(is)))
             )
         )
     })
@@ -997,13 +997,13 @@ export function matchM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
                         in_,
                         () =>
                           pipe(
-                            p(O.Some(leftover) as O.Option<Chunk<I & I1 & I2>>),
+                            p(O.some(leftover) as O.Option<Chunk<I & I1 & I2>>),
                             I.when(() => leftover.length > 0),
-                            I.apr(p(O.None()))
+                            I.apr(p(O.none()))
                           ),
                         () =>
                           pipe(
-                            p(O.Some(leftover) as O.Option<Chunk<I & I1 & I2>>),
+                            p(O.some(leftover) as O.Option<Chunk<I & I1 & I2>>),
                             I.when(() => leftover.length > 0)
                           )
                       )
@@ -1250,7 +1250,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                             return I.as_(restart, () => s1)
                           }
                         } else {
-                          return I.apr_(restart, go(s1, O.Some(leftover as unknown as Chunk<I>), end))
+                          return I.apr_(restart, go(s1, O.some(leftover as unknown as Chunk<I>), end))
                         }
                       } else {
                         return Push.emit(s, leftover)
@@ -1312,7 +1312,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                       I.apr(
                         pipe(
                           f,
-                          Ca.map(([r, leftover]) => tuple(E.map_(r, E.Left), leftover)),
+                          Ca.map(([r, leftover]) => tuple(E.map_(r, E.left), leftover)),
                           I.halt
                         )
                       )
@@ -1320,7 +1320,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   () =>
                     pipe(
                       F.join(fib2),
-                      I.mapError(([r, leftover]) => tuple(E.map_(r, E.Right), leftover))
+                      I.mapError(([r, leftover]) => tuple(E.map_(r, E.right), leftover))
                     )
                 )
               ),
@@ -1334,7 +1334,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                       I.apr(
                         pipe(
                           f,
-                          Ca.map(([r, leftover]) => tuple(E.map_(r, E.Right), leftover)),
+                          Ca.map(([r, leftover]) => tuple(E.map_(r, E.right), leftover)),
                           I.halt
                         )
                       )
@@ -1342,7 +1342,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   () =>
                     pipe(
                       F.join(fib1),
-                      I.mapError(([r, leftover]) => tuple(E.map_(r, E.Left), leftover))
+                      I.mapError(([r, leftover]) => tuple(E.map_(r, E.left), leftover))
                     )
                 )
               )
@@ -1418,7 +1418,7 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
                   restart,
                   C.isEmpty(leftover) || O.isNone(input)
                     ? I.succeed(C.single(z))
-                    : I.map_(go(O.Some(leftover)), C.prepend(z))
+                    : I.map_(go(O.some(leftover)), C.prepend(z))
                 )
             ),
           (_) => I.succeed(C.empty())
@@ -1449,14 +1449,14 @@ export function untilOutputM_<R, R1, E, E1, I, L extends I, Z>(
             (e) => Push.fail(e, leftover),
             (z) =>
               I.bind_(
-                I.mapError_(f(z), (err) => [E.Left(err), leftover] as const),
+                I.mapError_(f(z), (err) => [E.left(err), leftover] as const),
                 (satisfied) => {
                   if (satisfied) {
-                    return Push.emit(O.Some(z), leftover)
+                    return Push.emit(O.some(z), leftover)
                   } else if (C.isEmpty(leftover)) {
-                    return end ? Push.emit(O.None(), C.empty()) : I.apr_(restart, Push.more)
+                    return end ? Push.emit(O.none(), C.empty()) : I.apr_(restart, Push.more)
                   } else {
-                    return go(O.Some(leftover) as O.Option<Chunk<I>>, end)
+                    return go(O.some(leftover) as O.Option<Chunk<I>>, end)
                   }
                 }
               )

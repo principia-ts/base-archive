@@ -874,30 +874,6 @@ function fromArray<A>(array: ArrayLike<A>): ChunkImplementation<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
-  return new Arr(as)
-}
-
-export function from<A>(as: Iterable<A>): Chunk<A> {
-  return new Arr(A.from(as))
-}
-
-export function fromBuffer(bytes: Uint8Array): Chunk<Byte> {
-  return new BinArr(bytes as any)
-}
-
-export function empty<B>(): Chunk<B> {
-  return new Empty()
-}
-
-export function single<A>(a: A): Chunk<A> {
-  return new Singleton(a)
-}
-
-export function range(start: number, end: number): Chunk<number> {
-  return fromArray(A.range(start, end))
-}
-
 export class ChunkBuilder<A> {
   constructor(private chunk: Chunk<A>) {}
   append(a: A): ChunkBuilder<A> {
@@ -911,6 +887,30 @@ export class ChunkBuilder<A> {
 
 export function builder<A>(): ChunkBuilder<A> {
   return new ChunkBuilder(empty())
+}
+
+export function empty<B>(): Chunk<B> {
+  return new Empty()
+}
+
+export function from<A>(as: Iterable<A>): Chunk<A> {
+  return new Arr(A.from(as))
+}
+
+export function fromBuffer(bytes: Uint8Array): Chunk<Byte> {
+  return new BinArr(bytes as any)
+}
+
+export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
+  return new Arr(as)
+}
+
+export function range(start: number, end: number): Chunk<number> {
+  return fromArray(A.range(start, end))
+}
+
+export function single<A>(a: A): Chunk<A> {
+  return new Singleton(a)
 }
 
 /*
@@ -1000,6 +1000,37 @@ export function corresponds<A, B>(bs: Chunk<B>, f: (a: A, b: B) => boolean): (as
  * -------------------------------------------------------------------------------------------------
  */
 
+export function head<A>(chunk: Chunk<A>): O.Option<A> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.none()
+  }
+  return O.some(chunk.get(0))
+}
+
+export function init<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+  if (isEmpty(chunk)) {
+    return O.none()
+  }
+  return O.some(take_(chunk, chunk.length - 1))
+}
+
+export function last<A>(chunk: Chunk<A>): O.Option<A> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.none()
+  }
+  return O.some(chunk.get(chunk.length - 1))
+}
+
+export function tail<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+  concrete(chunk)
+  if (isEmpty(chunk)) {
+    return O.none()
+  }
+  return O.some(drop_(chunk, 1))
+}
+
 export function toArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
   concrete(chunk)
   return chunk.array()
@@ -1012,37 +1043,6 @@ export function toArrayLike<A>(chunk: Chunk<A>): ArrayLike<A> {
 
 export function toBuffer(chunk: Chunk<Byte>): Uint8Array {
   return unsafeCoerce(toArrayLike(chunk))
-}
-
-export function head<A>(chunk: Chunk<A>): O.Option<A> {
-  concrete(chunk)
-  if (isEmpty(chunk)) {
-    return O.None()
-  }
-  return O.Some(chunk.get(0))
-}
-
-export function tail<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
-  concrete(chunk)
-  if (isEmpty(chunk)) {
-    return O.None()
-  }
-  return O.Some(drop_(chunk, 1))
-}
-
-export function last<A>(chunk: Chunk<A>): O.Option<A> {
-  concrete(chunk)
-  if (isEmpty(chunk)) {
-    return O.None()
-  }
-  return O.Some(chunk.get(chunk.length - 1))
-}
-
-export function init<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
-  if (isEmpty(chunk)) {
-    return O.None()
-  }
-  return O.Some(take_(chunk, chunk.length - 1))
 }
 
 /*
@@ -1096,6 +1096,88 @@ export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
 
 export function prepend<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
   return (chunk) => prepend_(chunk, a)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Align
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function alignWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (_: These<A, B>) => C): Chunk<C> {
+  concrete(fa)
+  concrete(fb)
+  const out    = builder<C>()
+  const minlen = Math.min(fa.length, fb.length)
+  const maxlen = Math.max(fa.length, fb.length)
+  for (let i = 0; i < minlen; i++) {
+    out.append(f(Th.Both(fa.get(i), fb.get(i))))
+  }
+  if (minlen === maxlen) {
+    return out.result()
+  } else if (fa.length > fb.length) {
+    for (let i = minlen; i < maxlen; i++) {
+      out.append(f(Th.left(fa.get(i))))
+    }
+  } else {
+    for (let i = minlen; i < maxlen; i++) {
+      out.append(f(Th.right(fb.get(i))))
+    }
+  }
+  return out.result()
+}
+
+export function alignWith<A, B, C>(fb: Chunk<B>, f: (_: These<A, B>) => C): (fa: Chunk<A>) => Chunk<C> {
+  return (fa) => alignWith_(fa, fb, f)
+}
+
+export function align_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<These<A, B>> {
+  return alignWith_(fa, fb, P.identity)
+}
+
+export function align<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<These<A, B>> {
+  return (fa) => align_(fa, fb)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Applicative
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export const pure = single
+
+export function unit(): Chunk<void> {
+  return single(undefined)
+}
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Apply
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function ap_<A, B>(fab: Chunk<(a: A) => B>, fa: Chunk<A>): Chunk<B> {
+  return crossWith_(fab, fa, (f, a) => f(a))
+}
+
+export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
+  return (fab) => ap_(fab, fa)
+}
+
+export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
+  return crossWith_(as, bs, P.tuple)
+}
+
+export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
+  return (as) => cross_(as, bs)
+}
+
+export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  return bind_(as, (a) => map_(bs, (b) => f(a, b)))
+}
+
+export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
+  return (as) => crossWith_(as, bs, f)
 }
 
 /*
@@ -1163,48 +1245,6 @@ export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
 
 export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
   return bind_(mma, P.identity)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Apply
- * -------------------------------------------------------------------------------------------------
- */
-
-export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
-  return bind_(as, (a) => map_(bs, (b) => f(a, b)))
-}
-
-export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
-  return (as) => crossWith_(as, bs, f)
-}
-
-export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return crossWith_(as, bs, P.tuple)
-}
-
-export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
-  return (as) => cross_(as, bs)
-}
-
-export function ap_<A, B>(fab: Chunk<(a: A) => B>, fa: Chunk<A>): Chunk<B> {
-  return crossWith_(fab, fa, (f, a) => f(a))
-}
-
-export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
-  return (fab) => ap_(fab, fa)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Applicative
- * -------------------------------------------------------------------------------------------------
- */
-
-export const pure = single
-
-export function unit(): Chunk<void> {
-  return single(undefined)
 }
 
 /*
@@ -1585,47 +1625,6 @@ export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chu
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Align
- * -------------------------------------------------------------------------------------------------
- */
-
-export function alignWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (_: These<A, B>) => C): Chunk<C> {
-  concrete(fa)
-  concrete(fb)
-  const out    = builder<C>()
-  const minlen = Math.min(fa.length, fb.length)
-  const maxlen = Math.max(fa.length, fb.length)
-  for (let i = 0; i < minlen; i++) {
-    out.append(f(Th.Both(fa.get(i), fb.get(i))))
-  }
-  if (minlen === maxlen) {
-    return out.result()
-  } else if (fa.length > fb.length) {
-    for (let i = minlen; i < maxlen; i++) {
-      out.append(f(Th.Left(fa.get(i))))
-    }
-  } else {
-    for (let i = minlen; i < maxlen; i++) {
-      out.append(f(Th.Right(fb.get(i))))
-    }
-  }
-  return out.result()
-}
-
-export function alignWith<A, B, C>(fb: Chunk<B>, f: (_: These<A, B>) => C): (fa: Chunk<A>) => Chunk<C> {
-  return (fa) => alignWith_(fa, fb, f)
-}
-
-export function align_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<These<A, B>> {
-  return alignWith_(fa, fb, P.identity)
-}
-
-export function align<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<These<A, B>> {
-  return (fa) => align_(fa, fb)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */
@@ -1899,7 +1898,7 @@ export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
 export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
   concrete(as)
   const iterator = as.arrayIterator()
-  let out        = O.None<A>()
+  let out        = O.none<A>()
   let result: IteratorResult<ArrayLike<A>>
   while (out._tag === 'None' && !(result = iterator.next()).done) {
     const array  = result.value
@@ -1907,7 +1906,7 @@ export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
     for (let i = 0; out._tag === 'None' && i < length; i++) {
       const a = array[i]
       if (f(a)) {
-        out = O.Some(a)
+        out = O.some(a)
       }
     }
   }

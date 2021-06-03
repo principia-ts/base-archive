@@ -80,9 +80,9 @@ export class Driver<R, I, O> {
 
 export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
-    Ref.makeRef([O.None<O>(), schedule.step] as const),
+    Ref.makeRef([O.none<O>(), schedule.step] as const),
     I.map((ref) => {
-      const reset = ref.set([O.None(), schedule.step])
+      const reset = ref.set([O.none(), schedule.step])
 
       const last = pipe(
         ref.get,
@@ -102,12 +102,12 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
-              return yield* _(pipe(ref.set(tuple(O.Some(dec.out), done(dec.out))), I.apr(I.fail(O.None()))))
+              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.apr(I.fail(O.none()))))
             }
             case 'Continue': {
               return yield* _(
                 pipe(
-                  ref.set(tuple(O.Some(dec.out), dec.next)),
+                  ref.set(tuple(O.some(dec.out), dec.next)),
                   I.as(() => dec.interval - now),
                   I.bind((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
                   I.as(() => dec.out)
@@ -384,7 +384,7 @@ const andThenEitherLoop =
       ? I.bind_(sc(now, i), (d) => {
           switch (d._tag) {
             case 'Continue': {
-              return I.pure(makeContinue(E.Left(d.out), d.interval, andThenEitherLoop(d.next, that, true)))
+              return I.pure(makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true)))
             }
             case 'Done': {
               return andThenEitherLoop(sc, that, false)(now, i)
@@ -394,10 +394,10 @@ const andThenEitherLoop =
       : I.map_(that(now, i), (d) => {
           switch (d._tag) {
             case 'Done': {
-              return makeDone(E.Right(d.out))
+              return makeDone(E.right(d.out))
             }
             case 'Continue': {
-              return makeContinue(E.Right(d.out), d.interval, andThenEitherLoop(sc, d.next, false))
+              return makeContinue(E.right(d.out), d.interval, andThenEitherLoop(sc, d.next, false))
             }
           }
         })
@@ -559,10 +559,10 @@ const chooseLoop =
         I.map_(sc(now, i), (d) => {
           switch (d._tag) {
             case 'Done': {
-              return makeDone(E.Left(d.out))
+              return makeDone(E.left(d.out))
             }
             case 'Continue': {
-              return makeContinue(E.Left(d.out), d.interval, chooseLoop(d.next, that))
+              return makeContinue(E.left(d.out), d.interval, chooseLoop(d.next, that))
             }
           }
         }),
@@ -570,10 +570,10 @@ const chooseLoop =
         I.map_(that(now, i2), (d) => {
           switch (d._tag) {
             case 'Done': {
-              return makeDone(E.Right(d.out))
+              return makeDone(E.right(d.out))
             }
             case 'Continue': {
-              return makeContinue(E.Right(d.out), d.interval, chooseLoop(sc, d.next))
+              return makeContinue(E.right(d.out), d.interval, chooseLoop(sc, d.next))
             }
           }
         })
@@ -798,19 +798,19 @@ export function fixed(interval: number): Schedule<unknown, unknown, number> {
       I.pure(
         O.match_(
           startMillis,
-          () => makeContinue(n + 1, now + interval, loop(O.Some({ startMillis: now, lastRun: now }), n + 1)),
+          () => makeContinue(n + 1, now + interval, loop(O.some({ startMillis: now, lastRun: now }), n + 1)),
           ({ lastRun, startMillis }) => {
             const runningBehind = now > lastRun + interval
             const boundary      = interval === 0 ? interval : interval - ((now - startMillis) % interval)
             const sleepTime     = boundary === 0 ? interval : boundary
             const nextRun       = runningBehind ? now : now + sleepTime
 
-            return makeContinue(n + 1, nextRun, loop(O.Some<State>({ startMillis, lastRun: nextRun }), n + 1))
+            return makeContinue(n + 1, nextRun, loop(O.some<State>({ startMillis, lastRun: nextRun }), n + 1))
           }
         )
       )
 
-  return new Schedule(loop(O.None(), 0))
+  return new Schedule(loop(O.none(), 0))
 }
 
 const foldMLoop =
@@ -1562,16 +1562,16 @@ const windowedLoop =
     I.pure(
       O.match_(
         startMillis,
-        () => makeContinue(n + 1, now + interval, windowedLoop(interval, O.Some(now), n + 1)),
+        () => makeContinue(n + 1, now + interval, windowedLoop(interval, O.some(now), n + 1)),
         (startMillis) =>
           makeContinue(
             n + 1,
             now + ((now - startMillis) % interval),
-            windowedLoop(interval, O.Some(startMillis), n + 1)
+            windowedLoop(interval, O.some(startMillis), n + 1)
           )
       )
     )
 
 export function windowed(interval: number): Schedule<unknown, unknown, number> {
-  return new Schedule(windowedLoop(interval, O.None(), 0))
+  return new Schedule(windowedLoop(interval, O.none(), 0))
 }

@@ -108,20 +108,6 @@ export function isOutOfBound(i: number): <A>(as: ReadonlyArray<A>) => boolean {
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Unit
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * The unit `Array`
- *
- * @category Unit
- * @since 1.0.0
- */
-export const unit: () => ReadonlyArray<void> = NEA.unit
-
-/*
- * -------------------------------------------------------------------------------------------------
  * Alt
  * -------------------------------------------------------------------------------------------------
  */
@@ -894,17 +880,17 @@ export function alignWith_<A, B, C>(
   const maxlen  = Math.max(fa.length, fb.length)
   const mut_ret = Array(maxlen)
   for (let i = 0; i < minlen; i++) {
-    mut_ret[i] = (f(Th.Both(fa[i], fb[i])))
+    mut_ret[i] = f(Th.both(fa[i], fb[i]))
   }
   if (minlen === maxlen) {
     return mut_ret
   } else if (fa.length > fb.length) {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = (f(Th.Left(fa[i])))
+      mut_ret[i] = f(Th.left(fa[i]))
     }
   } else {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = (f(Th.Right(fb[i])))
+      mut_ret[i] = f(Th.right(fb[i]))
     }
   }
   return mut_ret
@@ -1035,6 +1021,20 @@ export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Readon
   }
   return ret
 }
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Unit
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * The unit `Array`
+ *
+ * @category Unit
+ * @since 1.0.0
+ */
+export const unit: () => ReadonlyArray<void> = NEA.unit
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1279,38 +1279,13 @@ export const concat_: <A>(xs: ReadonlyArray<A>, ys: ReadonlyArray<A>) => Readonl
 export const concat: <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => ReadonlyArray<A> = NEA.concat
 
 /**
- * @category combinators
- * @since 1.0.0
- */
-export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray<A | B> = NEA.prependW_
-
-/**
- * @category combinators
- * @since 1.0.0
- */
-export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => NonEmptyArray<A | B> = NEA.prependW
-
-/**
- * @category combinators
- * @since 1.0.0
- */
-export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> = NEA.prepend_
-
-/**
- * @category combinators
- * @since 1.0.0
- * @dataFirst prepend_
- */
-export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<A> = NEA.prepend
-
-/**
  * Delete the element at the specified index, creating a new array, or returning `None` if the index is out of bounds
  *
  * @category combinators
  * @since 1.0.0
  */
 export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeDeleteAt_(as, i))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeDeleteAt_(as, i))
 }
 
 /**
@@ -1467,10 +1442,10 @@ export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): O
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
-      return O.Some(as[i])
+      return O.some(as[i])
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1496,7 +1471,7 @@ export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>)
       return v
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1518,10 +1493,10 @@ export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
-      return O.Some(i)
+      return O.some(i)
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1545,10 +1520,10 @@ export function findFirst_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): 
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
-      return O.Some(as[i])
+      return O.some(as[i])
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1574,7 +1549,7 @@ export function findFirstMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>
       return v
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1596,10 +1571,10 @@ export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
-      return O.Some(i)
+      return O.some(i)
     }
   }
-  return O.None()
+  return O.none()
 }
 
 /**
@@ -1670,7 +1645,7 @@ export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => Reado
  * @since 1.0.0
  */
 export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeInsertAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeInsertAt_(as, i, a))
 }
 
 /**
@@ -1725,7 +1700,7 @@ export function intersperse<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A>
  * @since 1.0.0
  */
 export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(as[i])
+  return isOutOfBound_(as, i) ? O.none() : O.some(as[i])
 }
 
 /**
@@ -1762,7 +1737,7 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
  * @since 1.0.0
  */
 export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeUpdateAt_(as, i, f(as[i])))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, f(as[i])))
 }
 
 /**
@@ -1775,6 +1750,31 @@ export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): O
 export function modifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
   return (as) => modifyAt_(as, i, f)
 }
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray<A | B> = NEA.prependW_
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => NonEmptyArray<A | B> = NEA.prependW
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> = NEA.prepend_
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ * @dataFirst prepend_
+ */
+export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<A> = NEA.prepend
 
 /**
  * @category combinators
@@ -2116,7 +2116,7 @@ export function takeWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @since 1.0.0
  */
 export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.None() : O.Some(unsafeUpdateAt_(as, i, a))
+  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, a))
 }
 
 /**
@@ -2443,89 +2443,7 @@ export function unsafeDeleteAt_<A>(as: ReadonlyArray<A>, i: number): ReadonlyArr
  * -------------------------------------------------------------------------------------------------
  */
 
-export function head<A>(as: ReadonlyArray<A>): Option<A> {
-  return isEmpty(as) ? O.None() : O.Some(as[0])
-}
-
-export function tail<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
-  return isEmpty(as) ? O.None() : O.Some(as.slice(1))
-}
-
-export function init<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
-  const len = as.length
-  return len === 0 ? O.None() : O.Some(as.slice(0, len - 1))
-}
-
-export function last<A>(as: ReadonlyArray<A>): Option<A> {
-  return lookup_(as, as.length - 1)
-}
-
-export function mutableClone<A>(as: ReadonlyArray<A>): Array<A> {
-  return as.slice(0) as unknown as Array<A>
-}
-
 export const clone: <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> = mutableClone
-
-export function toBuffer(as: ReadonlyArray<Byte>): Uint8Array {
-  return Uint8Array.from(unsafeCoerce(as))
-}
-
-/**
- * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
- */
-export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): ReadonlyArray<A> {
-  const mut_as = mutableClone(as)
-  f(mut_as)
-  return mut_as
-}
-
-/**
- * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
- */
-export function mutate<A>(f: (as: Array<A>) => void): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => mutate_(as, f)
-}
-
-export function join_(as: ReadonlyArray<string>, s: string): string {
-  return as.join(s)
-}
-
-export function join(s: string): (as: ReadonlyArray<string>) => string {
-  return (as) => as.join(s)
-}
-
-export function size<A>(as: ReadonlyArray<A>): number {
-  return as.length
-}
-
-export function spanIndexLeft_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): number {
-  const l = as.length
-  let i   = 0
-  for (; i < l; i++) {
-    if (!predicate(as[i])) {
-      break
-    }
-  }
-  return i
-}
-
-export function spanIndexRight_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): number {
-  let i = as.length - 1
-  for (; i >= 0; i--) {
-    if (!predicate(as[i])) {
-      break
-    }
-  }
-  return i
-}
-
-/**
- * @category utils
- * @since 1.0.0
- */
-export function sum(as: ReadonlyArray<number>): number {
-  return foldl_(as, 0, (b, a) => b + a)
-}
 
 export function ievery_<A, B extends A>(
   as: ReadonlyArray<A>,
@@ -2598,4 +2516,86 @@ export function exists_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): as 
  */
 export function exists<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => as is NonEmptyArray<A> {
   return (as): as is NonEmptyArray<A> => exists_(as, predicate)
+}
+
+export function head<A>(as: ReadonlyArray<A>): Option<A> {
+  return isEmpty(as) ? O.none() : O.some(as[0])
+}
+
+export function init<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
+  const len = as.length
+  return len === 0 ? O.none() : O.some(as.slice(0, len - 1))
+}
+
+export function last<A>(as: ReadonlyArray<A>): Option<A> {
+  return lookup_(as, as.length - 1)
+}
+
+export function mutableClone<A>(as: ReadonlyArray<A>): Array<A> {
+  return as.slice(0) as unknown as Array<A>
+}
+
+/**
+ * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
+ */
+export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): ReadonlyArray<A> {
+  const mut_as = mutableClone(as)
+  f(mut_as)
+  return mut_as
+}
+
+/**
+ * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
+ */
+export function mutate<A>(f: (as: Array<A>) => void): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => mutate_(as, f)
+}
+
+export function join_(as: ReadonlyArray<string>, s: string): string {
+  return as.join(s)
+}
+
+export function join(s: string): (as: ReadonlyArray<string>) => string {
+  return (as) => as.join(s)
+}
+
+export function size<A>(as: ReadonlyArray<A>): number {
+  return as.length
+}
+
+export function spanIndexLeft_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): number {
+  const l = as.length
+  let i   = 0
+  for (; i < l; i++) {
+    if (!predicate(as[i])) {
+      break
+    }
+  }
+  return i
+}
+
+export function spanIndexRight_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): number {
+  let i = as.length - 1
+  for (; i >= 0; i--) {
+    if (!predicate(as[i])) {
+      break
+    }
+  }
+  return i
+}
+
+/**
+ * @category utils
+ * @since 1.0.0
+ */
+export function sum(as: ReadonlyArray<number>): number {
+  return foldl_(as, 0, (b, a) => b + a)
+}
+
+export function tail<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
+  return isEmpty(as) ? O.none() : O.some(as.slice(1))
+}
+
+export function toBuffer(as: ReadonlyArray<Byte>): Uint8Array {
+  return Uint8Array.from(unsafeCoerce(as))
 }

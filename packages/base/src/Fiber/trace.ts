@@ -31,17 +31,8 @@ export class Trace {
   ) {}
 }
 
-export function ancestryLengthSafe(trace: Trace, i: number): Ev.Eval<number> {
-  const parent = trace.parentTrace
-  if (parent._tag === 'None') {
-    return Ev.now(i)
-  } else {
-    return Ev.defer(() => ancestryLengthSafe(parent.value, i + 1))
-  }
-}
-
-export function ancestryLength(trace: Trace) {
-  return Ev.evaluate(ancestryLengthSafe(trace, 0))
+export function ancestryLength(trace: Trace): number {
+  return Ev.evaluate(ancestryLengthEval(trace, 0))
 }
 
 export function parents(trace: Trace): L.List<Trace> {
@@ -56,8 +47,8 @@ export function parents(trace: Trace): L.List<Trace> {
 
 export function truncatedParentTrace(trace: Trace, maxAncestors: number): O.Option<Trace> {
   if (ancestryLength(trace) > maxAncestors) {
-    return L.foldr_(L.take_(parents(trace), maxAncestors), O.None() as O.Option<Trace>, (trace, parent) =>
-      O.Some(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
+    return L.foldr_(L.take_(parents(trace), maxAncestors), O.none() as O.Option<Trace>, (trace, parent) =>
+      O.some(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
     )
   } else {
     return trace.parentTrace
@@ -102,4 +93,13 @@ export function prettyTraceSafe(trace: Trace): Ev.Eval<string> {
 
     return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
   })
+}
+
+function ancestryLengthEval(trace: Trace, i: number): Ev.Eval<number> {
+  const parent = trace.parentTrace
+  if (parent._tag === 'None') {
+    return Ev.now(i)
+  } else {
+    return Ev.defer(() => ancestryLengthEval(parent.value, i + 1))
+  }
 }

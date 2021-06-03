@@ -29,7 +29,7 @@ import { timeoutTo_ } from './timeoutTo'
  */
 export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>, E, O.Option<A>> {
   const trace = accessCallTrace()
-  return traceCall(timeoutTo_, trace)(ma, d, O.None(), O.Some)
+  return traceCall(timeoutTo_, trace)(ma, d, O.none(), O.some)
 }
 
 /**

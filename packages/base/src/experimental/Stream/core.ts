@@ -458,7 +458,7 @@ export function take(n: number): <R, E, A>(self: Stream<R, E, A>) => Stream<R, E
  */
 export function toPull<R, E, A>(self: Stream<R, E, A>): M.Managed<R, never, I.IO<R, O.Option<E>, C.Chunk<A>>> {
   return M.map_(Ch.toPull(self.channel), (pull) =>
-    I.mapError_(pull, (e) => (e._tag === 'Left' ? O.Some(e.left) : O.None()))
+    I.mapError_(pull, (e) => (e._tag === 'Left' ? O.some(e.left) : O.none()))
   )
 }
 
@@ -554,8 +554,8 @@ export function aggregateAsyncWithin_<R, R1, R2, E extends E1, E1, E2, A extends
   return collect_(
     aggregateAsyncWithinEither_(self, sink, schedule),
     E.match(
-      () => O.None(),
-      (v) => O.Some(v)
+      () => O.none(),
+      (v) => O.some(v)
     )
   )
 }
@@ -647,15 +647,15 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
                   switch (reason._typeId) {
                     case SER.ScheduleEndTypeId:
                       return tuple(
-                        Ch.as_(Ch.write(C.from([E.Right(b), E.Left(reason.c)])), O.Some(b)),
+                        Ch.as_(Ch.write(C.from([E.right(b), E.left(reason.c)])), O.some(b)),
                         new SER.SinkEnd()
                       )
                     case SER.ScheduleTimeoutTypeId:
-                      return tuple(Ch.as_(Ch.write(C.single(E.Right(b))), O.Some(b)), new SER.SinkEnd())
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), O.some(b)), new SER.SinkEnd())
                     case SER.SinkEndTypeId:
-                      return tuple(Ch.as_(Ch.write(C.single(E.Right(b))), O.Some(b)), new SER.SinkEnd())
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), O.some(b)), new SER.SinkEnd())
                     case SER.UpstreamEndTypeId:
-                      return tuple(Ch.as_(Ch.write(C.single(E.Right(b))), O.None()), new SER.UpstreamEnd())
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), O.none()), new SER.UpstreamEnd())
                   }
                 })
               )
@@ -674,7 +674,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
     return zipRight_(
       managed(pipe(self.channel['>>>'](handoffProducer), Ch.runManaged, M.fork)),
-      new Stream(scheduledAggregator(O.None()))
+      new Stream(scheduledAggregator(O.none()))
     )
   })
 }
@@ -1069,8 +1069,8 @@ export function collectLeft<R, E, L1, A>(self: Stream<R, E, E.Either<L1, A>>): S
   return collect_(
     self,
     E.match(
-      (a) => O.Some(a),
-      (_) => O.None()
+      (a) => O.some(a),
+      (_) => O.none()
     )
   )
 }
@@ -1082,8 +1082,8 @@ export function collectRight<R, E, A, R1>(self: Stream<R, E, E.Either<A, R1>>): 
   return collect_(
     self,
     E.match(
-      (_) => O.None(),
-      (a) => O.Some(a)
+      (_) => O.none(),
+      (a) => O.some(a)
     )
   )
 }
@@ -1102,8 +1102,8 @@ export function collectSuccess<R, E, A, L1>(self: Stream<R, E, Ex.Exit<L1, A>>) 
   return collect_(
     self,
     Ex.match(
-      (_) => O.None(),
-      (a) => O.Some(a)
+      (_) => O.none(),
+      (a) => O.some(a)
     )
   )
 }
@@ -1166,8 +1166,8 @@ export function collectWhileLeft<R, E, A1, L1>(self: Stream<R, E, E.Either<L1, A
   return collectWhile_(
     self,
     E.match(
-      (l) => O.Some(l),
-      (_) => O.None()
+      (l) => O.some(l),
+      (_) => O.none()
     )
   )
 }
@@ -1226,8 +1226,8 @@ export function collectWhileRight<R, E, A1, L1>(self: Stream<R, E, E.Either<L1, 
   return collectWhile_(
     self,
     E.match(
-      () => O.None(),
-      (r) => O.Some(r)
+      () => O.none(),
+      (r) => O.some(r)
     )
   )
 }
@@ -1239,8 +1239,8 @@ export function collectWhileSuccess<R, E, A1, L1>(self: Stream<R, E, Ex.Exit<L1,
   return collectWhile_(
     self,
     Ex.match(
-      () => O.None(),
-      (r) => O.Some(r)
+      () => O.none(),
+      (r) => O.some(r)
     )
   )
 }
@@ -1372,7 +1372,7 @@ export function crossWith<R, R1, E, E1, A, A1>(self: Stream<R, E, A>, that: Stre
  * Creates a stream from an effect producing a value of type `A`
  */
 export function fromEffect<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return fromEffectOption(I.mapError_(fa, O.Some))
+  return fromEffectOption(I.mapError_(fa, O.some))
 }
 
 /**
@@ -1507,8 +1507,8 @@ export function flattenExitOption<R, E, E1, A>(self: Stream<R, E, Ex.Exit<O.Opti
         C.filterMap_(
           toEmit,
           Ex.match(
-            () => O.None(),
-            (a) => O.Some(a)
+            () => O.none(),
+            (a) => O.some(a)
           )
         )
       ),
@@ -1632,7 +1632,7 @@ export function repeat<A>(a: A): Stream<unknown, never, A> {
  * Creates a stream from an effect producing a value of type `A` which repeats forever.
  */
 export function repeatEffect<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return pipe(fa, I.mapError(O.Some), repeatEffectOption)
+  return pipe(fa, I.mapError(O.some), repeatEffectOption)
 }
 
 /**
@@ -1646,7 +1646,7 @@ export function repeatEffectOption<R, E, A>(fa: I.IO<R, O.Option<E>, A>): Stream
  * Creates a stream from an effect producing chunks of `A` values which repeats forever.
  */
 export function repeatEffectChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R, E, A> {
-  return pipe(fa, I.mapError(O.Some), repeatEffectChunkOption)
+  return pipe(fa, I.mapError(O.some), repeatEffectChunkOption)
 }
 
 /**
@@ -1655,9 +1655,9 @@ export function repeatEffectChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R
 export function repeatEffectChunkOption<R, E, A>(fa: I.IO<R, O.Option<E>, C.Chunk<A>>): Stream<R, E, A> {
   return unfoldChunkM(undefined)((_) => {
     return I.catchAll_(
-      I.map_(fa, (chunk) => O.Some(tuple(chunk, undefined))),
+      I.map_(fa, (chunk) => O.some(tuple(chunk, undefined))),
       O.match(
-        () => I.succeed(O.None()),
+        () => I.succeed(O.none()),
         (e) => I.fail(e)
       )
     )
@@ -1684,11 +1684,11 @@ export function repeatEffectWith<R, E, A>(
             flow(
               driver.next,
               I.matchM(
-                (_) => I.succeed(O.None()),
+                (_) => I.succeed(O.none()),
                 () =>
                   pipe(
                     effect,
-                    I.map((nextA) => O.Some(tuple(nextA, nextA)))
+                    I.map((nextA) => O.some(tuple(nextA, nextA)))
                   )
               )
             )
@@ -1749,7 +1749,7 @@ export function effectAsync<R, E, A>(
 ): Stream<R, E, A> {
   return effectAsyncOption((cb) => {
     register(cb)
-    return O.None()
+    return O.none()
   }, outputBuffer)
 }
 
@@ -1864,11 +1864,11 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): M.Managed<R, neve
           if (currentChunk.length === 1) {
             const v      = C.unsafeHead(currentChunk)
             currentChunk = C.empty()
-            return { done: false, value: E.Right(v) }
+            return { done: false, value: E.right(v) }
           } else if (currentChunk.length > 1) {
             const v      = C.unsafeHead(currentChunk)
             currentChunk = C.unsafeTail(currentChunk)
-            return { done: false, value: E.Right(v) }
+            return { done: false, value: E.right(v) }
           } else {
             const result = await runtime.runPromiseExit(pull)
             return pipe(
@@ -1879,7 +1879,7 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): M.Managed<R, neve
                   E.match(
                     O.match(
                       () => Promise.resolve({ value: null, done: true }),
-                      (e) => Promise.resolve({ value: E.Left(e), done: true })
+                      (e) => Promise.resolve({ value: E.left(e), done: true })
                     ),
                     (ca) => {
                       throw new Ca.FiberFailure(ca)
@@ -1943,7 +1943,7 @@ function handleSuccess<A, A1, B>(
     return Ex.succeed(tuple(emit, new Running(newExcess)))
   }
   if (leftUpd._tag === 'None' && rightUpd._tag === 'None') {
-    return Ex.fail(O.None())
+    return Ex.fail(O.none())
   }
   const newState: State<A, A1> =
     newExcess._tag === 'Left'
@@ -1966,27 +1966,27 @@ export function zipWith_<R, E, A, R1, E1, A1, B>(
   that: Stream<R1, E1, A1>,
   f: (a: A, a1: A1) => B
 ): Stream<R1 & R, E | E1, B> {
-  return combineChunks_(self, that, <State<A, A1>>new Running(E.Left(C.empty())), (st, p1, p2) => {
+  return combineChunks_(self, that, <State<A, A1>>new Running(E.left(C.empty())), (st, p1, p2) => {
     switch (st._tag) {
       case 'End': {
-        return I.succeed(Ex.fail(O.None()))
+        return I.succeed(Ex.fail(O.none()))
       }
       case 'Running': {
         return I.catchAllCause_(
           I.crossWithPar_(I.optional(p1), I.optional(p2), (l, r) => handleSuccess(f, l, r, st.excess)),
-          (e) => I.succeed(Ex.halt(Ca.map_(e, O.Some)))
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
       case 'LeftDone': {
         return I.catchAllCause_(
-          I.map_(I.optional(p2), (l) => handleSuccess(f, O.None(), l, E.Left(st.excessL))),
-          (e) => I.succeed(Ex.halt(Ca.map_(e, O.Some)))
+          I.map_(I.optional(p2), (l) => handleSuccess(f, O.none(), l, E.left(st.excessL))),
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
       case 'RightDone': {
         return I.catchAllCause_(
-          I.map_(I.optional(p1), (r) => handleSuccess(f, r, O.None(), E.Right(st.excessR))),
-          (e) => I.succeed(Ex.halt(Ca.map_(e, O.Some)))
+          I.map_(I.optional(p1), (r) => handleSuccess(f, r, O.none(), E.right(st.excessR))),
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
     }

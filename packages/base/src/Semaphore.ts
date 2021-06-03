@@ -45,19 +45,19 @@ export class Semaphore {
   private loop(n: number, state: State, acc: I.UIO<void>): [I.UIO<void>, State] {
     switch (state._tag) {
       case 'Right': {
-        return [acc, E.Right(n + state.right)]
+        return [acc, E.right(n + state.right)]
       }
       case 'Left': {
         return O.match_(
           state.left.dequeue(),
-          (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.Right(n)],
+          (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.Left(q), I.apl_(acc, p.succeed(undefined)))
+              return this.loop(n - m, E.left(q), I.apl_(acc, p.succeed(undefined)))
             } else if (n === m) {
-              return [I.apl_(acc, p.succeed(undefined)), E.Left(q)]
+              return [I.apl_(acc, p.succeed(undefined)), E.left(q)]
             } else {
-              return [acc, E.Left(q.prepend([p, m - n]))]
+              return [acc, E.left(q.prepend([p, m - n]))]
             }
           }
         )
@@ -85,13 +85,13 @@ export class Semaphore {
             (q) =>
               O.match_(
                 q.find(([a]) => a === p),
-                (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.Left(q)],
+                (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
                 (x): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
                   this.releaseN(n - x[1]),
-                  E.Left(q.filter(([a]) => a != p))
+                  E.left(q.filter(([a]) => a != p))
                 ]
               ),
-            (m): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [I.unit(), E.Right(n + m)]
+            (m): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [I.unit(), E.right(n + m)]
           )
         )
       )
@@ -109,13 +109,13 @@ export class Semaphore {
             E.match(
               (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
                 new Acquisition(p.await, this.restore(p, n)),
-                E.Left(q.push([p, n]))
+                E.left(q.push([p, n]))
               ],
               (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
                 if (m >= n) {
-                  return [new Acquisition(I.unit(), this.releaseN(n)), E.Right(m - n)]
+                  return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
                 }
-                return [new Acquisition(p.await, this.restore(p, n)), E.Left(new ImmutableQueue([[p, n - m]]))]
+                return [new Acquisition(p.await, this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
               }
             )
           )
@@ -182,14 +182,14 @@ export function available(s: Semaphore): I.IO<unknown, never, number> {
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function make(permits: number): I.IO<unknown, never, Semaphore> {
-  return I.map_(Ref.makeRef<State>(E.Right(permits)), (state) => new Semaphore(state))
+  return I.map_(Ref.makeRef<State>(E.right(permits)), (state) => new Semaphore(state))
 }
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function unsafeMake(permits: number): Semaphore {
-  const state = Ref.unsafeMakeRef<State>(E.Right(permits))
+  const state = Ref.unsafeMakeRef<State>(E.right(permits))
 
   return new Semaphore(state)
 }

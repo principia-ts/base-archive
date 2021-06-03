@@ -18,7 +18,7 @@ import { foreachPar } from './foreachPar'
  * @trace 1
  */
 export function filterPar_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
-  return pipe(as, foreachPar(traceAs(f, (a) => map_(f(a), (b) => (b ? O.Some(a) : O.None())))), map(C.compact))
+  return pipe(as, foreachPar(traceAs(f, (a) => map_(f(a), (b) => (b ? O.some(a) : O.none())))), map(C.compact))
 }
 
 /**

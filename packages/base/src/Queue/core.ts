@@ -929,7 +929,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
         I.foreach((a) =>
           pipe(
             f(a),
-            I.map((b) => (b ? O.Some(a) : O.None()))
+            I.map((b) => (b ? O.some(a) : O.none()))
           )
         ),
         I.bind((maybeAs) => {

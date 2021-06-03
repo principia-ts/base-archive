@@ -37,11 +37,11 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               I.raceWith(
                 pipe(
                   I.sleep(d),
-                  I.as(() => O.None())
+                  I.as(() => O.none())
                 ),
                 (result, sleeper) =>
-                  pipe(sleeper.interruptAs(id), I.apr(I.done(Ex.map_(result, ([, a]) => E.Right(a))))),
-                (_, resultFiber) => I.succeed(E.Left(resultFiber))
+                  pipe(sleeper.interruptAs(id), I.apr(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
+                (_, resultFiber) => I.succeed(E.left(resultFiber))
               ),
               I.giveAll(r),
               restore
@@ -55,9 +55,9 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
                   fiber.interruptAs(id),
                   I.ensuring(releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
                   I.forkDaemon,
-                  I.as(() => O.None())
+                  I.as(() => O.none())
                 ),
-              flow(O.Some, I.succeed)
+              flow(O.some, I.succeed)
             )
           )
           return tuple(earlyRelease, a)

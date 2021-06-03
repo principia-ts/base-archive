@@ -79,11 +79,11 @@ export class CustomRuntime<R, A> {
       this.platform.maxOp,
       this.platform.reportFailure,
       this.platform,
-      O.None()
+      O.none()
     )
 
     if (supervisor !== Super.none) {
-      supervisor.unsafeOnStart(this.env, effect, O.None(), context)
+      supervisor.unsafeOnStart(this.env, effect, O.none(), context)
       context.onDone((exit) => supervisor.unsafeOnEnd(Ex.flatten(exit), context))
     }
 

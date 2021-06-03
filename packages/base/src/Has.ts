@@ -11,7 +11,7 @@
 
 import type { Option } from './internal/Option'
 
-import { fromNullable, None } from './internal/Option'
+import { fromNullable, none } from './internal/Option'
 import { isObject } from './prelude'
 
 /**
@@ -53,7 +53,7 @@ export class Tag<T> {
   readonly fixed       = (): Tag<T> => new Tag(false, this.key)
   readonly refine      = <T1 extends T>(): Tag<T1> => new Tag(this.def, this.key)
   readonly read        = (r: Has<T>): T => r[this.key]
-  readonly readOption  = (r: unknown): Option<T> => (isObject(r) ? fromNullable(r[this.key]) : None())
+  readonly readOption  = (r: unknown): Option<T> => (isObject(r) ? fromNullable(r[this.key]) : none())
   readonly setKey      = (s: PropertyKey): Tag<T> => new Tag(this.def, s)
   readonly of          = (_: T): Has<T> => ({ [this.key]: _ } as any)
 }

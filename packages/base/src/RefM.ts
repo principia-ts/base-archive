@@ -362,13 +362,13 @@ export function filterInputM_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
   return P.pipe(
     ref,
     matchM(
-      (ea) => O.Some<EA | EC>(ea),
+      (ea) => O.some<EA | EC>(ea),
       P.identity,
       (a: A1) =>
         I.ifM_(
           I.asSomeError(f(a)),
           () => I.pure(a),
-          () => I.fail<O.Option<EA | EC>>(O.None())
+          () => I.fail<O.Option<EA | EC>>(O.none())
         ),
       I.pure
     )
@@ -421,13 +421,13 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RC, EC>(
   return matchM_(
     ref,
     (ea) => ea,
-    (eb) => O.Some<EB | EC>(eb),
+    (eb) => O.some<EB | EC>(eb),
     (a) => I.pure(a),
     (b) =>
       I.ifM_(
         I.asSomeError(f(b)),
         () => I.pure(b),
-        () => I.fail(O.None())
+        () => I.fail(O.none())
       )
   )
 }
@@ -726,8 +726,8 @@ export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
     match(
       (ea) => f(ea),
       (eb) => g(eb),
-      (a) => E.Right(a),
-      (b) => E.Right(b)
+      (a) => E.right(a),
+      (b) => E.right(b)
     )
   )
 }
@@ -1060,13 +1060,13 @@ export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
 ): RefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
   return ref.matchM(
     P.identity,
-    (_) => O.Some<EB | EC>(_),
+    (_) => O.some<EB | EC>(_),
     (_) => I.pure(_),
     (b) =>
       P.pipe(
         f(b),
         O.map((a) => I.asSomeError(a)),
-        O.getOrElse(() => I.fail(O.None()))
+        O.getOrElse(() => I.fail(O.none()))
       )
   )
 }
@@ -1125,8 +1125,8 @@ export function writeOnly<RA, RB, EA, EB, A, B>(ref: RefM<RA, RB, EA, EB, A, B>)
     match(
       P.identity,
       (): void => undefined,
-      E.Right,
-      () => E.Left<void>(undefined)
+      E.right,
+      () => E.left<void>(undefined)
     )
   )
 }

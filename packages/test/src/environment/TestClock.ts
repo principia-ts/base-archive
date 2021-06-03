@@ -186,9 +186,9 @@ export class TestClock implements Clock {
           sorted,
           Li.first,
           O.bind(([duration, promise]) =>
-            duration <= end ? O.Some(tuple(O.Some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.None()
+            duration <= end ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.none()
           ),
-          O.getOrElse(() => tuple(O.None(), new Data(end, data.sleeps)))
+          O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
         )
       })
     )['>>='](
@@ -228,9 +228,9 @@ export class TestClock implements Clock {
   private warningDone: UIO<void> = RefM.updateSomeM_(
     this.warningState,
     matchTag({
-      Start: () => O.Some(I.succeed(Done)),
-      Pending: ({ fiber }) => O.Some(Fi.interrupt(fiber)['$>'](() => Done)),
-      Done: () => O.None()
+      Start: () => O.some(I.succeed(Done)),
+      Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](() => Done)),
+      Done: () => O.none()
     })
   )
 
@@ -244,10 +244,10 @@ export class TestClock implements Clock {
             I.makeInterruptible,
             I.fork,
             I.map(Pending),
-            O.Some
+            O.some
           )
       },
-      () => O.None<IO<unknown, never, WarningData>>()
+      () => O.none<IO<unknown, never, WarningData>>()
     )
   )
 

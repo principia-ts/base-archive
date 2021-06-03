@@ -47,7 +47,7 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.UHKT<F>>): 
     ifilter_ = F.ifilter_
   } else {
     ifilter_ = <A>(fa: HKT.HKT<F, A>, predicate: PredicateWithIndex<unknown, A>): HKT.HKT<F, A> =>
-      F.ifilterMap_(fa, (i, a) => (predicate(i, a) ? O.Some(a) : O.None()))
+      F.ifilterMap_(fa, (i, a) => (predicate(i, a) ? O.some(a) : O.none()))
   }
 
   if ('ipartition_' in F) {
@@ -57,7 +57,7 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.UHKT<F>>): 
       fa: HKT.HKT<F, A>,
       predicate: PredicateWithIndex<unknown, A>
     ): readonly [HKT.HKT<F, A>, HKT.HKT<F, A>] =>
-      ipartitionMap_(fa, (i, a) => (predicate(i, a) ? E.Right(a) : E.Left(a)))
+      ipartitionMap_(fa, (i, a) => (predicate(i, a) ? E.right(a) : E.left(a)))
   }
 
   return HKT.instance<FilterableWithIndex<HKT.UHKT<F>>>({
@@ -67,9 +67,15 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.UHKT<F>>): 
     ipartitionMap_,
     ipartitionMap: (f) => (fa) => ipartitionMap_(fa, f),
     ifilter_,
-    ifilter: <A>(f: PredicateWithIndex<unknown, A>) => (fa: HKT.HKT<F, A>) => ifilter_(fa, f),
+    ifilter:
+      <A>(f: PredicateWithIndex<unknown, A>) =>
+      (fa: HKT.HKT<F, A>) =>
+        ifilter_(fa, f),
     ipartition_,
-    ipartition: <A>(f: PredicateWithIndex<unknown, A>) => (fa: HKT.HKT<F, A>) => ipartition_(fa, f)
+    ipartition:
+      <A>(f: PredicateWithIndex<unknown, A>) =>
+      (fa: HKT.HKT<F, A>) =>
+        ipartition_(fa, f)
   })
 }
 

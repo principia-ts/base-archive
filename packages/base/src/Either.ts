@@ -61,7 +61,7 @@ type URI = [HKT.URI<EitherURI>]
  * @category Constructors
  * @since 1.0.0
  */
-export const Left = E.Left
+export const left = E.left
 
 /**
  * Constructs a new `Either` holding a `Right` value.
@@ -70,7 +70,7 @@ export const Left = E.Left
  * @category Constructors
  * @since 1.0.0
  */
-export const Right = E.Right
+export const right = E.right
 
 /**
  * Takes a default and a nullable value, if the value is not nully,
@@ -80,7 +80,7 @@ export const Right = E.Right
  * @since 1.0.0
  */
 export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>> {
-  return a == null ? Left(e()) : Right(a as NonNullable<A>)
+  return a == null ? left(e()) : right(a as NonNullable<A>)
 }
 
 /**
@@ -91,7 +91,7 @@ export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>>
  * @since 1.0.0
  */
 export function fromNullable<E>(e: () => E): <A>(a: A) => Either<E, NonNullable<A>> {
-  return <A>(a: A): Either<E, NonNullable<A>> => (a == null ? Left(e()) : Right(a as NonNullable<A>))
+  return <A>(a: A): Either<E, NonNullable<A>> => (a == null ? left(e()) : right(a as NonNullable<A>))
 }
 
 export function fromNullableK_<E, A extends ReadonlyArray<unknown>, B>(
@@ -118,9 +118,9 @@ export function fromNullableK<E>(
  */
 export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
   try {
-    return Right(thunk())
+    return right(thunk())
   } catch (e) {
-    return Left(e)
+    return left(e)
   }
 }
 
@@ -180,7 +180,7 @@ export function stringifyJson(u: unknown): Either<unknown, string> {
  * @since 1.0.0
  */
 export function fromOption_<E, A>(fa: Option<A>, onNothing: () => E): Either<E, A> {
-  return fa._tag === 'None' ? Left(onNothing()) : Right(fa.value)
+  return fa._tag === 'None' ? left(onNothing()) : right(fa.value)
 }
 
 /**
@@ -202,7 +202,7 @@ export function fromPredicate_<E, A, B extends A>(
 ): Either<E, B>
 export function fromPredicate_<E, A>(a: A, predicate: P.Predicate<A>, onFalse: (a: A) => E): Either<E, A>
 export function fromPredicate_<E, A>(a: A, predicate: P.Predicate<A>, onFalse: (a: A) => E): Either<E, A> {
-  return predicate(a) ? Right(a) : Left(onFalse(a))
+  return predicate(a) ? right(a) : left(onFalse(a))
 }
 
 /**
@@ -310,10 +310,10 @@ export function alignWith_<E, A, E1, B, C>(
   return fa._tag === 'Left'
     ? fb._tag === 'Left'
       ? fa
-      : Right(f(T.Right(fb.right)))
+      : right(f(T.right(fb.right)))
     : fb._tag === 'Left'
-    ? Right(f(T.Left(fa.right)))
-    : Right(f(T.Both(fa.right, fb.right)))
+    ? right(f(T.left(fa.right)))
+    : right(f(T.Both(fa.right, fb.right)))
 }
 
 export function alignWith<A, E1, B, C>(
@@ -371,7 +371,7 @@ export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Ei
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: <E = never, A = never>(a: A) => Either<E, A> = Right
+export const pure: <E = never, A = never>(a: A) => Either<E, A> = right
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ export const pure: <E = never, A = never>(a: A) => Either<E, A> = Right
  */
 
 export function catchAll_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Either<E1, B>): Either<E1, A | B> {
-  return match_(fa, f, Right)
+  return match_(fa, f, right)
 }
 
 export function catchAll<E, E1, B>(f: (e: E) => Either<E1, B>): <A>(fa: Either<E, A>) => Either<E1, A | B> {
@@ -404,7 +404,7 @@ export function catchSome<E, E1, B>(
 }
 
 export function catchMap_<E, A, B>(fa: Either<E, A>, f: (e: E) => B): Either<never, A | B> {
-  return catchAll_(fa, flow(f, Right))
+  return catchAll_(fa, flow(f, right))
 }
 
 export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<never, A | B> {
@@ -412,7 +412,7 @@ export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<
 }
 
 export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
-  return Right(fa)
+  return right(fa)
 }
 
 /*
@@ -428,7 +428,7 @@ export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
  * @since 1.0.0
  */
 export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> {
-  return isLeft(fab) ? fab : isLeft(fa) ? fa : Right(fab.right(fa.right))
+  return isLeft(fab) ? fab : isLeft(fa) ? fa : right(fab.right(fa.right))
 }
 
 /**
@@ -517,7 +517,7 @@ export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eithe
  * @since 1.0.0
  */
 export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
-  return isLeft(fa) ? fa : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
+  return isLeft(fa) ? fa : isLeft(fb) ? fb : right(f(fa.right, fb.right))
 }
 
 /**
@@ -543,7 +543,7 @@ export function crossWith<A, G, B, C>(
 export function liftA2<A, B, C>(
   f: (a: A) => (b: B) => C
 ): <E>(fa: Either<E, A>) => <G>(fb: Either<G, B>) => Either<E | G, C> {
-  return (fa) => (fb) => isLeft(fa) ? Left(fa.left) : isLeft(fb) ? Left(fb.left) : Right(f(fa.right)(fb.right))
+  return (fa) => (fb) => isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right))
 }
 
 /*
@@ -559,7 +559,7 @@ export function liftA2<A, B, C>(
  * @since 1.0.0
  */
 export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
-  return isLeft(pab) ? Right(pab.left) : Left(pab.right)
+  return isLeft(pab) ? right(pab.left) : left(pab.right)
 }
 
 /**
@@ -569,7 +569,7 @@ export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
  * @since 1.0.0
  */
 export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> {
-  return isLeft(pab) ? Left(f(pab.left)) : Right(g(pab.right))
+  return isLeft(pab) ? left(f(pab.left)) : right(g(pab.right))
 }
 
 /**
@@ -589,7 +589,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<
  * @since 1.0.0
  */
 export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> {
-  return isLeft(pab) ? Left(f(pab.left)) : pab
+  return isLeft(pab) ? left(f(pab.left)) : pab
 }
 
 /**
@@ -611,15 +611,15 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
 export function getCompactable<E>(M: P.Monoid<E>) {
   return HKT.instance<P.Compactable<[HKT.URI<EitherURI, V>], HKT.Fix<'E', E>>>({
     compact: (fa) => {
-      return isLeft(fa) ? fa : fa.right._tag === 'None' ? Left(M.nat) : Right(fa.right.value)
+      return isLeft(fa) ? fa : fa.right._tag === 'None' ? left(M.nat) : right(fa.right.value)
     },
 
     separate: (fa) => {
       return isLeft(fa)
         ? [fa, fa]
         : isLeft(fa.right)
-        ? [Right(fa.right.left), Left(M.nat)]
-        : [Left(M.nat), Right(fa.right.right)]
+        ? [right(fa.right.left), left(M.nat)]
+        : [left(M.nat), right(fa.right.right)]
     }
   })
 }
@@ -654,7 +654,7 @@ export function getEq<E, A>(eqE: P.Eq<E>, eqA: P.Eq<A>): P.Eq<Either<E, A>> {
  * @since 1.0.0
  */
 export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): Either<E, B> {
-  return isLeft(wa) ? wa : Right(f(wa))
+  return isLeft(wa) ? wa : right(f(wa))
 }
 
 /**
@@ -688,21 +688,21 @@ export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
 export function getFilterable<E>(M: P.Monoid<E>) {
   type FixE = HKT.Fix<'E', E>
 
-  const empty = Left(M.nat)
+  const empty = left(M.nat)
 
   const partitionMap_: P.PartitionMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) => {
     if (isLeft(fa)) {
       return [fa, fa]
     }
     const e = f(fa.right)
-    return isLeft(e) ? [Right(e.left), empty] : [empty, Right(e.right)]
+    return isLeft(e) ? [right(e.left), empty] : [empty, right(e.right)]
   }
 
   const partition_: P.PartitionFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
     predicate: P.Predicate<A>
   ): readonly [Either<E, A>, Either<E, A>] => {
-    return isLeft(fa) ? [fa, fa] : predicate(fa.right) ? [empty, Right(fa.right)] : [Right(fa.right), empty]
+    return isLeft(fa) ? [fa, fa] : predicate(fa.right) ? [empty, right(fa.right)] : [right(fa.right), empty]
   }
 
   const filterMap_: P.FilterMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) => {
@@ -710,7 +710,7 @@ export function getFilterable<E>(M: P.Monoid<E>) {
       return fa
     }
     const ob = f(fa.right)
-    return ob._tag === 'None' ? empty : Right(ob.value)
+    return ob._tag === 'None' ? empty : right(ob.value)
   }
 
   const filter_: P.FilterFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
@@ -770,7 +770,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) =
  * @since 1.0.0
  */
 export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
-  return isLeft(fa) ? fa : Right(f(fa.right))
+  return isLeft(fa) ? fa : right(f(fa.right))
 }
 
 /**
@@ -871,7 +871,7 @@ export function refail<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, 
  */
 export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
   const combine_: P.CombineFn_<Either<E, A>> = (x, y) =>
-    isLeft(y) ? x : isLeft(x) ? y : Right(S.combine_(x.right, y.right))
+    isLeft(y) ? x : isLeft(x) ? y : right(S.combine_(x.right, y.right))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
@@ -909,10 +909,10 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
 export const traverse_ = P.implementTraverse_<URI, V>()((_) => (F) => {
   return (ta, f) =>
     isLeft(ta)
-      ? F.pure(Left(ta.left))
+      ? F.pure(left(ta.left))
       : pipe(
           f(ta.right),
-          F.map((b) => Right(b))
+          F.map((b) => right(b))
         )
 })
 
@@ -942,7 +942,7 @@ export const sequence: P.SequenceFn<URI, V> = (F) => (ta) => traverse_(F)(ta, id
  * The unit `Either`
  */
 export function unit<E = never>(): Either<E, void> {
-  return Right(undefined)
+  return right(undefined)
 }
 
 /*
@@ -1077,7 +1077,7 @@ export const Applicative = P.Applicative<URI, V>({
  * @since 1.0.0
  */
 export const Fail = P.Fail<URI, V>({
-  fail: Left
+  fail: left
 })
 
 /**
@@ -1107,7 +1107,7 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
   pure,
   unit,
   catchAll_,
-  fail: Left
+  fail: left
 })
 
 /**
@@ -1124,7 +1124,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   bind_,
   flatten,
   catchAll_,
-  fail: Left
+  fail: left
 })
 
 /**
@@ -1181,7 +1181,7 @@ export const Do = P.Do(Monad)
  * @category Do
  * @since 1.0.0
  */
-const of: Either<never, {}> = Right({})
+const of: Either<never, {}> = right({})
 export { of as do }
 
 /**
@@ -1222,16 +1222,16 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<UR
   type FixE = V & HKT.Fix<'E', E>
 
   const crossWithV_: P.CrossWithFn_<URI, FixE> = (fa, fb, f) =>
-    isLeft(fa) ? (isLeft(fb) ? Left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : Right(f(fa.right, fb.right))
+    isLeft(fa) ? (isLeft(fb) ? left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : right(f(fa.right, fb.right))
 
   const apV_: P.ApFn_<URI, FixE> = (fab, fa) =>
     isLeft(fab)
       ? isLeft(fa)
-        ? Left(S.combine_(fab.left, fa.left))
+        ? left(S.combine_(fab.left, fa.left))
         : fab
       : isLeft(fa)
       ? fa
-      : Right(fab.right(fa.right))
+      : right(fab.right(fa.right))
 
   return P.Applicative({
     map_,
@@ -1254,7 +1254,7 @@ export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<URI, HKT.Fix<'E', 
       return fa
     }
     const ea = that()
-    return isLeft(ea) ? Left(S.combine_(fa.left, ea.left)) : ea
+    return isLeft(ea) ? left(S.combine_(fa.left, ea.left)) : ea
   }
 
   return P.Alt({
@@ -1301,7 +1301,7 @@ export function itraverseArray_<A, E, B>(
   f: (i: number, a: A) => Either<E, B>
 ): Either<E, ReadonlyArray<B>> {
   if (as.length === 0) {
-    return Right([])
+    return right([])
   }
 
   const e = f(0, as[0])
@@ -1316,7 +1316,7 @@ export function itraverseArray_<A, E, B>(
     }
     out.push(e.right)
   }
-  return Right(out)
+  return right(out)
 }
 
 export function itraverseArray<A, E, B>(

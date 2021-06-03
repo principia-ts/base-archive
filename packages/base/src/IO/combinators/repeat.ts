@@ -120,12 +120,12 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
         return pipe(
           driver.next(a),
           matchM(
-            () => pipe(orDie(driver.last), map(E.Right)),
+            () => pipe(orDie(driver.last), map(E.right)),
             (b) =>
               pipe(
                 fa,
                 matchM(
-                  traceAs(f, (e) => pipe(f(e, O.Some(b)), map(E.Left))),
+                  traceAs(f, (e) => pipe(f(e, O.some(b)), map(E.left))),
                   (a) => loop(a)
                 )
               )
@@ -135,7 +135,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       return pipe(
         fa,
         matchM(
-          traceAs(f, (e) => pipe(f(e, O.None()), map(E.Left))),
+          traceAs(f, (e) => pipe(f(e, O.none()), map(E.left))),
           (a) => loop(a)
         )
       )

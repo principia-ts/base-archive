@@ -16,18 +16,20 @@ export interface FiberId {
 
 const _fiberCounter = new AtomicNumber(0)
 
-export const FiberId = (startTime: number, seqNumber: number): FiberId => ({
-  _tag: 'FiberId',
-  startTime,
-  seqNumber
-})
+export function fiberId(startTime: number, seqNumber: number): FiberId {
+  return {
+    _tag: 'FiberId',
+    startTime,
+    seqNumber
+  }
+}
 
-export const emptyFiberId = FiberId(0, 0)
+export const emptyFiberId = fiberId(0, 0)
 
 export const eqFiberId: P.Eq<FiberId> = P.Eq((x, y) => x.seqNumber === y.seqNumber && x.startTime === y.startTime)
 
-export function newFiberId() {
-  return FiberId(new Date().getTime(), _fiberCounter.getAndIncrement())
+export function newFiberId(): FiberId {
+  return fiberId(new Date().getTime(), _fiberCounter.getAndIncrement())
 }
 
 export function prettyFiberId(_: FiberId): string {

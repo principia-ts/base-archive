@@ -1302,14 +1302,14 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   State.concrete(channelState)
   switch (channelState._tag) {
     case State.ChannelStateTag.Effect: {
-      return I.bind_(I.mapError_(channelState.effect, E.Left), () => toPullInterpret(exec.run(), exec))
+      return I.bind_(I.mapError_(channelState.effect, E.left), () => toPullInterpret(exec.run(), exec))
     }
     case State.ChannelStateTag.Emit: {
       return I.succeed(exec.getEmit())
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      return Ex.matchM_(done, flow(Ca.map(E.Left), I.halt), flow(E.Right, I.fail))
+      return Ex.matchM_(done, flow(Ca.map(E.left), I.halt), flow(E.right, I.fail))
     }
   }
 }
@@ -1944,7 +1944,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): Channel<unknown, unkno
 export function fromOption<A>(option: O.Option<A>): Channel<unknown, unknown, unknown, unknown, O.None, never, A> {
   return O.match_(
     option,
-    () => fail(O.None() as O.None),
+    () => fail(O.none() as O.None),
     (_) => succeed(_)
   )
 }
@@ -2008,7 +2008,7 @@ export function readOrFail<In, E>(e: E): Channel<unknown, unknown, In, unknown, 
 }
 
 export function read<In>(): Channel<unknown, unknown, In, unknown, O.None, never, In> {
-  return readOrFail(O.None() as O.None)
+  return readOrFail(O.none() as O.None)
 }
 
 export function fromHub<Err, Done, Elem>(hub: H.Hub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
@@ -2053,8 +2053,8 @@ export function toQueue<Err, Done, Elem>(
 ): Channel<unknown, Err, Elem, Done, never, never, any> {
   return readWithCause(
     (in_: Elem) => zipr_(fromEffect(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
-    (cause: Ca.Cause<Err>) => fromEffect(Q.offer_(queue, Ex.halt(Ca.map_(cause, (_) => E.Left(_))))),
-    (done: Done) => fromEffect(Q.offer_(queue, Ex.fail(E.Right(done))))
+    (cause: Ca.Cause<Err>) => fromEffect(Q.offer_(queue, Ex.halt(Ca.map_(cause, (_) => E.left(_))))),
+    (done: Done) => fromEffect(Q.offer_(queue, Ex.fail(E.right(done))))
   )
 }
 

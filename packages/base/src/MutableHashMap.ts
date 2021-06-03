@@ -48,19 +48,19 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
-      return O.None()
+      return O.none()
     }
 
     let c: Node<K, V> | undefined = arr
 
     while (c) {
       if (St.equals(k, c.k)) {
-        return O.Some(c.v)
+        return O.some(c.v)
       }
       c = c.next
     }
 
-    return O.None()
+    return O.none()
   }
 
   remove(k: K): HashMap<K, V> {

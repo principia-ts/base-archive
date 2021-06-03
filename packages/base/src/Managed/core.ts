@@ -663,7 +663,7 @@ export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Manage
  */
 export function recover<R, E, A>(fa: Managed<R, E, A>): Managed<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
-  return match_(fa, traceFrom(trace, flow(E.Left)), traceFrom(trace, flow(E.Right)))
+  return match_(fa, traceFrom(trace, flow(E.left)), traceFrom(trace, flow(E.right)))
 }
 
 /*
@@ -1226,7 +1226,7 @@ export function asSome<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, O.Option<A>
   const trace = accessCallTrace()
   return map_(
     ma,
-    traceFrom(trace, (a) => O.Some(a))
+    traceFrom(trace, (a) => O.some(a))
   )
 }
 
@@ -1239,7 +1239,7 @@ export function asSomeError<R, E, A>(ma: Managed<R, E, A>): Managed<R, O.Option<
   const trace = accessCallTrace()
   return mapError_(
     ma,
-    traceFrom(trace, (e) => O.Some(e))
+    traceFrom(trace, (e) => O.some(e))
   )
 }
 
@@ -1638,7 +1638,7 @@ export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Opti
   )(
     map_(
       ma,
-      E.fromOption(() => O.None())
+      E.fromOption(() => O.none())
     )
   )
 }
@@ -1810,8 +1810,8 @@ export function joinEither_<R, E, A, R1, E1, A1>(
     traceFrom(
       trace,
       E.match(
-        (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.Left), r),
-        (r1) => giveAll_(map_(that, E.Right), r1)
+        (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
+        (r1) => giveAll_(map_(that, E.right), r1)
       )
     )
   )
@@ -1928,12 +1928,12 @@ export function none<R, E, A>(ma: Managed<R, E, O.Option<A>>): Managed<R, O.Opti
   const trace = accessCallTrace()
   return matchM_(
     ma,
-    traceFrom(trace, flow(O.Some, fail)),
+    traceFrom(trace, flow(O.some, fail)),
     traceFrom(
       trace,
       O.match(
         () => unit(),
-        () => fail(O.None())
+        () => fail(O.none())
       )
     )
   )
@@ -1948,8 +1948,8 @@ export function option<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, O.Optio
   const trace = accessCallTrace()
   return match_(
     ma,
-    traceFrom(trace, () => O.None()),
-    traceFrom(trace, (a) => O.Some(a))
+    traceFrom(trace, () => O.none()),
+    traceFrom(trace, (a) => O.some(a))
   )
 }
 
@@ -1964,9 +1964,9 @@ export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E,
     ma,
     traceFrom(
       trace,
-      O.match(() => succeed(O.None()), fail)
+      O.match(() => succeed(O.none()), fail)
     ),
-    traceFrom(trace, flow(O.Some, succeed))
+    traceFrom(trace, flow(O.some, succeed))
   )
 }
 
@@ -2053,8 +2053,8 @@ export function orElseEither_<R, E, A, R1, E1, B>(
   const trace = accessCallTrace()
   return matchM_(
     ma,
-    traceAs(that, () => map_(that(), E.Left)),
-    traceFrom(trace, flow(E.Right, succeed))
+    traceAs(that, () => map_(that(), E.left)),
+    traceFrom(trace, flow(E.right, succeed))
   )
 }
 
@@ -2118,7 +2118,7 @@ export function orElseOptional_<R, E, A, R1, E1, B>(
       that,
       O.match(
         () => that(),
-        (e) => fail(O.Some<E | E1>(e))
+        (e) => fail(O.some<E | E1>(e))
       )
     )
   )

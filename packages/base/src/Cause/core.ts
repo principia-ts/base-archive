@@ -313,6 +313,39 @@ export function both<E, E1>(left: Cause<E>, right: Cause<E1>): Cause<E | E1> {
  * -------------------------------------------------------------------------------------------------
  */
 
+export function contains_<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => Ev.Eval<boolean> {
+  return (cause) =>
+    Ev.gen(function* (_) {
+      if (yield* _(cause.equalsEval(that))) {
+        return true
+      }
+      return yield* _(
+        pipe(
+          cause,
+          foldl(Ev.now(false), (_, c) => O.some(Ev.bind_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
+        )
+      )
+    })
+}
+
+/**
+ * Determines if this cause contains or is equal to the specified cause.
+ */
+export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
+  return flow(contains_(that), Ev.evaluate)
+}
+/**
+ * Returns if a cause contains a defect
+ */
+export function died<E>(cause: Cause<E>): cause is Die {
+  return pipe(
+    cause,
+    dieOption,
+    O.map(() => true),
+    O.getOrElse(() => false)
+  )
+}
+
 /**
  * Returns if the cause has a failure in it
  */
@@ -381,18 +414,6 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
 }
 
 /**
- * Returns if a cause contains a defect
- */
-export function died<E>(cause: Cause<E>): cause is Die {
-  return pipe(
-    cause,
-    dieOption,
-    O.map(() => true),
-    O.getOrElse(() => false)
-  )
-}
-
-/**
  * Returns if the cause contains an interruption in it
  */
 export function interrupted<E>(cause: Cause<E>): boolean {
@@ -404,33 +425,27 @@ export function interrupted<E>(cause: Cause<E>): boolean {
   )
 }
 
-export function _contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => Ev.Eval<boolean> {
-  return (cause) =>
-    Ev.gen(function* (_) {
-      if (yield* _(cause.equalsEval(that))) {
-        return true
-      }
-      return yield* _(
-        pipe(
-          cause,
-          foldl(Ev.now(false), (_, c) => O.Some(Ev.bind_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
-        )
-      )
-    })
-}
-
-/**
- * Determines if this cause contains or is equal to the specified cause.
- */
-export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>) => boolean {
-  return flow(_contains(that), Ev.evaluate)
-}
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Destructors
  * -------------------------------------------------------------------------------------------------
  */
+
+/**
+ * Returns the `Error` associated with the first `Die` in this `Cause` if
+ * one exists.
+ */
+export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
+  return find_(cause, (c) => (c._tag === CauseTag.Die ? O.some(c.value) : O.none()))
+}
+
+/**
+ * Returns the `E` associated with the first `Fail` in this `Cause` if one
+ * exists.
+ */
+export function failureOption<E>(cause: Cause<E>): O.Option<E> {
+  return find_(cause, (c) => (c._tag === CauseTag.Fail ? O.some(c.value) : O.none()))
+}
 
 /**
  * @internal
@@ -486,6 +501,64 @@ export function find_<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option<A>
  */
 export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => O.Option<A> {
   return (cause) => find_(cause, f)
+}
+
+/**
+ * Accumulates a state over a Cause
+ *
+ * @category Destructors
+ * @since 1.0.0
+ */
+export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A {
+  let causes: Stack<Cause<E>> | undefined = undefined
+  let current: Cause<E> | undefined       = cause
+  let acc                                 = a
+
+  while (current) {
+    const x = f(acc, current)
+    acc     = x._tag === 'Some' ? x.value : acc
+
+    switch (current._tag) {
+      case CauseTag.Then: {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      case CauseTag.Both: {
+        causes  = makeStack(current.right, causes)
+        current = current.left
+        break
+      }
+      default: {
+        current = undefined
+        break
+      }
+    }
+
+    if (!current && causes) {
+      current = causes.value
+      causes  = causes.previous
+    }
+  }
+  return acc
+}
+
+/**
+ * Accumulates a state over a Cause
+ *
+ * @category Destructors
+ * @since 1.0.0
+ */
+export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
+  return (cause) => foldl_(cause, a, f)
+}
+
+/**
+ * Returns the `FiberID` associated with the first `Interrupt` in this `Cause` if one
+ * exists.
+ */
+export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
+  return find_(cause, (c) => (c._tag === CauseTag.Interrupt ? O.some(c.fiberId) : O.none()))
 }
 
 /**
@@ -565,80 +638,6 @@ export function match<E, A>(
   onTraced: (_: A, trace: Trace) => A
 ): (cause: Cause<E>) => A {
   return (cause) => matchEval(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
-}
-
-/**
- * Accumulates a state over a Cause
- *
- * @category Destructors
- * @since 1.0.0
- */
-export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A {
-  let causes: Stack<Cause<E>> | undefined = undefined
-  let current: Cause<E> | undefined       = cause
-  let acc                                 = a
-
-  while (current) {
-    const x = f(acc, current)
-    acc     = x._tag === 'Some' ? x.value : acc
-
-    switch (current._tag) {
-      case CauseTag.Then: {
-        causes  = makeStack(current.right, causes)
-        current = current.left
-        break
-      }
-      case CauseTag.Both: {
-        causes  = makeStack(current.right, causes)
-        current = current.left
-        break
-      }
-      default: {
-        current = undefined
-        break
-      }
-    }
-
-    if (!current && causes) {
-      current = causes.value
-      causes  = causes.previous
-    }
-  }
-  return acc
-}
-
-/**
- * Accumulates a state over a Cause
- *
- * @category Destructors
- * @since 1.0.0
- */
-export function foldl<E, A>(a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): (cause: Cause<E>) => A {
-  return (cause) => foldl_(cause, a, f)
-}
-
-/**
- * Returns the `FiberID` associated with the first `Interrupt` in this `Cause` if one
- * exists.
- */
-export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
-  return find_(cause, (c) => (c._tag === CauseTag.Interrupt ? O.Some(c.fiberId) : O.None()))
-}
-
-/**
- * Returns the `E` associated with the first `Fail` in this `Cause` if one
- * exists.
- */
-export function failureOption<E>(cause: Cause<E>): O.Option<E> {
-  return find_(cause, (c) => (c._tag === CauseTag.Fail ? O.Some(c.value) : O.None()))
-}
-
-/**
- * Returns the `Error` associated with the first `Die` in this `Cause` if
- * one exists.
- */
-export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
-  return find_(cause, (c) => (c._tag === CauseTag.Die ? O.Some(c.value) : O.None()))
 }
 
 /*
@@ -845,7 +844,7 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
   return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
-    c._tag === CauseTag.Die ? O.Some([...a, c.value]) : O.None()
+    c._tag === CauseTag.Die ? O.some([...a, c.value]) : O.none()
   )
 }
 
@@ -853,7 +852,7 @@ export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
  * Produces a list of all recoverable errors `E` in the `Cause`.
  */
 export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
-  return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === CauseTag.Fail ? O.Some([...a, c.value]) : O.None()))
+  return foldl_(cause, [] as readonly E[], (a, c) => (c._tag === CauseTag.Fail ? O.some([...a, c.value]) : O.none()))
 }
 
 /**
@@ -861,7 +860,7 @@ export function failures<E>(cause: Cause<E>): ReadonlyArray<E> {
  * by this `Cause`.
  */
 export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
-  return foldl_(cause, new Set(), (s, c) => (c._tag === CauseTag.Interrupt ? O.Some(s.add(c.fiberId)) : O.None()))
+  return foldl_(cause, new Set(), (s, c) => (c._tag === CauseTag.Interrupt ? O.some(s.add(c.fiberId)) : O.none()))
 }
 
 /**
@@ -871,9 +870,77 @@ export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
 export function interruptedOnly<E>(cause: Cause<E>): boolean {
   return pipe(
     cause,
-    find((c) => (died(c) || failed(c) ? O.Some(false) : O.None())),
+    find((c) => (died(c) || failed(c) ? O.some(false) : O.none())),
     O.getOrElse(() => true)
   )
+}
+
+/**
+ * @internal
+ */
+function keepDefectsEval<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
+  switch (cause._tag) {
+    case CauseTag.Empty: {
+      return Ev.now(O.none())
+    }
+    case CauseTag.Fail: {
+      return Ev.now(O.none())
+    }
+    case CauseTag.Interrupt: {
+      return Ev.now(O.none())
+    }
+    case CauseTag.Die: {
+      return Ev.now(O.some(cause))
+    }
+    case CauseTag.Then: {
+      return Ev.crossWith_(
+        Ev.defer(() => keepDefectsEval(cause.left)),
+        Ev.defer(() => keepDefectsEval(cause.right)),
+        (lefts, rights) => {
+          if (lefts._tag === 'Some' && rights._tag === 'Some') {
+            return O.some(then(lefts.value, rights.value))
+          } else if (lefts._tag === 'Some') {
+            return lefts
+          } else if (rights._tag === 'Some') {
+            return rights
+          } else {
+            return O.none()
+          }
+        }
+      )
+    }
+    case CauseTag.Both: {
+      return Ev.crossWith_(
+        Ev.defer(() => keepDefectsEval(cause.left)),
+        Ev.defer(() => keepDefectsEval(cause.right)),
+        (lefts, rights) => {
+          if (lefts._tag === 'Some' && rights._tag === 'Some') {
+            return O.some(both(lefts.value, rights.value))
+          } else if (lefts._tag === 'Some') {
+            return lefts
+          } else if (rights._tag === 'Some') {
+            return rights
+          } else {
+            return O.none()
+          }
+        }
+      )
+    }
+    case CauseTag.Traced: {
+      return Ev.map_(
+        Ev.defer(() => keepDefectsEval(cause.cause)),
+        O.map((c) => traced(c, cause.trace))
+      )
+    }
+  }
+}
+
+/**
+ * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
+ * return only `Die` cause/finalizer defects.
+ */
+export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
+  return keepDefectsEval(cause).value
 }
 
 /**
@@ -973,16 +1040,16 @@ export function stripInterrupts<E>(cause: Cause<E>): Cause<E> {
 function stripSomeDefectsEval<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Eval<O.Option<Cause<E>>> {
   switch (cause._tag) {
     case CauseTag.Empty: {
-      return Ev.now(O.None())
+      return Ev.now(O.none())
     }
     case CauseTag.Interrupt: {
-      return Ev.now(O.Some(interrupt(cause.fiberId)))
+      return Ev.now(O.some(interrupt(cause.fiberId)))
     }
     case CauseTag.Fail: {
-      return Ev.now(O.Some(fail(cause.value)))
+      return Ev.now(O.some(fail(cause.value)))
     }
     case CauseTag.Die: {
-      return Ev.now(pf(cause.value) ? O.Some(die(cause.value)) : O.None())
+      return Ev.now(pf(cause.value) ? O.some(die(cause.value)) : O.none())
     }
     case CauseTag.Both: {
       return Ev.crossWith_(
@@ -991,11 +1058,11 @@ function stripSomeDefectsEval<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Ev
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
-              ? O.Some(both(left.value, right.value))
+              ? O.some(both(left.value, right.value))
               : left
             : right._tag === 'Some'
             ? right
-            : O.None()
+            : O.none()
         }
       )
     }
@@ -1006,11 +1073,11 @@ function stripSomeDefectsEval<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Ev
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
-              ? O.Some(then(left.value, right.value))
+              ? O.some(then(left.value, right.value))
               : left
             : right._tag === 'Some'
             ? right
-            : O.None()
+            : O.none()
         }
       )
     }
@@ -1031,87 +1098,19 @@ export function stripSomeDefects(pf: Predicate<unknown>): <E>(cause: Cause<E>) =
   return (cause) => stripSomeDefectsEval(cause, pf).value
 }
 
-/**
- * @internal
- */
-function keepDefectsEval<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
-  switch (cause._tag) {
-    case CauseTag.Empty: {
-      return Ev.now(O.None())
-    }
-    case CauseTag.Fail: {
-      return Ev.now(O.None())
-    }
-    case CauseTag.Interrupt: {
-      return Ev.now(O.None())
-    }
-    case CauseTag.Die: {
-      return Ev.now(O.Some(cause))
-    }
-    case CauseTag.Then: {
-      return Ev.crossWith_(
-        Ev.defer(() => keepDefectsEval(cause.left)),
-        Ev.defer(() => keepDefectsEval(cause.right)),
-        (lefts, rights) => {
-          if (lefts._tag === 'Some' && rights._tag === 'Some') {
-            return O.Some(then(lefts.value, rights.value))
-          } else if (lefts._tag === 'Some') {
-            return lefts
-          } else if (rights._tag === 'Some') {
-            return rights
-          } else {
-            return O.None()
-          }
-        }
-      )
-    }
-    case CauseTag.Both: {
-      return Ev.crossWith_(
-        Ev.defer(() => keepDefectsEval(cause.left)),
-        Ev.defer(() => keepDefectsEval(cause.right)),
-        (lefts, rights) => {
-          if (lefts._tag === 'Some' && rights._tag === 'Some') {
-            return O.Some(both(lefts.value, rights.value))
-          } else if (lefts._tag === 'Some') {
-            return lefts
-          } else if (rights._tag === 'Some') {
-            return rights
-          } else {
-            return O.None()
-          }
-        }
-      )
-    }
-    case CauseTag.Traced: {
-      return Ev.map_(
-        Ev.defer(() => keepDefectsEval(cause.cause)),
-        O.map((c) => traced(c, cause.trace))
-      )
-    }
-  }
-}
-
-/**
- * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
- * return only `Die` cause/finalizer defects.
- */
-export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
-  return keepDefectsEval(cause).value
-}
-
 function sequenceCauseEitherEval<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.Either<Cause<E>, A>> {
   switch (cause._tag) {
     case CauseTag.Empty: {
-      return Ev.now(E.Left(empty))
+      return Ev.now(E.left(empty))
     }
     case CauseTag.Interrupt: {
-      return Ev.now(E.Left(cause))
+      return Ev.now(E.left(cause))
     }
     case CauseTag.Fail: {
-      return Ev.now(cause.value._tag === 'Left' ? E.Left(fail(cause.value.left)) : E.Right(cause.value.right))
+      return Ev.now(cause.value._tag === 'Left' ? E.left(fail(cause.value.left)) : E.right(cause.value.right))
     }
     case CauseTag.Die: {
-      return Ev.now(E.Left(cause))
+      return Ev.now(E.left(cause))
     }
     case CauseTag.Then: {
       return Ev.crossWith_(
@@ -1120,9 +1119,9 @@ function sequenceCauseEitherEval<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.
         (lefts, rights) => {
           return lefts._tag === 'Left'
             ? rights._tag === 'Right'
-              ? E.Right(rights.right)
-              : E.Left(then(lefts.left, rights.left))
-            : E.Right(lefts.right)
+              ? E.right(rights.right)
+              : E.left(then(lefts.left, rights.left))
+            : E.right(lefts.right)
         }
       )
     }
@@ -1133,9 +1132,9 @@ function sequenceCauseEitherEval<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.
         (lefts, rights) => {
           return lefts._tag === 'Left'
             ? rights._tag === 'Right'
-              ? E.Right(rights.right)
-              : E.Left(both(lefts.left, rights.left))
-            : E.Right(lefts.right)
+              ? E.right(rights.right)
+              : E.left(both(lefts.left, rights.left))
+            : E.right(lefts.right)
         }
       )
     }
@@ -1158,16 +1157,16 @@ export function sequenceCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Eithe
 function sequenceCauseOptionEval<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option<Cause<E>>> {
   switch (cause._tag) {
     case CauseTag.Empty: {
-      return Ev.now(O.Some(empty))
+      return Ev.now(O.some(empty))
     }
     case CauseTag.Interrupt: {
-      return Ev.now(O.Some(cause))
+      return Ev.now(O.some(cause))
     }
     case CauseTag.Fail: {
       return Ev.now(O.map_(cause.value, fail))
     }
     case CauseTag.Die: {
-      return Ev.now(O.Some(cause))
+      return Ev.now(O.some(cause))
     }
     case CauseTag.Then: {
       return Ev.crossWith_(
@@ -1176,11 +1175,11 @@ function sequenceCauseOptionEval<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option
         (lefts, rights) => {
           return lefts._tag === 'Some'
             ? rights._tag === 'Some'
-              ? O.Some(then(lefts.value, rights.value))
+              ? O.some(then(lefts.value, rights.value))
               : lefts
             : rights._tag === 'Some'
             ? rights
-            : O.None()
+            : O.none()
         }
       )
     }
@@ -1191,11 +1190,11 @@ function sequenceCauseOptionEval<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option
         (lefts, rights) => {
           return lefts._tag === 'Some'
             ? rights._tag === 'Some'
-              ? O.Some(both(lefts.value, rights.value))
+              ? O.some(both(lefts.value, rights.value))
               : lefts
             : rights._tag === 'Some'
             ? rights
-            : O.None()
+            : O.none()
         }
       )
     }
@@ -1224,8 +1223,8 @@ export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
   return pipe(
     cause,
     failureOption,
-    O.map(E.Left),
-    O.getOrElse(() => E.Right(cause as Cause<never>)) // no E inside this cause, can safely cast
+    O.map(E.left),
+    O.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
   )
 }
 
@@ -1241,7 +1240,7 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
       O.map(f),
       O.alt(() =>
         interrupted(cause)
-          ? O.Some<unknown>(
+          ? O.some<unknown>(
               new InterruptedException(
                 'Interrupted by fibers: ' +
                   Array.from(interruptors(cause))
@@ -1250,7 +1249,7 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
                     .join(', ')
               )
             )
-          : O.None()
+          : O.none()
       ),
       O.alt(() => A.head(defects(cause))),
       O.getOrElse(() => new InterruptedException('Interrupted'))
@@ -1390,16 +1389,8 @@ const renderError = (error: Error): string[] => lines(error.stack ? error.stack 
 const renderDie = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
   Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
-const renderDieUnknown = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
-  Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
-
 const renderFailure = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
   Sequential([Failure(['A checked error was not handled.', '', ...error, ...renderTrace(trace, traceRenderer)])])
-
-const renderFailError = (error: Error, trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
-  Sequential([
-    Failure(['A checked error was not handled.', '', ...renderError(error), ...renderTrace(trace, traceRenderer)])
-  ])
 
 const renderToString = (u: unknown): string => {
   if (typeof u === 'object' && u != null && 'toString' in u && typeof u['toString'] === 'function') {
@@ -1416,16 +1407,16 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<S
       }
       case CauseTag.Fail: {
         return cause.value instanceof Error
-          ? renderFailure(renderer.renderError(cause.value), O.None(), renderer.renderTrace)
-          : renderFailure(renderer.renderFailure(cause.value), O.None(), renderer.renderTrace)
+          ? renderFailure(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
+          : renderFailure(renderer.renderFailure(cause.value), O.none(), renderer.renderTrace)
       }
       case CauseTag.Die: {
         return cause.value instanceof Error
-          ? renderDie(renderer.renderError(cause.value), O.None(), renderer.renderTrace)
-          : renderDie(renderer.renderUnknown(cause.value), O.None(), renderer.renderTrace)
+          ? renderDie(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
+          : renderDie(renderer.renderUnknown(cause.value), O.none(), renderer.renderTrace)
       }
       case CauseTag.Interrupt: {
-        return renderInterrupt(cause.fiberId, O.None(), renderer.renderTrace)
+        return renderInterrupt(cause.fiberId, O.none(), renderer.renderTrace)
       }
       case CauseTag.Then: {
         return Sequential(yield* _(linearSegments(cause, renderer)))
@@ -1436,19 +1427,19 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<S
       case CauseTag.Traced: {
         switch (cause.cause._tag) {
           case CauseTag.Fail: {
-            return renderFailure(renderer.renderFailure(cause.cause.value), O.Some(cause.trace), renderer.renderTrace)
+            return renderFailure(renderer.renderFailure(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
           }
           case CauseTag.Die: {
-            return renderDie(renderer.renderUnknown(cause.cause.value), O.Some(cause.trace), renderer.renderTrace)
+            return renderDie(renderer.renderUnknown(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
           }
           case CauseTag.Interrupt: {
-            return renderInterrupt(cause.cause.fiberId, O.Some(cause.trace), renderer.renderTrace)
+            return renderInterrupt(cause.cause.fiberId, O.some(cause.trace), renderer.renderTrace)
           }
           default: {
             return Sequential([
               Failure([
                 'An error was rethrown with a new trace.',
-                ...renderTrace(O.Some(cause.trace), renderer.renderTrace)
+                ...renderTrace(O.some(cause.trace), renderer.renderTrace)
               ]),
               ...(yield* _(causeToSequential(cause.cause, renderer))).all
             ])
@@ -1618,23 +1609,23 @@ export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Ca
     pushing: while (true) {
       switch (c._tag) {
         case CauseTag.Empty:
-          result = E.Left(empty)
+          result = E.left(empty)
           break pushing
         case CauseTag.Traced:
           stack = makeStack(new FCEStackFrameTraced(c), stack)
           c     = c.cause
           continue pushing
         case CauseTag.Interrupt:
-          result = E.Left(interrupt(c.fiberId))
+          result = E.left(interrupt(c.fiberId))
           break pushing
         case CauseTag.Die:
-          result = E.Left(c)
+          result = E.left(c)
           break pushing
         case CauseTag.Fail:
           result = E.match_(
             c.value,
-            (l) => E.Left(fail(l)),
-            (r) => E.Right(r)
+            (l) => E.left(fail(l)),
+            (r) => E.right(r)
           )
           break pushing
         case CauseTag.Then:
@@ -1668,15 +1659,15 @@ export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Ca
           const l = top.leftResult
 
           if (E.isLeft(l) && E.isLeft(result)) {
-            result = E.Left(then(l.left, result.left))
+            result = E.left(then(l.left, result.left))
           }
 
           if (E.isRight(l)) {
-            result = E.Right(l.right)
+            result = E.right(l.right)
           }
 
           if (E.isRight(result)) {
-            result = E.Right(result.right)
+            result = E.right(result.right)
           }
 
           continue popping
@@ -1689,15 +1680,15 @@ export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Ca
           const l = top.leftResult
 
           if (E.isLeft(l) && E.isLeft(result)) {
-            result = E.Left(both(l.left, result.left))
+            result = E.left(both(l.left, result.left))
           }
 
           if (E.isRight(l)) {
-            result = E.Right(l.right)
+            result = E.right(l.right)
           }
 
           if (E.isRight(result)) {
-            result = E.Right(result.right)
+            result = E.right(result.right)
           }
 
           continue popping
@@ -1767,23 +1758,23 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
     pushing: while (true) {
       switch (c._tag) {
         case CauseTag.Empty:
-          result = O.Some(empty)
+          result = O.some(empty)
           break pushing
         case CauseTag.Traced:
           stack = makeStack(new FCOStackFrameTraced(c), stack)
           c     = c.cause
           continue pushing
         case CauseTag.Interrupt:
-          result = O.Some(interrupt(c.fiberId))
+          result = O.some(interrupt(c.fiberId))
           break pushing
         case CauseTag.Die:
-          result = O.Some(c)
+          result = O.some(c)
           break pushing
         case CauseTag.Fail:
           result = O.match_(
             c.value,
-            () => O.None(),
-            (r) => O.Some(fail(r))
+            () => O.none(),
+            (r) => O.some(fail(r))
           )
           break pushing
         case CauseTag.Then:
@@ -1817,18 +1808,18 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
           const l = top.leftResult
 
           if (O.isSome(l) && O.isSome(result)) {
-            result = O.Some(then(l.value, result.value))
+            result = O.some(then(l.value, result.value))
           }
 
           if (O.isNone(l) && O.isSome(result)) {
-            result = O.Some(result.value)
+            result = O.some(result.value)
           }
 
           if (O.isSome(l) && O.isNone(result)) {
-            result = O.Some(l.value)
+            result = O.some(l.value)
           }
 
-          result = O.None()
+          result = O.none()
 
           continue popping
         }
@@ -1840,18 +1831,18 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
           const l = top.leftResult
 
           if (O.isSome(l) && O.isSome(result)) {
-            result = O.Some(both(l.value, result.value))
+            result = O.some(both(l.value, result.value))
           }
 
           if (O.isNone(l) && O.isSome(result)) {
-            result = O.Some(result.value)
+            result = O.some(result.value)
           }
 
           if (O.isSome(l) && O.isNone(result)) {
-            result = O.Some(l.value)
+            result = O.some(l.value)
           }
 
-          result = O.None()
+          result = O.none()
 
           continue popping
         }

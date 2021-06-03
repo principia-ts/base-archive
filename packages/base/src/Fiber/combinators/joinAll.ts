@@ -1,3 +1,4 @@
+import type { Chunk } from '../../Chunk'
 import type { Fiber } from '../core'
 
 import * as I from '../internal/io'
@@ -8,5 +9,6 @@ import { awaitAll } from './awaitAll'
  * Attempting to join a fiber that has erred will result in
  * a catchable error, _if_ that error does not result from interruption.
  */
-export const joinAllFibers = <E, A>(as: Iterable<Fiber<E, A>>) =>
-  I.tap_(I.bind_(awaitAll(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+export function joinAll<E, A>(as: Iterable<Fiber<E, A>>): I.FIO<E, Chunk<A>> {
+  return I.tap_(I.bind_(awaitAll(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+}

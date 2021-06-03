@@ -184,7 +184,7 @@ export function dies(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
     'dies',
     [param(assertion0)],
     assertion0,
-    Ex.match(C.dieOption, () => O.None())
+    Ex.match(C.dieOption, () => O.none())
   )
 }
 
@@ -197,7 +197,7 @@ export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
     'fails',
     [param(assertion)],
     assertion,
-    Ex.match(flow(C.failures, A.head), () => O.None())
+    Ex.match(flow(C.failures, A.head), () => O.none())
   )
 }
 
@@ -213,17 +213,20 @@ export function forall<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
 
 export function hasField<A, B>(name: string, proj: (a: A) => B, assertion: Assertion<B>): Assertion<A> {
   return assertionRec('hasField', [param(quoted(name)), param(field(name)), param(assertion)], assertion, (actual) =>
-    O.Some(proj(actual))
+    O.some(proj(actual))
   )
 }
 
 export function hasMessage(message: Assertion<string>): Assertion<Error> {
-  return assertionRec('hasMessage', [param(message)], message, (error) => O.Some(error.message))
+  return assertionRec('hasMessage', [param(message)], message, (error) => O.some(error.message))
 }
 
 export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
   const show = pipe(getShow(custom), O.map(A.getShow), O.toUndefined)
-  const eq   = pipe(getEq(custom), O.getOrElse(() => St.DefaultEq))
+  const eq   = pipe(
+    getEq(custom),
+    O.getOrElse(() => St.DefaultEq)
+  )
   return assertion(
     'endsWith',
     [param(suffix, show)],
@@ -245,7 +248,10 @@ export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Asser
 
 export function equalTo<A>(expected: WidenLiteral<A>, custom?: Custom<WidenLiteral<A>>): Assertion<WidenLiteral<A>> {
   const show = pipe(getShow(custom), O.toUndefined)
-  const eq   = pipe(getEq(custom), O.getOrElse(() => St.DefaultEq))
+  const eq   = pipe(
+    getEq(custom),
+    O.getOrElse(() => St.DefaultEq)
+  )
   return assertion('equalTo', [param(expected, show)], (actual) => eq.equals_(actual, expected))
 }
 
@@ -256,7 +262,7 @@ export function isLeft<A>(assertion: Assertion<A>): Assertion<E.Either<A, any>> 
     'isLeft',
     [param(assertion)],
     assertion,
-    E.match(O.Some, () => O.None())
+    E.match(O.some, () => O.none())
   )
 }
 
@@ -267,7 +273,7 @@ export function isRight<A>(assertion: Assertion<A>): Assertion<E.Either<any, A>>
     'isRight',
     [param(assertion)],
     assertion,
-    E.match(() => O.None(), O.Some)
+    E.match(() => O.none(), O.some)
   )
 }
 
@@ -284,6 +290,6 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
     'succeeds',
     [param(assertion)],
     assertion,
-    Ex.match(() => O.None(), O.Some)
+    Ex.match(() => O.none(), O.some)
   )
 }

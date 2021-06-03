@@ -207,7 +207,7 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
   > => {
     const arr = toArray(r)
     const len = arr.length
-    return U.unfold(0, (b) => (b < len ? O.Some([arr[b], b + 1]) : O.None()))
+    return U.unfold(0, (b) => (b < len ? O.some([arr[b], b + 1]) : O.none()))
   }
 }
 
@@ -845,9 +845,9 @@ export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.O
   if (!has_(r, k)) {
     const mut_out = Object.assign({}, r) as Record<string, A>
     mut_out[k]    = a
-    return O.Some(mut_out)
+    return O.some(mut_out)
   }
-  return O.None()
+  return O.none()
 }
 
 export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
@@ -894,11 +894,11 @@ export function modifyAt_<A>(
   f: (a: A) => A
 ): O.Option<ReadonlyRecord<string, A>> {
   if (!has_(r, k)) {
-    return O.None()
+    return O.none()
   }
   const mut_out = Object.assign({}, r) as Record<string, A>
   mut_out[k]    = f(r[k])
-  return O.Some(mut_out)
+  return O.some(mut_out)
 }
 
 export function modifyAt<A>(
@@ -909,7 +909,7 @@ export function modifyAt<A>(
 }
 
 export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<A> {
-  return _hasOwnProperty.call(r, k) ? O.Some(r[k]) : O.None()
+  return _hasOwnProperty.call(r, k) ? O.some(r[k]) : O.none()
 }
 
 export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<A> {
@@ -919,7 +919,7 @@ export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option
 export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
-  return O.isNone(oa) ? O.None() : O.Some([oa.value, deleteAtk(r)])
+  return O.isNone(oa) ? O.none() : O.some([oa.value, deleteAtk(r)])
 }
 
 export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {

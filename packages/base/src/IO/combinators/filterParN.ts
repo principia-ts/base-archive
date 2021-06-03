@@ -24,7 +24,7 @@ export function filterParN_<A, R, E>(as: Iterable<A>, n: number, f: (a: A) => IO
     as,
     foreachParN(
       n,
-      traceAs(f, (a) => map_(f(a), (b) => (b ? O.Some(a) : O.None())))
+      traceAs(f, (a) => map_(f(a), (b) => (b ? O.some(a) : O.none())))
     ),
     map(C.compact)
   )

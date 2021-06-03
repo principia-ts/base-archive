@@ -130,7 +130,7 @@ export class GlobalScope extends CommonScope<never> {
     this.unsafeExtend = this.unsafeExtend.bind(this)
   }
 
-  private unsafeEnsureResult = E.Right(new Key(I.effectTotal(() => true)))
+  private unsafeEnsureResult = E.right(new Key(I.effectTotal(() => true)))
 
   private ensureResult = I.effectTotal(() => this.unsafeEnsureResult)
 
@@ -242,7 +242,7 @@ export class LocalScope<A> extends CommonScope<A> {
   unsafeEnsure(finalizer: (_: A) => UIO<any>): E.Either<A, Key> {
     if (this.unsafeClosed) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return E.Left(this.exitValue.get!)
+      return E.left(this.exitValue.get!)
     }
 
     const key = new Key()
@@ -250,7 +250,7 @@ export class LocalScope<A> extends CommonScope<A> {
 
     this.finalizers.set(key, new OrderedFinalizer(this.finalizerCount.incrementAndGet(), finalizer))
 
-    return E.Right(key)
+    return E.right(key)
   }
 
   unsafeAddRef(): boolean {

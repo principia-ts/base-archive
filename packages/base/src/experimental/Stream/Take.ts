@@ -155,7 +155,7 @@ export function chunk<A>(as: A.Chunk<A>): Take<never, A> {
  * Creates a failing `Take<E, unknown>` with the specified failure.
  */
 export function fail<E>(e: E): Take<E, never> {
-  return new Take(Ex.fail(O.Some(e)))
+  return new Take(Ex.fail(O.some(e)))
 }
 
 /**
@@ -178,7 +178,7 @@ export function fromPull<R, E, A>(pull: Pull<R, E, A>): T.URIO<R, Take<E, A>> {
  * Creates a failing `Take<E, never>` with the specified cause.
  */
 export function halt<E>(c: C.Cause<E>): Take<E, never> {
-  return new Take(Ex.halt(C.map_(c, O.Some)))
+  return new Take(Ex.halt(C.map_(c, O.some)))
 }
 
 /**
@@ -199,10 +199,10 @@ export function dieMessage(msg: string): Take<never, never> {
  * Creates a `Take<E, A>` from `Exit<E, A>`.
  */
 export function fromExit<E, A>(exit: Ex.Exit<E, A>): Take<E, A> {
-  return new Take(Ex.map_(Ex.mapError_(exit, O.Some), A.single))
+  return new Take(Ex.map_(Ex.mapError_(exit, O.some), A.single))
 }
 
 /**
  * End-of-stream marker
  */
-export const end: Take<never, never> = new Take(Ex.fail(O.None()))
+export const end: Take<never, never> = new Take(Ex.fail(O.none()))

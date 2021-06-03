@@ -30,7 +30,7 @@ const mergeExits =
       }
     })
 
-    return errored ? E.Left(errors.result()) : E.Right(results.result())
+    return errored ? E.left(errors.result()) : E.right(results.result())
   }
 
 /**

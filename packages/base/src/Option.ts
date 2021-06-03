@@ -46,7 +46,7 @@ type URI = [HKT.URI<OptionURI>]
  * @category Constructors
  * @since 1.0.0
  */
-export const None = O.None
+export const none = O.none
 
 /**
  * Constructs a new `Option` holding a `Some` value.
@@ -54,7 +54,7 @@ export const None = O.None
  * @category Constructs
  * @since 1.0.0
  */
-export const Some = O.Some
+export const some = O.some
 
 /**
  * Constructs a new `Option` from a nullable value. If the value is `null` or `undefined`, returns `None`, otherwise
@@ -64,7 +64,7 @@ export const Some = O.Some
  * @since 1.0.0
  */
 export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>> {
-  return a == null ? None() : Some(a as NonNullable<A>)
+  return a == null ? none() : some(a as NonNullable<A>)
 }
 
 export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
@@ -81,9 +81,9 @@ export function fromNullableK<A extends ReadonlyArray<unknown>, B>(
  */
 export function tryCatch<A>(thunk: () => A): Option<A> {
   try {
-    return Some(thunk())
+    return some(thunk())
   } catch (_) {
-    return None()
+    return none()
   }
 }
 
@@ -122,7 +122,7 @@ export const fromPredicate = O.fromPredicate
  * @since 1.0.0
  */
 export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
-  return ma._tag === 'Left' ? None() : Some(ma.right)
+  return ma._tag === 'Left' ? none() : some(ma.right)
 }
 
 /*
@@ -218,11 +218,11 @@ export const getOrElse = O.getOrElse
 export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A, B>) => C): Option<C> {
   return fa._tag === 'None'
     ? fb._tag === 'None'
-      ? None()
-      : Some(f({ _tag: 'Right', right: fb.value }))
+      ? none()
+      : some(f({ _tag: 'Right', right: fb.value }))
     : fb._tag === 'None'
-    ? Some(f({ _tag: 'Left', left: fa.value }))
-    : Some(f({ _tag: 'Both', left: fa.value, right: fb.value }))
+    ? some(f({ _tag: 'Left', left: fa.value }))
+    : some(f({ _tag: 'Both', left: fa.value, right: fb.value }))
 }
 
 export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
@@ -276,7 +276,7 @@ export function alt<A>(fa2: () => Option<A>): (fa1: Option<A>) => Option<A> {
  * @since 1.0.0
  */
 export function pure<A>(a: A): Option<A> {
-  return Some(a)
+  return some(a)
 }
 
 /*
@@ -286,7 +286,7 @@ export function pure<A>(a: A): Option<A> {
  */
 
 export function fail<E = never, A = never>(_: E): Option<A> {
-  return None()
+  return none()
 }
 
 export function catchAll_<A, B>(fa: Option<A>, f: () => Option<B>): Option<A | B> {
@@ -312,7 +312,7 @@ export function catchSome<B>(f: () => Option<Option<B>>): <A>(fa: Option<A>) => 
 }
 
 export function catchMap_<A, B>(fa: Option<A>, f: () => B): Option<A | B> {
-  return catchAll_(fa, () => Some(f()))
+  return catchAll_(fa, () => some(f()))
 }
 
 export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
@@ -322,7 +322,7 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
 export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
   return catchAll_(
     map_(fa, (a) => ({ _tag: 'Right', right: a })),
-    () => Some({ _tag: 'Left', left: undefined })
+    () => some({ _tag: 'Left', left: undefined })
   )
 }
 
@@ -395,7 +395,7 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function crossWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
-  return fa._tag === 'Some' && fb._tag === 'Some' ? Some(f(fa.value, fb.value)) : None()
+  return fa._tag === 'Some' && fb._tag === 'Some' ? some(f(fa.value, fb.value)) : none()
 }
 
 /**
@@ -427,7 +427,7 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (f
 
 export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
   const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const)
-  return isNone(o) ? [None(), None()] : o.value
+  return isNone(o) ? [none(), none()] : o.value
 }
 
 export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
@@ -448,7 +448,7 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<Option<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 export function extend_<A, B>(wa: Option<A>, f: (wa: Option<A>) => B): Option<B> {
-  return isNone(wa) ? None() : Some(f(wa))
+  return isNone(wa) ? none() : some(f(wa))
 }
 
 /**
@@ -472,7 +472,7 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
 export function filter_<A, B extends A>(fa: Option<A>, refinement: P.Refinement<A, B>): Option<B>
 export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A>
 export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A> {
-  return isNone(fa) ? None() : predicate(fa.value) ? fa : None()
+  return isNone(fa) ? none() : predicate(fa.value) ? fa : none()
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: Option<A>) => Option<B>
@@ -509,7 +509,7 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>
 /**
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(fa) ? None() : f(fa.value)
+  return isNone(fa) ? none() : f(fa.value)
 }
 
 /**
@@ -567,7 +567,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A
  * @since 1.0.0
  */
 export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
-  return isNone(fa) ? fa : Some(f(fa.value))
+  return isNone(fa) ? fa : some(f(fa.value))
 }
 
 /**
@@ -650,7 +650,7 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
  */
 
 export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
-  return bind_(fa, (a) => (a._tag === 'Left' ? None() : Some(a.right)))
+  return bind_(fa, (a) => (a._tag === 'Left' ? none() : some(a.right)))
 }
 
 /*
@@ -662,7 +662,7 @@ export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
 export function getApplyMonoid<A>(M: P.Monoid<A>): P.Monoid<Option<A>> {
   return {
     ...getApplySemigroup(M),
-    nat: Some(M.nat)
+    nat: some(M.nat)
   }
 }
 
@@ -670,7 +670,7 @@ export function getFirstMonoid<A = never>(): P.Monoid<Option<A>> {
   return {
     combine_: (x, y) => (isNone(y) ? x : y),
     combine: (y) => (x) => isNone(y) ? x : y,
-    nat: None()
+    nat: none()
   }
 }
 
@@ -678,16 +678,16 @@ export function getLastMonoid<A = never>(): P.Monoid<Option<A>> {
   return {
     combine_: (x, y) => (isNone(x) ? y : x),
     combine: (y) => (x) => isNone(x) ? y : x,
-    nat: None()
+    nat: none()
   }
 }
 
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
-  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : Some(S.combine_(x.value, y.value)))
+  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : some(S.combine_(x.value, y.value)))
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y),
-    nat: None()
+    nat: none()
   }
 }
 
@@ -699,7 +699,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
 
 export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> {
   const combine_ = (x: Option<A>, y: Option<A>) =>
-    isSome(x) && isSome(y) ? Some(S.combine_(x.value, y.value)) : None()
+    isSome(x) && isSome(y) ? some(S.combine_(x.value, y.value)) : none()
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
@@ -731,7 +731,7 @@ export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
  * @since 1.0.0
  */
 export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) =>
-  isNone(ta) ? G.pure(None()) : P.pipe(f(ta.value), G.map(Some))
+  isNone(ta) ? G.pure(none()) : P.pipe(f(ta.value), G.map(some))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -747,7 +747,7 @@ export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI> = (G) => (fa) => isNone(fa) ? G.pure(None()) : P.pipe(fa.value, G.map(Some))
+export const sequence: P.SequenceFn<URI> = (G) => (fa) => isNone(fa) ? G.pure(none()) : P.pipe(fa.value, G.map(some))
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -756,7 +756,7 @@ export const sequence: P.SequenceFn<URI> = (G) => (fa) => isNone(fa) ? G.pure(No
  */
 
 export function unit(): Option<void> {
-  return Some(undefined)
+  return some(undefined)
 }
 
 /*
@@ -765,7 +765,7 @@ export function unit(): Option<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => isNone(wa) ? A.pure(None()) : f(wa.value)
+export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => isNone(wa) ? A.pure(none()) : f(wa.value)
 
 export const compactA: P.WitherFn<URI> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
@@ -777,7 +777,7 @@ export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) => {
       A.map((e) => P.tuple(getLeft(e), getRight(e)))
     )
   )
-  return isNone(o) ? A.pure(P.tuple(None(), None())) : o.value
+  return isNone(o) ? A.pure(P.tuple(none(), none())) : o.value
 }
 
 export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, f)
@@ -795,7 +795,7 @@ export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, 
  * @since 1.0.0
  */
 export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
-  return isNone(fa) ? None() : fromNullable(f(fa.value))
+  return isNone(fa) ? none() : fromNullable(f(fa.value))
 }
 
 /**
@@ -835,7 +835,7 @@ export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option
  * @since 1.0.0
  */
 export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
-  return fea._tag === 'Right' ? None() : Some(fea.left)
+  return fea._tag === 'Right' ? none() : some(fea.left)
 }
 
 /**
@@ -845,7 +845,7 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  * @since 1.0.0
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
-  return fea._tag === 'Left' ? None() : Some(fea.right)
+  return fea._tag === 'Left' ? none() : some(fea.right)
 }
 
 /*
@@ -867,7 +867,7 @@ export function getGuard<A>(guard: G.Guard<unknown, A>): G.Guard<unknown, Option
 export const Align = P.Align<URI>({
   map_,
   alignWith_,
-  nil: None
+  nil: none
 })
 
 export const Functor = P.Functor<URI>({
@@ -964,7 +964,7 @@ export const MonadExcept = P.MonadExcept<URI, HKT.Fix<'E', void>>({
 
 export const Do = P.Do(Monad)
 
-const of: Option<{}> = Some({})
+const of: Option<{}> = some({})
 export { of as do }
 
 /**

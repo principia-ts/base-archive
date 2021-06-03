@@ -82,12 +82,12 @@ const _loop = <R, E extends I, A, R1, I, O, R2, E2, A2>(
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<A2, A>> =>
   pipe(
     fa,
-    map(E.Right),
+    map(E.right),
     catchAll((e) =>
       pipe(
         driver.next(e),
         matchM(
-          () => pipe(driver.last, orDie, bind(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.Left))))),
+          () => pipe(driver.last, orDie, bind(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.left))))),
           () => _loop(fa, orElse, driver)
         )
       )

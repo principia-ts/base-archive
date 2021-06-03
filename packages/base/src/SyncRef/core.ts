@@ -91,8 +91,8 @@ export class Derived<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
         new Derived<EC, ED, C, D>((f) =>
           f(
             value,
-            (s) => E.match_(getEither(s), (e) => E.Left(eb(e)), bd),
-            (c) => E.bind_(ca(c), (a) => E.match_(setEither(a), (e) => E.Left(ea(e)), E.Right))
+            (s) => E.match_(getEither(s), (e) => E.left(eb(e)), bd),
+            (c) => E.bind_(ca(c), (a) => E.match_(setEither(a), (e) => E.left(ea(e)), E.right))
           )
         )
     )
@@ -110,13 +110,13 @@ export class Derived<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
         new DerivedAll<EC, ED, C, D>((f) =>
           f(
             value,
-            (s) => E.match_(getEither(s), (e) => E.Left(eb(e)), bd),
+            (s) => E.match_(getEither(s), (e) => E.left(eb(e)), bd),
             (c) => (s) =>
               pipe(
                 getEither(s),
-                E.match(flow(ec, E.Left), ca(c)),
+                E.match(flow(ec, E.left), ca(c)),
                 E.deunion,
-                E.bind((a) => pipe(setEither(a), E.match(flow(ea, E.Left), E.Right)))
+                E.bind((a) => pipe(setEither(a), E.match(flow(ea, E.left), E.right)))
               )
           )
         )
@@ -162,9 +162,9 @@ export class DerivedAll<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
             value,
             flow(
               getEither,
-              E.match((e) => E.Left(eb(e)), bd)
+              E.match((e) => E.left(eb(e)), bd)
             ),
-            (c) => (s) => E.bind_(ca(c), (a) => E.match_(setEither(a)(s), flow(ea, E.Left), E.Right))
+            (c) => (s) => E.bind_(ca(c), (a) => E.match_(setEither(a)(s), flow(ea, E.left), E.right))
           )
         )
     )
@@ -182,13 +182,13 @@ export class DerivedAll<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
         new DerivedAll((f) =>
           f(
             value,
-            (s) => E.match_(getEither(s), (e) => E.Left(eb(e)), bd),
+            (s) => E.match_(getEither(s), (e) => E.left(eb(e)), bd),
             (c) => (s) =>
               pipe(
                 getEither(s),
-                E.match((e) => E.Left(ec(e)), ca(c)),
+                E.match((e) => E.left(ec(e)), ca(c)),
                 E.deunion,
-                E.bind((a) => E.match_(setEither(a)(s), (e) => E.Left(ea(e)), E.Right))
+                E.bind((a) => E.match_(setEither(a)(s), (e) => E.left(ea(e)), E.right))
               )
           )
         )
@@ -206,8 +206,8 @@ export class DerivedAll<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
         modify((s) =>
           E.match_(
             setEither(a)(s),
-            (e) => [E.Left(e), s] as [E.Either<EA, void>, typeof s],
-            (s) => [E.Right(undefined), s]
+            (e) => [E.left(e), s] as [E.Either<EA, void>, typeof s],
+            (s) => [E.right(undefined), s]
           )
         ),
         S.refail
@@ -261,7 +261,7 @@ export function mapEither_<EA, EB, A, B, EC, C>(
   ref: SyncRef<EA, EB, A, B>,
   f: (_: B) => E.Either<EC, C>
 ): SyncRef<EA, EC | EB, A, C> {
-  return dimapEither_(ref, (a) => E.Right(a), f)
+  return dimapEither_(ref, (a) => E.right(a), f)
 }
 
 /**
@@ -278,7 +278,7 @@ export function mapEither<B, EC, C>(
  * Transforms the `get` value of the `SyncRef` with the specified function.
  */
 export function map_<EA, EB, A, B, C>(ref: SyncRef<EA, EB, A, B>, f: (_: B) => C): SyncRef<EA, EB, A, C> {
-  return mapEither_(ref, (b) => E.Right(f(b)))
+  return mapEither_(ref, (b) => E.right(f(b)))
 }
 
 /**
@@ -319,7 +319,7 @@ export function dimap_<EA, EB, A, B, C, D>(
   f: (_: C) => A,
   g: (_: B) => D
 ): SyncRef<EA, EB, C, D> {
-  return dimapEither_(ref, flow(f, E.Right), flow(g, E.Right))
+  return dimapEither_(ref, flow(f, E.right), flow(g, E.right))
 }
 
 export function dimap<A, B, C, D>(
@@ -333,7 +333,7 @@ export function lmapEither_<EA, EB, A, B, EC, C>(
   ref: SyncRef<EA, EB, A, B>,
   f: (_: C) => E.Either<EC, A>
 ): SyncRef<EC | EA, EB, C, B> {
-  return dimapEither_(ref, f, E.Right)
+  return dimapEither_(ref, f, E.right)
 }
 
 export function lmapEither<A, EC, C>(
@@ -365,7 +365,7 @@ export function collect_<EA, EB, A, B, C>(
   ref: SyncRef<EA, EB, A, B>,
   pf: (_: B) => O.Option<C>
 ): SyncRef<EA, O.Option<EB>, A, C> {
-  return ref.match(identity, O.Some, E.Right, (b) => E.fromOption_(pf(b), () => O.None()))
+  return ref.match(identity, O.some, E.right, (b) => E.fromOption_(pf(b), () => O.none()))
 }
 
 /**
@@ -388,7 +388,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
   ref: SyncRef<EA, EB, A, B>,
   f: (_: A1) => boolean
 ): SyncRef<O.Option<EA>, EB, A1, B> {
-  return ref.match(O.Some, identity, (a) => (f(a) ? E.Right(a) : E.Left(O.None())), E.Right)
+  return ref.match(O.some, identity, (a) => (f(a) ? E.right(a) : E.left(O.none())), E.right)
 }
 
 /**
@@ -411,7 +411,7 @@ export function filterOutput_<EA, EB, A, B>(
   ref: SyncRef<EA, EB, A, B>,
   f: (_: B) => boolean
 ): SyncRef<EA, O.Option<EB>, A, B> {
-  return ref.match(identity, O.Some, E.Right, (b) => (f(b) ? E.Right(b) : E.Left(O.None())))
+  return ref.match(identity, O.some, E.right, (b) => (f(b) ? E.right(b) : E.left(O.none())))
 }
 
 /**
@@ -520,15 +520,15 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 s,
                 getEither,
                 E.match(
-                  (e) => tuple(E.Left(e), s),
+                  (e) => tuple(E.left(e), s),
                   (a1) =>
                     pipe(f(a1), ([b, a2]) =>
                       pipe(
                         a2,
                         setEither,
                         E.match(
-                          (e) => tuple(E.Left(e), s),
-                          (s) => tuple(E.widenE<EA | EB>()(E.Right(b)), s)
+                          (e) => tuple(E.left(e), s),
+                          (s) => tuple(E.widenE<EA | EB>()(E.right(b)), s)
                         )
                       )
                     )
@@ -547,14 +547,14 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 s,
                 getEither,
                 E.match(
-                  (e) => tuple(E.Left(e), s),
+                  (e) => tuple(E.left(e), s),
                   (a1) =>
                     pipe(f(a1), ([b, a2]) =>
                       pipe(
                         setEither(a2)(s),
                         E.match(
-                          (e) => tuple(E.Left(e), s),
-                          (s) => tuple(E.widenE<EA | EB>()(E.Right(b)), s)
+                          (e) => tuple(E.left(e), s),
+                          (s) => tuple(E.widenE<EA | EB>()(E.right(b)), s)
                         )
                       )
                     )

@@ -13,7 +13,7 @@ export type Either<E, A> = Left<E> | Right<A>
 /**
  * @internal
  */
-export function Left<E, A = never>(e: E): Either<E, A> {
+export function left<E, A = never>(e: E): Either<E, A> {
   return {
     _tag: 'Left',
     left: e
@@ -23,7 +23,7 @@ export function Left<E, A = never>(e: E): Either<E, A> {
 /**
  * @internal
  */
-export function Right<E = never, A = never>(a: A): Either<E, A> {
+export function right<E = never, A = never>(a: A): Either<E, A> {
   return {
     _tag: 'Right',
     right: a

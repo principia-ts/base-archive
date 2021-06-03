@@ -33,7 +33,7 @@ export function cachedInvalidate_<R, E, A>(
   const trace = accessCallTrace()
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
-    const cache = yield* _(RefM.makeRefM<Option<readonly [number, Promise<E, A>]>>(O.None()))
+    const cache = yield* _(RefM.makeRefM<Option<readonly [number, Promise<E, A>]>>(O.none()))
     return yield* _(traceCall(I.succeed, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))))
   })
 }
@@ -88,7 +88,7 @@ function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   return I.gen(function* (_) {
     const p = yield* _(P.make<E, A>())
     yield* _(to(p)(fa))
-    return O.Some(tuple(start + ttl, p))
+    return O.some(tuple(start + ttl, p))
   })
 }
 
@@ -106,11 +106,11 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
             pipe(
               o,
               O.match(
-                () => O.Some(_compute(fa, ttl, time)),
+                () => O.some(_compute(fa, ttl, time)),
                 ([end]) =>
                   end - time <= 0
-                    ? O.Some(_compute(fa, ttl, time))
-                    : O.None<IO<R, never, Option<readonly [number, P.Promise<E, A>]>>>()
+                    ? O.some(_compute(fa, ttl, time))
+                    : O.none<IO<R, never, Option<readonly [number, P.Promise<E, A>]>>>()
               )
             )
           ),
@@ -122,5 +122,5 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
 }
 
 function _invalidate<E, A>(cache: RefM.URefM<Option<readonly [number, Promise<E, A>]>>): UIO<void> {
-  return cache.set(O.None())
+  return cache.set(O.none())
 }

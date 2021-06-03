@@ -5,9 +5,9 @@ import * as C from '../../Cause'
 import * as Ch from '../../Chunk/core'
 import * as Ex from '../../Exit'
 import { pipe } from '../../function'
-import { None, Some } from '../../Option'
+import { none, some } from '../../Option'
 import * as O from '../../Option'
-import { makeSynthetic } from '../core'
+import { syntheticFiber } from '../core'
 import * as I from '../internal/io'
 import { awaitAll } from './awaitAll'
 
@@ -15,8 +15,8 @@ import { awaitAll } from './awaitAll'
  * Collects all fibers into a single fiber producing an in-order list of the
  * results.
  */
-export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
-  makeSynthetic({
+export function collectAll<E, A>(fibers: Iterable<Fiber<E, A>>): Fiber<E, Chunk<A>> {
+  return syntheticFiber({
     _tag: 'SyntheticFiber',
     getRef: (ref) =>
       I.foldl_(fibers, ref.initial, (a, fiber) =>
@@ -38,15 +38,15 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
     poll: pipe(
       I.foreach_(fibers, (f) => f.poll),
       I.map(
-        Ch.foldr(Some(Ex.succeed(Ch.empty()) as Ex.Exit<E, Chunk<A>>), (a, b) =>
+        Ch.foldr(some(Ex.succeed(Ch.empty()) as Ex.Exit<E, Chunk<A>>), (a, b) =>
           O.match_(
             a,
-            () => None(),
+            () => none(),
             (ra) =>
               O.match_(
                 b,
-                () => None(),
-                (rb) => Some(Ex.crossWithCause_(ra, rb, (_a, _b) => Ch.prepend_(_b, _a), C.both))
+                () => none(),
+                (rb) => some(Ex.crossWithCause_(ra, rb, (_a, _b) => Ch.prepend_(_b, _a), C.both))
               )
           )
         )
@@ -54,3 +54,4 @@ export const collectAll = <E, A>(fibers: Iterable<Fiber<E, A>>) =>
     ),
     await: awaitAll(fibers)
   })
+}

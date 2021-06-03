@@ -214,26 +214,26 @@ function foldLoop<A, B>(
       switch (head._tag) {
         case FreeSemiringTag.Empty: {
           input = new LinkedList(parSeqs)
-          output.prepend(E.Right(onEmpty))
+          output.prepend(E.right(onEmpty))
           break
         }
         case FreeSemiringTag.Single: {
           input = new LinkedList(parSeqs)
-          output.prepend(E.Right(onSingle(head.value)))
+          output.prepend(E.right(onSingle(head.value)))
           break
         }
         case FreeSemiringTag.Then: {
           input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
-          output.prepend(E.Left(false))
+          output.prepend(E.left(false))
           break
         }
         case FreeSemiringTag.Both: {
           input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
-          output.prepend(E.Left(true))
+          output.prepend(E.left(true))
           break
         }
       }

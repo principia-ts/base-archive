@@ -463,9 +463,9 @@ export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F
       fa,
       fb,
       T.match(
-        (a) => f([O.Some(a), O.None()]),
-        (b) => f([O.None(), O.Some(b)]),
-        (a, b) => f([O.Some(a), O.Some(b)])
+        (a) => f([O.some(a), O.none()]),
+        (b) => f([O.none(), O.some(b)]),
+        (a, b) => f([O.some(a), O.some(b)])
       )
     )
 }

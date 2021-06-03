@@ -6,7 +6,7 @@ import { absurd, increment, pipe } from '../function'
 import * as I from '../IO/core'
 import * as M from '../Map'
 import * as O from '../Option'
-import { None, Some } from '../Option'
+import { none, some } from '../Option'
 import * as XR from '../Ref/core'
 
 export type Finalizer = (exit: Exit<any, any>) => I.IO<unknown, never, any>
@@ -43,11 +43,11 @@ export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Option<num
     XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
       switch (s._tag) {
         case 'Exited': {
-          return [I.map_(finalizer(s.exit), () => None()), new Exited(increment(s.nextKey), s.exit)]
+          return [I.map_(finalizer(s.exit), () => none()), new Exited(increment(s.nextKey), s.exit)]
         }
         case 'Running': {
           return [
-            I.pure(Some(s.nextKey)),
+            I.pure(some(s.nextKey)),
             new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
           ]
         }
@@ -98,7 +98,7 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
     XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
       switch (s._tag) {
         case 'Exited':
-          return [I.map_(finalizer(s.exit), () => None()), new Exited(s.nextKey, s.exit)]
+          return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)]
         case 'Running':
           return [
             I.succeed(M.lookup_(finalizers(s), key)),

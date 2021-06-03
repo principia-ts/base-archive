@@ -57,7 +57,8 @@ import {
   Read,
   Succeed,
   Supervise,
-  Yield } from './primitives'
+  Yield
+} from './primitives'
 
 export * from './primitives'
 
@@ -100,7 +101,7 @@ export function effectAsync<R, E, A>(
   return new EffectAsync(
     traceAs(register, (cb) => {
       register(cb)
-      return O.None()
+      return O.none()
     }),
     blockingOn
   )
@@ -403,7 +404,7 @@ export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
 export function fromOption<A>(m: () => Option<A>): FIO<Option<never>, A> {
   return bind_(
     effectTotal(m),
-    O.match(() => fail(O.None()), succeed)
+    O.match(() => fail(O.none()), succeed)
   )
 }
 
@@ -760,7 +761,7 @@ export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1
  */
 export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
-  return traceFrom(trace, match_)(ma, E.Left, E.Right)
+  return traceFrom(trace, match_)(ma, E.left, E.right)
 }
 
 /*
@@ -1313,7 +1314,7 @@ export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
  */
 export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
   const trace = accessCallTrace()
-  return traceCall(map_, trace)(ma, O.Some)
+  return traceCall(map_, trace)(ma, O.some)
 }
 
 /**
@@ -1328,7 +1329,7 @@ export function asSomeError<R, E, A>(ma: IO<R, E, A>): IO<R, O.Option<E>, A> {
   const trace = accessCallTrace()
   return mapError_(
     ma,
-    traceFrom(trace, (e) => O.Some(e))
+    traceFrom(trace, (e) => O.some(e))
   )
 }
 
@@ -2257,7 +2258,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return new Fork(ma, O.None(), O.None(), trace)
+  return new Fork(ma, O.none(), O.none(), trace)
 }
 
 /**
@@ -2286,7 +2287,7 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return (ma) => new Fork(ma, O.None(), O.Some(reportFailure), trace)
+  return (ma) => new Fork(ma, O.none(), O.some(reportFailure), trace)
 }
 
 /**
@@ -2298,10 +2299,10 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
   const trace = accessCallTrace()
   return matchCauseM_(
     ma,
-    traceFrom(trace, flow(C.map(O.Some), halt)),
+    traceFrom(trace, flow(C.map(O.some), halt)),
     traceFrom(
       trace,
-      O.match(() => fail(O.None()), pure)
+      O.match(() => fail(O.none()), pure)
     )
   )
 }
@@ -2609,8 +2610,8 @@ export function joinEither_<R, E, A, R1, E1, A1>(
       (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
         E.match_(
           _,
-          (r) => map_(giveAll_(ma, r), E.Left),
-          (r1) => map_(giveAll_(mb, r1), E.Right)
+          (r) => map_(giveAll_(ma, r), E.left),
+          (r1) => map_(giveAll_(mb, r1), E.right)
         )
     )
   )
@@ -2635,7 +2636,7 @@ export function joinEither<R1, E1, A1>(
  *  @trace 0
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return bind_(effectTotal(a), flow(E.Left, pure))
+  return bind_(effectTotal(a), flow(E.left, pure))
 }
 
 /**
@@ -2811,8 +2812,8 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
   const trace = accessCallTrace()
   return match_(
     io,
-    traceFrom(trace, () => O.None()),
-    traceFrom(trace, (a) => O.Some(a))
+    traceFrom(trace, () => O.none()),
+    traceFrom(trace, (a) => O.some(a))
   )
 }
 
@@ -2827,9 +2828,9 @@ export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> 
     ma,
     traceFrom(
       trace,
-      O.match(() => pure(O.None()), fail)
+      O.match(() => pure(O.none()), fail)
     ),
-    flow(O.Some, pure)
+    flow(O.some, pure)
   )
 }
 
@@ -2888,8 +2889,8 @@ export function orElseEither_<R, E, A, R1, E1, A1>(
 ): IO<R & R1, E1, E.Either<A, A1>> {
   return tryOrElse_(
     self,
-    traceAs(that, () => map_(that(), E.Right)),
-    (a) => succeed(E.Left(a))
+    traceAs(that, () => map_(that(), E.right)),
+    (a) => succeed(E.left(a))
   )
 }
 
@@ -2932,7 +2933,7 @@ export function orElseOption_<R, E, A, R1, E1, A1>(
     ma,
     traceAs(
       that,
-      O.match(that, (e) => fail(O.Some<E | E1>(e)))
+      O.match(that, (e) => fail(O.some<E | E1>(e)))
     )
   )
 }
@@ -3325,7 +3326,7 @@ export { _require as require }
  */
 export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return unrefineWith_(io, traceFrom(trace, O.Some), identity)
+  return unrefineWith_(io, traceFrom(trace, O.some), identity)
 }
 
 /**
@@ -3679,7 +3680,7 @@ export function unrefineWith_<R, E, A, E1, E2>(
       (cause): IO<R, E1 | E2, A> =>
         pipe(
           cause,
-          C.find((c) => (C.died(c) ? pf(c.value) : O.None())),
+          C.find((c) => (C.died(c) ? pf(c.value) : O.none())),
           O.match(() => pipe(cause, C.map(f), halt), fail)
         )
     )

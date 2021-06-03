@@ -105,18 +105,18 @@ export interface SyntheticFiber<E, A> extends CommonFiber<E, A> {
   _tag: 'SyntheticFiber'
 }
 
+/**
+ * A type helper for building a Synthetic Fiber
+ */
+export function syntheticFiber<E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> {
+  return _
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
  * -------------------------------------------------------------------------------------------------
  */
-
-/**
- * A type helper for building a Synthetic Fiber
- */
-export function makeSynthetic<E, A>(_: SyntheticFiber<E, A>): Fiber<E, A> {
-  return _
-}
 
 export function done<E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> {
   return {
@@ -125,12 +125,8 @@ export function done<E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> {
     getRef: (ref) => I.pure(ref.initial),
     inheritRefs: I.unit(),
     interruptAs: () => I.pure(exit),
-    poll: I.pure(O.Some(exit))
+    poll: I.pure(O.some(exit))
   }
-}
-
-export function succeed<A>(a: A): SyntheticFiber<never, A> {
-  return done(Ex.succeed(a))
 }
 
 export function fail<E>(e: E): SyntheticFiber<E, never> {
@@ -143,6 +139,10 @@ export function halt<E>(cause: C.Cause<E>) {
 
 export function interruptAs(id: FiberId) {
   return done(Ex.interrupt(id))
+}
+
+export function succeed<A>(a: A): SyntheticFiber<never, A> {
+  return done(Ex.succeed(a))
 }
 
 /*
@@ -181,13 +181,7 @@ export function match<E, A, B>(
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Functor
- * -------------------------------------------------------------------------------------------------
- */
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Unit Fiber
+ * Unit
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -288,7 +282,7 @@ export class Suspended {
 /**
  * @internal
  */
-export function withInterruptingSafe_(s: FiberStatus, b: boolean): Ev.Eval<FiberStatus> {
+export function withInterruptingEval(s: FiberStatus, b: boolean): Ev.Eval<FiberStatus> {
   return Ev.gen(function* (_) {
     switch (s._tag) {
       case 'Done': {
@@ -301,17 +295,20 @@ export function withInterruptingSafe_(s: FiberStatus, b: boolean): Ev.Eval<Fiber
         return new Running(b)
       }
       case 'Suspended': {
-        return new Suspended(yield* _(withInterruptingSafe_(s.previous, b)), s.interruptible, s.epoch, s.blockingOn)
+        return new Suspended(yield* _(withInterruptingEval(s.previous, b)), s.interruptible, s.epoch, s.blockingOn)
       }
     }
   })
 }
 
 export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
-  return (s) => withInterruptingSafe_(s, b).value
+  return (s) => withInterruptingEval(s, b).value
 }
 
-export function toFinishingSafe(s: FiberStatus): Ev.Eval<FiberStatus> {
+/**
+ * @internal
+ */
+export function toFinishingEval(s: FiberStatus): Ev.Eval<FiberStatus> {
   return Ev.gen(function* (_) {
     switch (s._tag) {
       case 'Done': {
@@ -324,14 +321,14 @@ export function toFinishingSafe(s: FiberStatus): Ev.Eval<FiberStatus> {
         return s
       }
       case 'Suspended': {
-        return yield* _(toFinishingSafe(s.previous))
+        return yield* _(toFinishingEval(s.previous))
       }
     }
   })
 }
 
 export function toFinishing(s: FiberStatus): FiberStatus {
-  return toFinishingSafe(s).value
+  return toFinishingEval(s).value
 }
 
 /*
@@ -347,12 +344,14 @@ export interface FiberDump {
   status: FiberStatus
 }
 
-export const FiberDump = (fiberId: FiberId, fiberName: Option<string>, status: FiberStatus): FiberDump => ({
-  _tag: 'FiberDump',
-  fiberId,
-  fiberName,
-  status
-})
+export function FiberDump(fiberId: FiberId, fiberName: Option<string>, status: FiberStatus): FiberDump {
+  return {
+    _tag: 'FiberDump',
+    fiberId,
+    fiberName,
+    status
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -360,4 +359,4 @@ export const FiberDump = (fiberId: FiberId, fiberName: Option<string>, status: F
  * -------------------------------------------------------------------------------------------------
  */
 
-export const fiberName = new FiberRef<O.Option<string>>(O.None(), identity, identity)
+export const fiberName = new FiberRef<O.Option<string>>(O.none(), identity, identity)

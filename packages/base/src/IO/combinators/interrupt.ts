@@ -9,11 +9,11 @@ import type { Canceler, FIO, IO, UIO } from '../core'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
-import { Left } from '../../Either'
+import { left } from '../../Either'
 import { join } from '../../Fiber/combinators/join'
 import { interruptible, uninterruptible } from '../../Fiber/core'
 import { flow, pipe } from '../../function'
-import { None, Some } from '../../Option'
+import { none, some } from '../../Option'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import { OneShot } from '../../util/support/OneShot'
 import {
@@ -270,12 +270,12 @@ export function effectAsyncInterruptEither<R, E, A>(
         effectAsyncOption<R, E, IO<R, E, A>>(
           traceAs(register, (k) => {
             started.set(true)
-            const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(None())
+            const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
             try {
               const res = register((io) => k(pure(io)))
               switch (res._tag) {
                 case 'Right': {
-                  ret.set(Some(pure(res.right)))
+                  ret.set(some(pure(res.right)))
                   break
                 }
                 case 'Left': {
@@ -307,7 +307,7 @@ export function effectAsyncInterrupt<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return effectAsyncInterruptEither<R, E, A>(
-    traceAs(register, (cb) => Left(register(cb))),
+    traceAs(register, (cb) => left(register(cb))),
     blockingOn
   )
 }
@@ -320,7 +320,7 @@ export function effectAsyncInterruptPromise<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return effectAsyncInterruptEither<R, E, A>(
-    traceAs(register, (cb) => Left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten))),
+    traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten))),
     blockingOn
   )
 }

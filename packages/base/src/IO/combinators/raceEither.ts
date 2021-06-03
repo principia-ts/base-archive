@@ -24,7 +24,7 @@ export function raceEither_<R, E, A, R1, E1, A1>(
   that: IO<R1, E1, A1>
 ): IO<R & R1, E | E1, Either<A, A1>> {
   const trace = accessCallTrace()
-  return traceCall(race_, trace)(I.map_(fa, E.Left), I.map_(that, E.Right))
+  return traceCall(race_, trace)(I.map_(fa, E.left), I.map_(that, E.right))
 }
 
 /**

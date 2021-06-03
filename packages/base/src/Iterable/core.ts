@@ -506,10 +506,10 @@ export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Optio
   let a: IteratorResult<A>
   while (!(a = as.next()).done) {
     if (predicate(a.value)) {
-      return O.Some(a.value)
+      return O.some(a.value)
     }
   }
-  return O.None()
+  return O.none()
 }
 
 export function findFirst<A, B extends A>(refinement: P.Refinement<A, B>): (ia: Iterable<A>) => Option<B>

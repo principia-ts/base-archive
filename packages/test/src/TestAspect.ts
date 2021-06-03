@@ -177,7 +177,7 @@ export function executionStrategy(exec: ExecutionStrategy): TestAspectPoly {
       S.transform_(
         spec,
         matchTag({
-          Suite: (s) => (O.isNone(s.exec) && predicate(s.label) ? new S.SuiteCase(s.label, s.specs, O.Some(exec)) : s),
+          Suite: (s) => (O.isNone(s.exec) && predicate(s.label) ? new S.SuiteCase(s.label, s.specs, O.some(exec)) : s),
           Test: (t) => t
         })
       )

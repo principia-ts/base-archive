@@ -183,11 +183,11 @@ export function updateAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) 
   return (m, k, a) => {
     const found = lookupWithKeyE_(m, k)
     if (O.isNone(found)) {
-      return O.None()
+      return O.none()
     }
     const r = new Map(m)
     r.set(found.value[0], a)
-    return O.Some(r)
+    return O.some(r)
   }
 }
 
@@ -203,11 +203,11 @@ export function modifyAt_<K>(
   return (m, k, f) => {
     const found = lookupWithKeyE_(m, k)
     if (O.isNone(found)) {
-      return O.None()
+      return O.none()
     }
     const r = new Map(m)
     r.set(found.value[0], f(found.value[1]))
-    return O.Some(r)
+    return O.some(r)
   }
 }
 
@@ -280,10 +280,10 @@ export function lookupWithKey_<K>(E: P.Eq<K>) {
     while (!(e = entries.next()).done) {
       const [ka, a] = e.value
       if (E.equals_(ka, k)) {
-        return O.Some([ka, a])
+        return O.some([ka, a])
       }
     }
-    return O.None()
+    return O.none()
   }
 }
 

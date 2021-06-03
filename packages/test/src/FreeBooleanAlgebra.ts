@@ -295,27 +295,27 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
   return E.match_(
     fold_<A, E.Either<FreeBooleanAlgebra<A>, FreeBooleanAlgebra<A>>>(
       ba,
-      (a) => E.Right(success(a)),
+      (a) => E.right(success(a)),
       (l, r) =>
         E.isRight(l)
           ? E.isRight(r)
-            ? E.Right(and_(l.right, r.right))
+            ? E.right(and_(l.right, r.right))
             : r
           : E.isRight(r)
           ? l
-          : E.Left(and_(l.left, r.left)),
+          : E.left(and_(l.left, r.left)),
       (l, r) =>
         E.isRight(l)
           ? E.isRight(r)
-            ? E.Right(or_(l.right, r.right))
+            ? E.right(or_(l.right, r.right))
             : l
           : E.isRight(r)
           ? r
-          : E.Left(or_(l.left, r.left)),
+          : E.left(or_(l.left, r.left)),
       E.swap
     ),
-    O.Some,
-    () => O.None()
+    O.some,
+    () => O.none()
   )
 }
 

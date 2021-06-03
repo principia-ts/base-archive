@@ -72,7 +72,7 @@ export const timing: TestAnnotation<number> = new TestAnnotation(Timing, 'timing
 export const Fibers = tag<Either<number, ReadonlyArray<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>>()
 
 export const fibers: TestAnnotation<Either<number, ReadonlyArray<URef<Set.HashSet<Fiber.RuntimeFiber<any, any>>>>>> =
-  new TestAnnotation(Fibers, 'fibers', E.Left(0), compose_)
+  new TestAnnotation(Fibers, 'fibers', E.left(0), compose_)
 
 function compose_<A>(
   left: Either<number, ReadonlyArray<A>>,
@@ -80,11 +80,11 @@ function compose_<A>(
 ): Either<number, ReadonlyArray<A>> {
   return E.isLeft(left)
     ? E.isLeft(right)
-      ? E.Left(left.left + right.left)
+      ? E.left(left.left + right.left)
       : right
     : E.isRight(left)
     ? E.isRight(right)
-      ? E.Right(A.concat_(left.right, right.right))
+      ? E.right(A.concat_(left.right, right.right))
       : right
     : absurd(undefined as never)
 }
