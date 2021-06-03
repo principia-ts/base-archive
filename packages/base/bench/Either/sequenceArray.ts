@@ -3,7 +3,7 @@ import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/Function'
 import { Suite } from 'benchmark'
 
-const testArray = pipe(A.range(0, 1000), A.map(E.Right))
+const testArray = pipe(A.range(0, 1000), A.map(E.right))
 
 console.log(testArray)
 

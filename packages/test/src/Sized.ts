@@ -22,7 +22,7 @@ export abstract class Sized {
   static live(size: number): Layer<unknown, never, Has<Sized>> {
     return L.fromEffect(SizedTag)(
       pipe(
-        FR.make(size),
+        FR.fiberRef(size),
         I.map(
           (fiberRef) =>
             new (class extends Sized {

@@ -19,7 +19,7 @@ import { to } from './to'
  */
 export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> {
   return pipe(
-    RefM.makeRefM(new Map<A, P.Promise<E, B>>()),
+    RefM.refM(new Map<A, P.Promise<E, B>>()),
     I.map(
       traceAs(
         f,
@@ -60,7 +60,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
      */
     <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
       pipe(
-        RefM.makeRefM(new Map<A, P.Promise<E, B>>()),
+        RefM.refM(new Map<A, P.Promise<E, B>>()),
         I.map(
           traceAs(
             f,

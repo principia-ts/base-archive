@@ -202,7 +202,7 @@ export function finalizerExit<R>(f: (exit: Ex.Exit<unknown, unknown>) => I.URIO<
 export function finalizerRef(initial: Finalizer) {
   const trace = accessCallTrace()
   return traceCall(makeExit_, trace)(
-    Ref.makeRef(initial),
+    Ref.ref(initial),
     traceFrom(trace, (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
   )
 }

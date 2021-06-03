@@ -256,8 +256,8 @@ export class TestClock implements Clock {
       pipe(
         M.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
           M.gen(function* (_) {
-            const ref  = yield* _(Ref.makeRef(data))
-            const refM = yield* _(RefM.makeRefM(Start))
+            const ref  = yield* _(Ref.ref(data))
+            const refM = yield* _(RefM.refM(Start))
             const test = yield* _(
               M.make_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )

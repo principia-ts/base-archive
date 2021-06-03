@@ -31,7 +31,7 @@ export function restartable<R, E, I, L, Z>(
   return M.gen(function* (_) {
     const switchSink  = yield* _(M.switchable<R, never, Push<R, E, I, L, Z>>())
     const initialSink = yield* _(switchSink(sink))
-    const currSink    = yield* _(XR.makeRef(initialSink))
+    const currSink    = yield* _(XR.ref(initialSink))
 
     const restart = I.bind_(switchSink(sink), currSink.set)
     const push    = (input: O.Option<Chunk<I>>) => I.bind_(currSink.get, (f) => f(input))

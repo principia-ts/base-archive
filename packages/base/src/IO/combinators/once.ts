@@ -4,7 +4,7 @@ import type { IO, UIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
-import { getAndSet_, makeRef } from '../../Ref'
+import { getAndSet_, ref } from '../../Ref'
 import * as I from '../core'
 
 /**
@@ -16,7 +16,7 @@ import * as I from '../core'
 export function once<R, E, A>(io: IO<R, E, A>): UIO<IO<R, E, void>> {
   const trace = accessCallTrace()
   return I.map_(
-    makeRef(true),
+    ref(true),
     traceFrom(trace, (ref) => I.whenM_(io, getAndSet_(ref, false)))
   )
 }

@@ -112,4 +112,4 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
   )
 }
 
-export const make = I.map_(XR.makeRef<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))
+export const make = I.map_(XR.ref<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))

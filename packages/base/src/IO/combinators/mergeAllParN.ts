@@ -27,7 +27,7 @@ export function mergeAllParN_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): IO<R, E, B> {
-  return bind_(XR.makeRef(b), (acc) =>
+  return bind_(XR.ref(b), (acc) =>
     bind_(
       foreachUnitParN_(
         fas,

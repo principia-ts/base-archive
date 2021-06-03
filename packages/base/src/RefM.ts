@@ -255,9 +255,9 @@ export function concrete<RA, RB, EA, EB, A>(_: RefM<RA, RB, EA, EB, A, A>) {
 /**
  * Creates a new `RefM` with the specified value.
  */
-export function makeRefM<A>(a: A): UIO<URefM<A>> {
+export function refM<A>(a: A): UIO<URefM<A>> {
   return I.gen(function* (_) {
-    const ref       = yield* _(R.makeRef(a))
+    const ref       = yield* _(R.ref(a))
     const semaphore = yield* _(S.make(1))
     return new AtomicM(ref, semaphore)
   })
@@ -266,8 +266,8 @@ export function makeRefM<A>(a: A): UIO<URefM<A>> {
 /**
  * Creates a new `RefM` with the specified value.
  */
-export function unsafeMakeRefM<A>(a: A): URefM<A> {
-  const ref       = R.unsafeMakeRef(a)
+export function unsafeRefM<A>(a: A): URefM<A> {
+  const ref       = R.unsafeRef(a)
   const semaphore = S.unsafeMake(1)
   return new AtomicM(ref, semaphore)
 }
@@ -276,8 +276,8 @@ export function unsafeMakeRefM<A>(a: A): URefM<A> {
  * Creates a new `RefM` with the specified value in the context of a
  * `Managed.`
  */
-export function makeManagedRefM<A>(a: A): UManaged<URefM<A>> {
-  return P.pipe(makeRefM(a), M.fromEffect)
+export function managedRefM<A>(a: A): UManaged<URefM<A>> {
+  return P.pipe(refM(a), M.fromEffect)
 }
 
 /**
@@ -286,7 +286,7 @@ export function makeManagedRefM<A>(a: A): UManaged<URefM<A>> {
  */
 export function dequeueRefM<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
   return I.gen(function* (_) {
-    const ref   = yield* _(makeRefM(a))
+    const ref   = yield* _(refM(a))
     const queue = yield* _(Q.makeUnbounded<A>())
     return P.tuple(
       P.pipe(

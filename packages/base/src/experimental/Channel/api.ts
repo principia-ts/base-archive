@@ -1872,7 +1872,7 @@ export function bracketExit_<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDo
   release: (a: Acquired, exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDone> {
   return pipe(
-    fromEffect(Ref.makeRef<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
+    fromEffect(Ref.ref<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
     bind((ref) =>
       pipe(
         fromEffect(I.makeUninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),

@@ -1,34 +1,68 @@
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
 
-export interface None {
-  readonly _tag: 'None'
+import { $equals, equals } from '../Structural/Equatable'
+import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
+import { isObject } from '../util/predicates'
+
+export const OptionTypeId = Symbol('@principia/base/Option')
+export type OptionTypeId = typeof OptionTypeId
+
+const _noneHash = hashString('@principia/base/Option/None')
+
+const _someHash = hashString('@principia/base/Option/Some')
+
+export class None {
+  readonly [OptionTypeId]: OptionTypeId = OptionTypeId
+  readonly _tag                         = 'None'
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  constructor() {}
+  [$equals](that: unknown): boolean {
+    return isNone(that)
+  }
+  get [$hash]() {
+    return _noneHash
+  }
 }
 
-export interface Some<A> {
-  readonly _tag: 'Some'
-  readonly value: A
+export class Some<A> {
+  readonly [OptionTypeId]: OptionTypeId = OptionTypeId
+  readonly _tag                         = 'Some'
+  constructor(readonly value: A) {}
+  [$equals](that: unknown): boolean {
+    return isSome(that) && equals(this.value, that.value)
+  }
+  get [$hash]() {
+    return combineHash(_someHash, hash(this.value))
+  }
 }
 
 export type Option<A> = None | Some<A>
+
+function isOption(u: unknown): u is Option<unknown> {
+  return isObject(u) && OptionTypeId in u
+}
+
+function isNone(u: unknown): u is None {
+  return isOption(u) && u._tag === 'None'
+}
+
+function isSome(u: unknown): u is Some<unknown> {
+  return isOption(u) && u._tag === 'Some'
+}
 
 /**
  * @internal
  */
 export function some<A>(a: A): Option<A> {
-  return {
-    _tag: 'Some',
-    value: a
-  }
+  return new Some(a)
 }
 
 /**
  * @internal
  */
 export function none<A = never>(): Option<A> {
-  return {
-    _tag: 'None'
-  }
+  return new None()
 }
 
 /**

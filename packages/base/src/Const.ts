@@ -31,7 +31,7 @@ export function make<E, A = never>(e: E): Const<E, A> {
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Semimonoidal
+ * Applicative
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -39,12 +39,11 @@ export function make<E, A = never>(e: E): Const<E, A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
-  type CE = HKT.Fix<'E', E>
-  const crossWith_: P.SemimonoidalFunctor<URI, CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
-  return P.SemimonoidalFunctor({
-    map_,
-    crossWith_
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
+  return P.Applicative({
+    ...getApply(M),
+    unit: () => make(undefined),
+    pure: <A>() => make<E, A>(M.nat)
   })
 }
 
@@ -64,41 +63,6 @@ export function getApply<E>(S: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
   return P.Apply({
     map_,
     ap_
-  })
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Monoidal
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
-  return P.MonoidalFunctor({
-    ...getSemimonoidalFunctor(M),
-    unit: () => make(M.nat)
-  })
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Applicative
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * @category Instances
- * @since 1.0.0
- */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
-  return P.Applicative({
-    ...getApply(M),
-    unit: () => make(undefined),
-    pure: <A>() => make<E, A>(M.nat)
   })
 }
 
@@ -196,6 +160,23 @@ export function getMonoid<E, A>(M: P.Monoid<E>): P.Monoid<Const<E, A>> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Monoidal
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
+  return P.MonoidalFunctor({
+    ...getSemimonoidalFunctor(M),
+    unit: () => make(M.nat)
+  })
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Ord
  * -------------------------------------------------------------------------------------------------
  */
@@ -234,6 +215,25 @@ export function getRing<E, A>(S: P.Ring<E>): P.Ring<Const<E, A>> {
  */
 export function getSemigroup<E, A>(S: P.Semigroup<E>): P.Semigroup<Const<E, A>> {
   return identity(S) as any
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Semimonoidal
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * @category Instances
+ * @since 1.0.0
+ */
+export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
+  type CE = HKT.Fix<'E', E>
+  const crossWith_: P.SemimonoidalFunctor<URI, CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
+  return P.SemimonoidalFunctor({
+    map_,
+    crossWith_
+  })
 }
 
 /*

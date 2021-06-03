@@ -94,8 +94,8 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
 
 export function make<R, E, A>(pull: I.IO<R, O.Option<E>, Chunk<A>>): I.IO<unknown, never, BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
-    const done   = yield* _(R.makeRef(false))
-    const cursor = yield* _(R.makeRef<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
+    const done   = yield* _(R.ref(false))
+    const cursor = yield* _(R.ref<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))
     return new BufferedPull(pull, done, cursor)
   })
 }

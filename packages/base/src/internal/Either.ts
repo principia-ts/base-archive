@@ -1,11 +1,35 @@
-export interface Left<E> {
-  readonly _tag: 'Left'
-  readonly left: E
+import { $equals, equals } from '../Structural/Equatable'
+import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
+import { isObject } from '../util/predicates'
+
+export const EitherTypeId = Symbol('@principia/base/Either')
+export type EitherTypeId = typeof EitherTypeId
+
+const _leftHash  = hashString('@principia/base/Either/Left')
+const _rightHash = hashString('@principia/base/Either/Right')
+
+export class Left<E> {
+  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
+  readonly _tag                         = 'Left'
+  constructor(readonly left: E) {}
+  [$equals](that: unknown): boolean {
+    return isLeft(that) && equals(this.left, that.left)
+  }
+  get [$hash](): number {
+    return combineHash(_leftHash, hash(this.left))
+  }
 }
 
-export interface Right<A> {
-  readonly _tag: 'Right'
-  readonly right: A
+export class Right<A> {
+  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
+  readonly _tag                         = 'Right'
+  constructor(readonly right: A) {}
+  [$equals](that: unknown): boolean {
+    return isRight(that) && equals(this.right, that.right)
+  }
+  get [$hash]() {
+    return combineHash(_rightHash, hash(this.right))
+  }
 }
 
 export type Either<E, A> = Left<E> | Right<A>
@@ -13,21 +37,36 @@ export type Either<E, A> = Left<E> | Right<A>
 /**
  * @internal
  */
+function isEither(u: unknown): u is Either<unknown, unknown> {
+  return isObject(u) && EitherTypeId in u
+}
+
+/**
+ * @internal
+ */
+function isLeft(u: unknown): u is Left<unknown> {
+  return isEither(u) && u._tag === 'Left'
+}
+
+/**
+ * @internal
+ */
+function isRight(u: unknown): u is Right<unknown> {
+  return isEither(u) && u._tag === 'Right'
+}
+
+/**
+ * @internal
+ */
 export function left<E, A = never>(e: E): Either<E, A> {
-  return {
-    _tag: 'Left',
-    left: e
-  }
+  return new Left(e)
 }
 
 /**
  * @internal
  */
 export function right<E = never, A = never>(a: A): Either<E, A> {
-  return {
-    _tag: 'Right',
-    right: a
-  }
+  return new Right(a)
 }
 
 /**

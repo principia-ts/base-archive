@@ -1,5 +1,5 @@
-import type * as E from './Either'
 import type { Eq } from './Eq'
+import type { Both, Left, Right, These } from './internal/These'
 import type { TheseURI } from './Modules'
 import type * as O from './Option'
 import type { Show } from './Show'
@@ -15,23 +15,7 @@ import * as P from './prelude'
  * -------------------------------------------------------------------------------------------------
  */
 
-export interface Both<E, A> {
-  readonly _tag: 'Both'
-  readonly left: E
-  readonly right: A
-}
-
-export interface Left<E> {
-  readonly _tag: 'Left'
-  readonly left: E
-}
-
-export interface Right<A> {
-  readonly _tag: 'Right'
-  readonly right: A
-}
-
-export type These<E, A> = Left<E> | Right<A> | Both<E, A>
+export { Both, Left, Right, These } from './internal/These'
 
 export type V = HKT.V<'E', '+'>
 
@@ -48,15 +32,18 @@ type URI = [HKT.URI<TheseURI>]
  */
 export const left = T.left
 
-/**
- * @category constructors
- */
-export const right = T.right
+export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
+  return me._tag === 'None' ? left(e) : both(e, me.value)
+}
+
+export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
+  return (me) => leftOrThese_(me, e)
+}
 
 /**
  * @category constructors
  */
-export const both = T.both
+export const right = T.right
 
 export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
   return me._tag === 'None' ? right(a) : both(me.value, a)
@@ -66,13 +53,10 @@ export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
   return (me) => rightOrThese_(me, a)
 }
 
-export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
-  return me._tag === 'None' ? left(e) : both(e, me.value)
-}
-
-export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
-  return (me) => leftOrThese_(me, e)
-}
+/**
+ * @category constructors
+ */
+export const both = T.both
 
 export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<These<E, A>> {
   return fe._tag === 'None'
@@ -90,16 +74,16 @@ export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<Th
  * -------------------------------------------------------------------------------------------------
  */
 
-export function isLeft<E, A>(fa: These<E, A>): fa is E.Left<E> {
+export function isBoth<E, A>(fa: These<E, A>): fa is Both<E, A> {
+  return fa._tag === 'Both'
+}
+
+export function isLeft<E, A>(fa: These<E, A>): fa is Left<E> {
   return fa._tag === 'Left'
 }
 
-export function isRight<E, A>(fa: These<E, A>): fa is E.Right<A> {
+export function isRight<E, A>(fa: These<E, A>): fa is Right<A> {
   return fa._tag === 'Right'
-}
-
-export function isBoth<E, A>(fa: These<E, A>): fa is Both<E, A> {
-  return fa._tag === 'Both'
 }
 
 /*
@@ -107,6 +91,22 @@ export function isBoth<E, A>(fa: These<E, A>): fa is Both<E, A> {
  * Destructors
  * -------------------------------------------------------------------------------------------------
  */
+
+export function getLeft<E, A>(fa: These<E, A>): O.Option<E> {
+  return isRight(fa) ? none() : some(fa.left)
+}
+
+export function getLeftOnly<E, A>(fa: These<E, A>): O.Option<E> {
+  return isLeft(fa) ? some(fa.left) : none()
+}
+
+export function getRight<E, A>(fa: These<E, A>): O.Option<A> {
+  return isLeft(fa) ? none() : some(fa.right)
+}
+
+export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
+  return isRight(fa) ? some(fa.right) : none()
+}
 
 export const match_ = T.match_
 
@@ -118,22 +118,6 @@ export function toTuple_<E, A>(fa: These<E, A>, e: E, a: A): readonly [E, A] {
 
 export function toTuple<E, A>(e: E, a: A): (fa: These<E, A>) => readonly [E, A] {
   return (fa) => toTuple_(fa, e, a)
-}
-
-export function getLeft<E, A>(fa: These<E, A>): O.Option<E> {
-  return isRight(fa) ? none() : some(fa.left)
-}
-
-export function getRight<E, A>(fa: These<E, A>): O.Option<A> {
-  return isLeft(fa) ? none() : some(fa.right)
-}
-
-export function getLeftOnly<E, A>(fa: These<E, A>): O.Option<E> {
-  return isLeft(fa) ? some(fa.left) : none()
-}
-
-export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
-  return isRight(fa) ? some(fa.right) : none()
 }
 
 /*
@@ -394,15 +378,10 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI, V>()((_) => (G) => {
-  return (ta, f) => {
-    return isLeft(ta)
-      ? G.pure(ta)
-      : isRight(ta)
-      ? G.map_(f(ta.right), right)
-      : G.map_(f(ta.right), (b) => both(ta.left, b))
-  }
-})
+export const traverse_ = P.implementTraverse_<URI, V>()(
+  (_) => (G) => (ta, f) =>
+    isLeft(ta) ? G.pure(ta) : isRight(ta) ? G.map_(f(ta.right), right) : G.map_(f(ta.right), (b) => both(ta.left, b))
+)
 
 export const traverse: P.TraverseFn<URI, V> = (G) => {
   const traverseG_ = traverse_(G)

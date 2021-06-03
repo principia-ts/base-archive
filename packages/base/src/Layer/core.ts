@@ -988,9 +988,9 @@ export class MemoMap {
             return I.pure(tuple(cached, m))
           } else {
             return I.gen(function* (_) {
-              const observers    = yield* _(Ref.makeRef(0))
+              const observers    = yield* _(Ref.ref(0))
               const promise      = yield* _(P.make<E, A>())
-              const finalizerRef = yield* _(Ref.makeRef<Finalizer>(RelMap.noopFinalizer))
+              const finalizerRef = yield* _(Ref.ref<Finalizer>(RelMap.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {
@@ -1070,7 +1070,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {
   return pipe(
-    RefM.makeRefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
+    RefM.refM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
     I.bind((r) => I.effectTotal(() => new MemoMap(r)))
   )
 }

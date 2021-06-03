@@ -182,14 +182,14 @@ export function available(s: Semaphore): I.IO<unknown, never, number> {
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function make(permits: number): I.IO<unknown, never, Semaphore> {
-  return I.map_(Ref.makeRef<State>(E.right(permits)), (state) => new Semaphore(state))
+  return I.map_(Ref.ref<State>(E.right(permits)), (state) => new Semaphore(state))
 }
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
 export function unsafeMake(permits: number): Semaphore {
-  const state = Ref.unsafeMakeRef<State>(E.right(permits))
+  const state = Ref.unsafeRef<State>(E.right(permits))
 
   return new Semaphore(state)
 }

@@ -3,8 +3,12 @@ import type { Predicate } from './Predicate'
 import * as G from './Guard'
 import * as P from './prelude'
 
-export function invert(b: boolean): boolean {
-  return !b
+export function allPass_<A>(a: A, ps: ReadonlyArray<Predicate<A>>): boolean {
+  return ps.every((f) => f(a))
+}
+
+export function allPass<A>(ps: ReadonlyArray<Predicate<A>>): (a: A) => boolean {
+  return (a) => ps.every((f) => f(a))
 }
 
 export function and_(x: boolean, y: boolean): boolean {
@@ -15,28 +19,12 @@ export function and(y: boolean): (x: boolean) => boolean {
   return (x) => x && y
 }
 
-export function or_(x: boolean, y: boolean): boolean {
-  return x || y
+export function andPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
+  return (a) => and_(f(a), g(a))
 }
 
-export function or(y: boolean): (x: boolean) => boolean {
-  return (x) => x || y
-}
-
-export function xor_(x: boolean, y: boolean): boolean {
-  return (x && !y) || (!x && y)
-}
-
-export function xor(y: boolean): (x: boolean) => boolean {
-  return (x) => (x && !y) || (!x && y)
-}
-
-export function allPass_<A>(a: A, ps: ReadonlyArray<Predicate<A>>): boolean {
-  return ps.every((f) => f(a))
-}
-
-export function allPass<A>(ps: ReadonlyArray<Predicate<A>>): (a: A) => boolean {
-  return (a) => ps.every((f) => f(a))
+export function andPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
+  return (f) => andPass_(f, g)
 }
 
 export function anyPass_<A>(a: A, ps: ReadonlyArray<Predicate<A>>): boolean {
@@ -47,12 +35,16 @@ export function anyPass<A>(ps: ReadonlyArray<Predicate<A>>): (a: A) => boolean {
   return (a) => ps.some((f) => f(a))
 }
 
-export function andPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
-  return (a) => and_(f(a), g(a))
+export function invert(b: boolean): boolean {
+  return !b
 }
 
-export function andPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
-  return (f) => andPass_(f, g)
+export function or_(x: boolean, y: boolean): boolean {
+  return x || y
+}
+
+export function or(y: boolean): (x: boolean) => boolean {
+  return (x) => x || y
 }
 
 export function orPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
@@ -61,6 +53,14 @@ export function orPass_<A>(f: Predicate<A>, g: Predicate<A>): Predicate<A> {
 
 export function orPass<A>(g: Predicate<A>): (f: Predicate<A>) => Predicate<A> {
   return (f) => orPass_(f, g)
+}
+
+export function xor_(x: boolean, y: boolean): boolean {
+  return (x && !y) || (!x && y)
+}
+
+export function xor(y: boolean): (x: boolean) => boolean {
+  return (x) => (x && !y) || (!x && y)
 }
 
 /*

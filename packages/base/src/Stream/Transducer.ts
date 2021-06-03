@@ -130,7 +130,7 @@ export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
 export function prepend<O>(values: Chunk<O>): Transducer<unknown, never, O, O> {
   return new Transducer(
     M.map_(
-      Ref.makeManaged(values),
+      Ref.managedRef(values),
       (state) => (is: O.Option<Chunk<O>>) =>
         O.match_(
           is,
@@ -171,7 +171,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
   return new Transducer(
     M.bind_(M.scope(), (scope) =>
       M.map_(
-        RefM.makeManagedRefM<State>(initialState),
+        RefM.managedRefM<State>(initialState),
         (state) => (is: O.Option<Chunk<I>>) =>
           O.match_(
             is,
@@ -225,7 +225,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
 export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
   return new Transducer(
     M.map_(
-      Ref.makeManaged(true),
+      Ref.managedRef(true),
       (dropping) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
@@ -254,7 +254,7 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
 export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, I> {
   return new Transducer(
     pipe(
-      Ref.makeManaged(true),
+      Ref.managedRef(true),
       M.map(
         (droppingRef) => (is: O.Option<Chunk<I>>) =>
           O.match_(
@@ -304,7 +304,7 @@ export function fold<I, O>(
 
   return new Transducer(
     M.map_(
-      Ref.makeManaged(O.some(initial)),
+      Ref.managedRef(O.some(initial)),
       (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
@@ -358,7 +358,7 @@ export function foldM<R, E, I, O>(
     )
   return new Transducer(
     M.map_(
-      Ref.makeManaged(init),
+      Ref.managedRef(init),
       (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
@@ -498,7 +498,7 @@ export function foldWeightedDecompose<I, O>(
 
   return new Transducer(
     M.map_(
-      Ref.makeManaged(O.some(initialState)),
+      Ref.managedRef(O.some(initialState)),
       (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
@@ -603,7 +603,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
 
   return new Transducer(
     M.map_(
-      Ref.makeManaged(O.some(initialState)),
+      Ref.managedRef(O.some(initialState)),
       (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
@@ -673,7 +673,7 @@ export function collectAllN<I>(n: number): Transducer<unknown, never, I, Chunk<I
 
   return new Transducer(
     M.map_(
-      Ref.makeManaged(C.empty<I>()),
+      Ref.managedRef(C.empty<I>()),
       (state) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,

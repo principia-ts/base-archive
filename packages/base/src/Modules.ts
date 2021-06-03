@@ -15,6 +15,7 @@ import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
+import type { RoseTree } from './RoseTree'
 import type { Show } from './Show'
 import type { State } from './State'
 import type { Store } from './Store'
@@ -115,6 +116,9 @@ export type IOURI = typeof IOURI
 export const ChunkURI = 'Chunk'
 export type ChunkURI = typeof ChunkURI
 
+export const RoseTreeURI = 'RoseTree'
+export type RoseTreeURI = typeof RoseTreeURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -147,6 +151,7 @@ declare module './HKT' {
     [AsyncURI]: Async<R, E, A>
     [IOURI]: IO<R, E, A>
     [ChunkURI]: Chunk<A>
+    [RoseTreeURI]: RoseTree<A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

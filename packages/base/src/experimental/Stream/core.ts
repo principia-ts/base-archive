@@ -592,8 +592,8 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
   const deps = I.sequenceT(
     HO.make<HandoffSignal>(),
-    Ref.makeRef<SinkEndReason>(new SER.SinkEnd()),
-    Ref.makeRef(C.empty<A1>()),
+    Ref.ref<SinkEndReason>(new SER.SinkEnd()),
+    Ref.ref(C.empty<A1>()),
     SC.driver(schedule)
   )
 

@@ -6,11 +6,14 @@
 import type { Either } from './Either'
 import type { FunctionN } from './function'
 import type * as HKT from './HKT'
+import type { None, Option, Some } from './internal/Option'
 import type { OptionURI } from './Modules'
 import type { These } from './These'
 
 import * as G from './Guard'
+import * as _E from './internal/Either'
 import * as O from './internal/Option'
+import * as _T from './internal/These'
 import * as P from './prelude'
 
 /*
@@ -19,16 +22,7 @@ import * as P from './prelude'
  * -------------------------------------------------------------------------------------------------
  */
 
-export interface None {
-  readonly _tag: 'None'
-}
-
-export interface Some<A> {
-  readonly _tag: 'Some'
-  readonly value: A
-}
-
-export type Option<A> = None | Some<A>
+export { None, Option, Some } from './internal/Option'
 
 export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
 
@@ -219,10 +213,10 @@ export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A
   return fa._tag === 'None'
     ? fb._tag === 'None'
       ? none()
-      : some(f({ _tag: 'Right', right: fb.value }))
+      : some(f(_T.right(fb.value)))
     : fb._tag === 'None'
-    ? some(f({ _tag: 'Left', left: fa.value }))
-    : some(f({ _tag: 'Both', left: fa.value, right: fb.value }))
+    ? some(f(_T.left(fa.value)))
+    : some(f(_T.both(fa.value, fb.value)))
 }
 
 export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
@@ -321,8 +315,8 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
 
 export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
   return catchAll_(
-    map_(fa, (a) => ({ _tag: 'Right', right: a })),
-    () => some({ _tag: 'Left', left: undefined })
+    map_(fa, (a) => _E.right(a)),
+    () => some(_E.left(undefined))
   )
 }
 

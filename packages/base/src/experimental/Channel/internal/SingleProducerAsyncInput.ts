@@ -194,7 +194,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
  */
 export function makeSingleProducerAsyncInput<Err, Elem, Done>(): UIO<SingleProducerAsyncInput<Err, Elem, Done>> {
   return T.map_(
-    T.bind_(P.make<never, void>(), (p) => Ref.makeRef<State<Err, Elem, Done>>(new StateEmpty(p))),
+    T.bind_(P.make<never, void>(), (p) => Ref.ref<State<Err, Elem, Done>>(new StateEmpty(p))),
     (ref) => new SingleProducerAsyncInput(ref)
   )
 }

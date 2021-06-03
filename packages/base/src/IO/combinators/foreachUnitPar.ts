@@ -49,9 +49,9 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
   return I.gen(function* (_) {
     const parentId    = yield* _(I.fiberId())
-    const causes      = yield* _(Ref.makeRef<C.Cause<E>>(C.empty))
+    const causes      = yield* _(Ref.ref<C.Cause<E>>(C.empty))
     const result      = yield* _(P.make<void, void>())
-    const status      = yield* _(Ref.makeRef<[number, number, boolean]>([0, 0, false]))
+    const status      = yield* _(Ref.ref<[number, number, boolean]>([0, 0, false]))
     const startEffect = pipe(
       status,
       Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] => {

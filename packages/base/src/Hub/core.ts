@@ -552,7 +552,7 @@ export function makeBounded<A>(requestedCapacity: number): I.UIO<Hub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeBounded<A>(requestedCapacity: number): Hub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMakeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
 
   return unsafeMakeHub(
     _.makeBounded<A>(requestedCapacity),
@@ -586,7 +586,7 @@ export function makeDropping<A>(requestedCapacity: number): I.UIO<Hub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeDropping<A>(requestedCapacity: number): Hub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMakeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
 
   return unsafeMakeHub(
     _.makeBounded<A>(requestedCapacity),
@@ -620,7 +620,7 @@ export function makeSliding<A>(requestedCapacity: number): I.UIO<Hub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeSliding<A>(requestedCapacity: number): Hub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMakeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
 
   return unsafeMakeHub(
     _.makeBounded<A>(requestedCapacity),
@@ -648,7 +648,7 @@ export function makeUnbounded<A>(): I.UIO<Hub<A>> {
  * Creates an unbounded hub.
  */
 export function unsafeMakeUnbounded<A>(): Hub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMakeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
 
   return unsafeMakeHub(
     _.makeUnbounded<A>(),

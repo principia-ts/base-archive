@@ -41,7 +41,7 @@ export abstract class Annotations {
   static get live(): Layer<unknown, never, Has<Annotations>> {
     return L.fromEffect(AnnotationsTag)(
       pipe(
-        FR.make(TestAnnotationMap.empty),
+        FR.fiberRef(TestAnnotationMap.empty),
         I.map(
           (fiberRef): Annotations => ({
             annotate: (key, value) => FR.update_(fiberRef, (m) => m.annotate(key, value)),

@@ -12,7 +12,7 @@
       }
     ]
   },
-  "include": ["../src", "../test"],
+  "include": ["../src", "../test", "../bench"],
   "exclude": ["../test/*Spec.ts"],
   "extends": "../../../tsconfig.json"
 }

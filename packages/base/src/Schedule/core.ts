@@ -80,7 +80,7 @@ export class Driver<R, I, O> {
 
 export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
-    Ref.makeRef([O.none<O>(), schedule.step] as const),
+    Ref.ref([O.none<O>(), schedule.step] as const),
     I.map((ref) => {
       const reset = ref.set([O.none(), schedule.step])
 

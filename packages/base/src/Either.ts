@@ -7,6 +7,7 @@
  */
 
 import type { FunctionN } from './function'
+import type { Either, Left, Right } from './internal/Either'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
@@ -28,17 +29,7 @@ import { tuple } from './tuple'
  * -------------------------------------------------------------------------------------------------
  */
 
-export interface Left<E> {
-  readonly _tag: 'Left'
-  readonly left: E
-}
-
-export interface Right<A> {
-  readonly _tag: 'Right'
-  readonly right: A
-}
-
-export type Either<E, A> = Left<E> | Right<A>
+export { Either, Left, Right } from './internal/Either'
 
 export type InferLeft<T extends Either<any, any>> = T extends Left<infer E> ? E : never
 
@@ -53,24 +44,6 @@ type URI = [HKT.URI<EitherURI>]
  * Constructors
  * -------------------------------------------------------------------------------------------------
  */
-
-/**
- * Constructs a new `Either` holding a `Left` value.
- * This usually represents a failure, due to the right-bias of this structure
- *
- * @category Constructors
- * @since 1.0.0
- */
-export const left = E.left
-
-/**
- * Constructs a new `Either` holding a `Right` value.
- * This usually represents a successful value due to the right bias of this structure
- *
- * @category Constructors
- * @since 1.0.0
- */
-export const right = E.right
 
 /**
  * Takes a default and a nullable value, if the value is not nully,
@@ -108,71 +81,6 @@ export function fromNullableK<E>(
   f: (...args: A) => B | null | undefined
 ) => (...args: A) => Either<E, NonNullable<B>> {
   return (f) => fromNullableK_(f, e)
-}
-
-/**
- * Constructs a new `Either` from a function that might throw
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
-  try {
-    return right(thunk())
-  } catch (e) {
-    return left(e)
-  }
-}
-
-/**
- * @category Constructors
- * @since 1.0.0
- */
-export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
-  f: FunctionN<A, B>,
-  onThrow: (reason: unknown) => E
-): (...args: A) => Either<E, B> {
-  return (...a) =>
-    pipe(
-      tryCatch(() => f(...a)),
-      mapLeft(onThrow)
-    )
-}
-
-/**
- * @category Constructors
- * @since 1.0.0
- */
-export function tryCatchK<E>(
-  onThrow: (reason: unknown) => E
-): <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>) => (...args: A) => Either<E, B> {
-  return (f) => tryCatchK_(f, onThrow)
-}
-
-export type Json = boolean | number | string | null | JsonArray | JsonRecord
-
-export interface JsonRecord extends Readonly<Record<string, Json>> {}
-
-export interface JsonArray extends ReadonlyArray<Json> {}
-
-/**
- * Converts a JavaScript Object Notation (JSON) string into an object.
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function parseJson(s: string): Either<unknown, Json> {
-  return tryCatch(() => JSON.parse(s))
-}
-
-/**
- * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
- *
- * @category Constructors
- * @since 1.0.0
- */
-export function stringifyJson(u: unknown): Either<unknown, string> {
-  return tryCatch(() => JSON.stringify(u))
 }
 
 /**
@@ -218,11 +126,72 @@ export function fromPredicate<E, A>(predicate: P.Predicate<A>, onFalse: (a: A) =
   return (a) => fromPredicate_(a, predicate, onFalse)
 }
 
+/**
+ * Constructs a new `Either` holding a `Left` value.
+ * This usually represents a failure, due to the right-bias of this structure
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export const left = E.left
+
+/**
+ * Constructs a new `Either` holding a `Right` value.
+ * This usually represents a successful value due to the right bias of this structure
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export const right = E.right
+
+/**
+ * Constructs a new `Either` from a function that might throw
+ *
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function tryCatch<E, A>(thunk: () => A): Either<E, A> {
+  try {
+    return right(thunk())
+  } catch (e) {
+    return left(e)
+  }
+}
+
+/**
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
+  f: FunctionN<A, B>,
+  onThrow: (reason: unknown) => E
+): (...args: A) => Either<E, B> {
+  return (...a) =>
+    pipe(
+      tryCatch(() => f(...a)),
+      mapLeft(onThrow)
+    )
+}
+
+/**
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function tryCatchK<E>(
+  onThrow: (reason: unknown) => E
+): <A extends ReadonlyArray<unknown>, B>(f: FunctionN<A, B>) => (...args: A) => Either<E, B> {
+  return (f) => tryCatchK_(f, onThrow)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Guards
  * -------------------------------------------------------------------------------------------------
  */
+
+export function isEither(u: unknown): u is Either<unknown, unknown> {
+  return typeof u === 'object' && u != null && '_tag' in u && (u['_tag'] === 'Left' || u['_tag'] === 'Right')
+}
 
 /**
  * Returns `true` if the either is an instance of `Left`, `false` otherwise
@@ -242,10 +211,6 @@ export function isLeft<E, A>(fa: Either<E, A>): fa is Left<E> {
  */
 export function isRight<E, A>(fa: Either<E, A>): fa is Right<A> {
   return fa._tag === 'Right'
-}
-
-export function isEither(u: unknown): u is Either<unknown, unknown> {
-  return typeof u === 'object' && u != null && '_tag' in u && (u['_tag'] === 'Left' || u['_tag'] === 'Right')
 }
 
 /*

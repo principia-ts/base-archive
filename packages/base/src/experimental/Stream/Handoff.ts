@@ -16,7 +16,7 @@ export class Handoff<A> {
 export function make<A>() {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) => Ref.makeRef<State<A>>(new Empty(p))),
+    I.bind((p) => Ref.ref<State<A>>(new Empty(p))),
     I.map((_) => new Handoff(_))
   )
 }

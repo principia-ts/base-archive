@@ -263,14 +263,14 @@ export function concrete<EA, EB, A>(ref: Ref<EA, EB, A, A>) {
 /**
  * Creates a new `Ref` with the specified value.
  */
-export function makeRef<A>(a: A): UIO<URef<A>> {
+export function ref<A>(a: A): UIO<URef<A>> {
   return I.effectTotal(() => new Atomic(new AtomicReference(a)))
 }
 
 /**
  * Creates a new `Ref` with the specified value.
  */
-export function unsafeMakeRef<A>(a: A): URef<A> {
+export function unsafeRef<A>(a: A): URef<A> {
   return new Atomic(new AtomicReference(a))
 }
 

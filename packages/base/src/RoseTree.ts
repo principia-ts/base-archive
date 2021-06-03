@@ -1,4 +1,5 @@
 import type * as HKT from './HKT'
+import type { RoseTreeURI } from './Modules'
 import type { Show } from './Show'
 
 import * as A from './Array/core'
@@ -20,17 +21,9 @@ export interface RoseTree<A> {
 
 export type Forest<A> = ReadonlyArray<RoseTree<A>>
 
-export const URI = 'Tree'
-
-export type URI = HKT.URI<typeof URI, V>
+export type URI = HKT.URI<RoseTreeURI, V>
 
 export type V = HKT.Auto
-
-declare module './HKT' {
-  interface URItoKind<FC, TC, N extends string, K, Q, W, X, I, S, R, E, A> {
-    readonly [URI]: RoseTree<A>
-  }
-}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -38,7 +31,7 @@ declare module './HKT' {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function make<A>(value: A, forest: Forest<A>): RoseTree<A> {
+export function roseTree<A>(value: A, forest: Forest<A>): RoseTree<A> {
   return {
     value,
     forest

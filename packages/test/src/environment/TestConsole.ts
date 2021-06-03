@@ -90,8 +90,8 @@ export class TestConsole implements Console {
     return L.fromRawEffect(
       I.asksServiceM(LiveTag)((live) =>
         I.gen(function* (_) {
-          const ref      = yield* _(Ref.makeRef(data))
-          const debugRef = yield* _(FR.make(debug))
+          const ref      = yield* _(Ref.ref(data))
+          const debugRef = yield* _(FR.fiberRef(debug))
           const test     = new TestConsole(ref, live, debugRef)
           return intersect(TestConsoleTag.of(test), ConsoleTag.of(test))
         })
