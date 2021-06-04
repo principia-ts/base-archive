@@ -59,7 +59,7 @@ export function raceAll<R, E, A>(
 ): IO<R, E, A> {
   const trace = accessCallTrace()
   return I.gen(function* (_) {
-    const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
+    const done    = yield* _(P.promise<E, readonly [A, Fiber.Fiber<E, A>]>())
     const fails   = yield* _(Ref.ref(ios.length))
     const [c, fs] = yield* _(
       uninterruptibleMask(

@@ -770,7 +770,7 @@ function _unsafeQueue<A>(
           strategy.unsafeOnQueueEmptySpace(queue)
           return I.pure(item)
         } else {
-          const p = P.unsafeMake<never, A>(d.id)
+          const p = P.unsafePromise<never, A>(d.id)
 
           return I.onInterrupt_(
             I.deferTotal(() => {
@@ -815,7 +815,7 @@ function _unsafeQueue<A>(
 
 function _queue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<unknown, never, UQueue<A>> {
   return (queue) =>
-    I.map_(P.make<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
+    I.map_(P.promise<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
 function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
@@ -929,7 +929,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
       I.deferTotal(() => {
-        const p = P.unsafeMake<never, boolean>(d.id)
+        const p = P.unsafePromise<never, boolean>(d.id)
 
         return I.onInterrupt_(
           I.deferTotal(() => {

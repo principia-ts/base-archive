@@ -1920,7 +1920,7 @@ export function distributedWith_<R, E, A>(
   decide: (_: A) => I.UIO<(_: number) => boolean>
 ): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return pipe(
-    P.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
+    P.promise<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromEffect,
     M.bind((prom) =>
       pipe(
@@ -2161,7 +2161,7 @@ function bufferSignal_<R, E, A>(
 ): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<A>>> {
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
-    const start = yield* _(P.make<never, void>())
+    const start = yield* _(P.promise<never, void>())
     yield* _(start.succeed(undefined))
     const ref     = yield* _(Ref.ref(start))
     const doneRef = yield* _(Ref.ref(false))
@@ -2172,14 +2172,14 @@ function bufferSignal_<R, E, A>(
           I.gen(function* ($) {
             const latch = yield* $(ref.get)
             yield* $(latch.await)
-            const p = yield* $(P.make<never, void>())
+            const p = yield* $(P.promise<never, void>())
             yield* $(queue.offer([take, p]))
             yield* $(ref.set(p))
             yield* $(p.await)
           }),
         (_) =>
           I.gen(function* ($) {
-            const p     = yield* $(P.make<never, void>())
+            const p     = yield* $(P.promise<never, void>())
             const added = yield* $(queue.offer([take, p]))
             yield* $(I.when_(ref.set(p), () => added))
           })
@@ -2455,7 +2455,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
           I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
         )
         const permits      = yield* _(Semaphore.make(n))
-        const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
+        const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
         // - The driver stream forks an inner fiber for each stream created
         //   by f, with an upper bound of n concurrent fibers, enforced by the semaphore.
         //   - On completion, the driver stream tries to acquire all permits to verify
@@ -2474,7 +2474,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
           pipe(
             foreachManaged_(ma, (o) =>
               I.gen(function* (_) {
-                const latch       = yield* _(P.make<never, void>())
+                const latch       = yield* _(P.promise<never, void>())
                 const innerStream = pipe(
                   Semaphore.withPermitManaged(permits),
                   managed,
@@ -2549,15 +2549,15 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
             I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
           )
           const permits      = yield* _(Semaphore.make(n))
-          const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
+          const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
           const cancelers    = yield* _(I.toManaged_(Queue.boundedQueue<P.Promise<never, void>>(n), (q) => q.shutdown))
           yield* _(
             pipe(
               ma,
               foreachManaged((o) =>
                 I.gen(function* (_) {
-                  const canceler = yield* _(P.make<never, void>())
-                  const latch    = yield* _(P.make<never, void>())
+                  const canceler = yield* _(P.promise<never, void>())
+                  const latch    = yield* _(P.promise<never, void>())
                   const size     = yield* _(cancelers.size)
                   if (size < n) {
                     yield* _(I.unit())
@@ -3143,7 +3143,7 @@ export function drainFork_<R, E, A, R1, E1, A1>(
   mb: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A> {
   return pipe(
-    P.make<E | E1, never>(),
+    P.promise<E | E1, never>(),
     fromEffect,
     bind((bgDied) =>
       pipe(
@@ -3349,7 +3349,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
 ): GroupBy<R & R1, E | E1, K, V> {
   const qstream = unwrapManaged(
     M.gen(function* (_) {
-      const decider = yield* _(P.make<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
+      const decider = yield* _(P.promise<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
 
       const out = yield* _(
         pipe(
@@ -4047,15 +4047,15 @@ export function mapMPar_(n: number) {
     new Stream(
       M.gen(function* (_) {
         const out         = yield* _(Queue.boundedQueue<I.IO<R1, Option<E | E1>, B>>(n))
-        const errorSignal = yield* _(P.make<E1, never>())
+        const errorSignal = yield* _(P.promise<E1, never>())
         const permits     = yield* _(Semaphore.make(n))
         yield* _(
           pipe(
             stream,
             foreachManaged((o) =>
               I.gen(function* (_) {
-                const p     = yield* _(P.make<E1, B>())
-                const latch = yield* _(P.make<never, void>())
+                const p     = yield* _(P.promise<E1, B>())
+                const latch = yield* _(P.promise<never, void>())
                 yield* _(out.offer(pipe(p.await, I.mapError(O.some))))
                 yield* _(
                   pipe(

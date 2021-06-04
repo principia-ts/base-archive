@@ -86,7 +86,7 @@ export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO
 
 function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   return I.gen(function* (_) {
-    const p = yield* _(P.make<E, A>())
+    const p = yield* _(P.promise<E, A>())
     yield* _(to(p)(fa))
     return O.some(tuple(start + ttl, p))
   })

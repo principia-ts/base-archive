@@ -33,7 +33,7 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
                     return I.succeed(tuple(memo, m))
                   } else {
                     return I.gen(function* (_) {
-                      const p = yield* _(P.make<E, B>())
+                      const p = yield* _(P.promise<E, B>())
                       yield* _(I.fork(to(p)(f(a))))
                       return tuple(p, m.set(a, p))
                     })
@@ -75,7 +75,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
                         }
                       }
                       return I.gen(function* (_) {
-                        const p = yield* _(P.make<E, B>())
+                        const p = yield* _(P.promise<E, B>())
                         yield* _(I.fork(to(p)(f(a))))
                         return tuple(p, m.set(a, p))
                       })

@@ -989,7 +989,7 @@ export class MemoMap {
           } else {
             return I.gen(function* (_) {
               const observers    = yield* _(Ref.ref(0))
-              const promise      = yield* _(P.make<E, A>())
+              const promise      = yield* _(P.promise<E, A>())
               const finalizerRef = yield* _(Ref.ref<Finalizer>(RelMap.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>

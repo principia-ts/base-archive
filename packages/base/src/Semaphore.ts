@@ -102,7 +102,7 @@ export class Semaphore {
     if (n === 0) {
       return I.pure(new Acquisition(I.unit(), I.unit()))
     } else {
-      return I.bind_(P.make<never, void>(), (p) =>
+      return I.bind_(P.promise<never, void>(), (p) =>
         pipe(
           this.state,
           Ref.modify(

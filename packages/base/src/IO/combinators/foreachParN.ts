@@ -47,7 +47,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
           const pairs = yield* _(
             I.foreach_(as, (a) =>
               pipe(
-                P.make<E, B>(),
+                P.promise<E, B>(),
                 I.map((p) => tuple(p, a))
               )
             )

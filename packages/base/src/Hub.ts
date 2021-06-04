@@ -132,7 +132,7 @@ export function unsafeBoundedHub<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    P.unsafePromise<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new BackPressure()
   )
@@ -166,7 +166,7 @@ export function unsafeDroppingHub<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    P.unsafePromise<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -200,7 +200,7 @@ export function unsafeSlidingHub<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    P.unsafePromise<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Sliding()
   )
@@ -228,7 +228,7 @@ export function unsafeUnboundedHub<A>(): UHub<A> {
     _makeUnbounded<A>(),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    P.unsafePromise<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -236,7 +236,7 @@ export function unsafeUnboundedHub<A>(): UHub<A> {
 
 function _hub<A>(hub: HubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
   return I.bind_(RM.make, (releaseMap) => {
-    return I.map_(P.make<never, void>(), (promise) => {
+    return I.map_(P.promise<never, void>(), (promise) => {
       return _unsafeHub(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
     })
   })
@@ -357,7 +357,7 @@ function subscription<A>(
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   strategy: Strategy<A>
 ): I.UIO<Q.Dequeue<A>> {
-  return I.map_(P.make<never, void>(), (promise) => {
+  return I.map_(P.promise<never, void>(), (promise) => {
     return unsafeSubscription(
       hub,
       subscribers,
@@ -428,7 +428,7 @@ function unsafeSubscription<A>(
           const message = pollers.isEmpty ? subscription.poll(empty) : empty
 
           if (message === null) {
-            const promise = P.unsafeMake<never, A>(fiberId)
+            const promise = P.unsafePromise<never, A>(fiberId)
 
             return I.onInterrupt_(
               I.deferTotal(() => {
@@ -932,7 +932,7 @@ export class BackPressure<A> extends Strategy<A> {
       I.fiberId(),
       I.bind((fiberId) =>
         I.deferTotal(() => {
-          const promise = P.unsafeMake<never, boolean>(fiberId)
+          const promise = P.unsafePromise<never, boolean>(fiberId)
 
           return pipe(
             I.deferTotal(() => {

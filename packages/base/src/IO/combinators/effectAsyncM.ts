@@ -21,7 +21,7 @@ export function effectAsyncM<R, E, R1, E1, A>(
   register: (k: (_: IO<R1, E1, A>) => void) => IO<R, E, any>
 ): IO<R & R1, E | E1, A> {
   return I.gen(function* (_) {
-    const p = yield* _(P.make<E | E1, A>())
+    const p = yield* _(P.promise<E | E1, A>())
     const r = yield* _(runtime<R & R1>())
     const a = yield* _(
       uninterruptibleMask(

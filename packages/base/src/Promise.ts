@@ -205,24 +205,6 @@ export class Pending<E, A> {
 }
 
 /**
- * Returns an IO that keeps or breaks a promise based on the result of
- * this effect. Synchronizes interruption, so if this effect is interrupted,
- * the specified promise will be interrupted, too.
- */
-export function to<E, A>(p: Promise<E, A>) {
-  return <R>(effect: I.IO<R, E, A>): I.IO<R, never, boolean> =>
-    uninterruptibleMask(({ restore }) => I.bind_(I.result(restore(effect)), (x) => p.done(x)))
-}
-
-/**
- * Retrieves the value of the promise, suspending the fiber running the action
- * until the result is available.
- */
-function wait<E, A>(promise: Promise<E, A>): I.IO<unknown, E, A> {
-  return promise.await
-}
-
-/**
  * Completes the promise with the result of the specified effect. If the
  * promise has already been completed, the method will produce false.
  *
@@ -330,19 +312,15 @@ export function isDone<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
 /**
  * Makes a new promise to be completed by the fiber creating the promise.
  */
-export function make<E, A>() {
-  return I.bind_(I.fiberId(), (id) => makeAs<E, A>(id))
+export function promise<E, A>() {
+  return I.bind_(I.fiberId(), (id) => promiseAs<E, A>(id))
 }
 
 /**
  * Makes a new promise to be completed by the fiber with the specified id.
  */
-export function makeAs<E, A>(fiberId: FiberId) {
-  return I.effectTotal(() => unsafeMake<E, A>(fiberId))
-}
-
-export function unsafeMake<E, A>(fiberId: FiberId) {
-  return new Promise<E, A>(new AtomicReference(new Pending([])), [fiberId])
+export function promiseAs<E, A>(fiberId: FiberId) {
+  return I.effectTotal(() => unsafePromise<E, A>(fiberId))
 }
 
 /**
@@ -372,6 +350,28 @@ export function succeed_<A, E>(promise: Promise<E, A>, a: A) {
  */
 export function unsafeDone<E, A>(io: FIO<E, A>) {
   return (promise: Promise<E, A>) => promise.unsafeDone(io)
+}
+
+export function unsafePromise<E, A>(fiberId: FiberId) {
+  return new Promise<E, A>(new AtomicReference(new Pending([])), [fiberId])
+}
+
+/**
+ * Returns an IO that keeps or breaks a promise based on the result of
+ * this effect. Synchronizes interruption, so if this effect is interrupted,
+ * the specified promise will be interrupted, too.
+ */
+export function to<E, A>(p: Promise<E, A>) {
+  return <R>(effect: I.IO<R, E, A>): I.IO<R, never, boolean> =>
+    uninterruptibleMask(({ restore }) => I.bind_(I.result(restore(effect)), (x) => p.done(x)))
+}
+
+/**
+ * Retrieves the value of the promise, suspending the fiber running the action
+ * until the result is available.
+ */
+function wait<E, A>(promise: Promise<E, A>): I.IO<unknown, E, A> {
+  return promise.await
 }
 
 export { wait as await }
