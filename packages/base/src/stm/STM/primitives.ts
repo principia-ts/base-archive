@@ -1,9 +1,8 @@
 import type { FiberId } from '../../Fiber'
 import type { Journal } from '../Journal'
 
-import { isObject } from '@principia/base/prelude'
-
 import * as E from '../../Either'
+import { isObject } from '../../util/predicates'
 
 export const STMTag = {
   Effect: 'Effect',

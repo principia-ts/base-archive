@@ -1,6 +1,5 @@
-import { isObject } from '@principia/base/prelude'
-
 import * as St from '../Structural'
+import { isObject } from '../util/predicates'
 
 export type TExit<E, A> = Fail<E> | Succeed<A> | Retry | Die
 

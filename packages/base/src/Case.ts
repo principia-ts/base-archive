@@ -1,6 +1,6 @@
 import type { Equatable } from './Structural/Equatable'
 import type { Hashable } from './Structural/Hashable'
-import type { IsEqualTo } from '@principia/base/util/types'
+import type { IsEqualTo } from './util/types'
 
 import { isObject } from './prelude'
 import { $equals, equals } from './Structural/Equatable'
