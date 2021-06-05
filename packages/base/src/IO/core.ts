@@ -2224,7 +2224,7 @@ export function foldr<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i: Ite
  *
  * @trace call
  */
-export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
+export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
   const trace = accessCallTrace()
   return bind_(
     ma,
