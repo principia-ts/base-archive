@@ -1343,6 +1343,26 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
   return bind_(ma, () => unit())
 }
 
+export function catchTag_<K extends E['_tag'] & string, R, E extends { _tag: string }, A, R1, E1, A1>(
+  ma: IO<R, E, A>,
+  k: K,
+  f: (e: Extract<E, { _tag: K }>) => IO<R1, E1, A1>
+): IO<R & R1, Exclude<E, { _tag: K }> | E1, A | A1> {
+  return catchAll_(ma, (e) => {
+    if ('_tag' in e && e['_tag'] === k) {
+      return f(e as any)
+    }
+    return fail(e as any)
+  })
+}
+
+export function catchTag<K extends E['_tag'] & string, E extends { _tag: string }, R1, E1, A1>(
+  k: K,
+  f: (e: Extract<E, { _tag: K }>) => IO<R1, E1, A1>
+): <R, A>(ma: IO<R, E, A>) => IO<R & R1, Exclude<E, { _tag: K }> | E1, A | A1> {
+  return (ma) => catchTag_(ma, k, f)
+}
+
 /**
  * Recovers from all errors
  *
