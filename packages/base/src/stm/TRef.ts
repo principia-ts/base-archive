@@ -11,6 +11,7 @@ import { AtomicReference } from '../util/support/AtomicReference'
 import { makeEntry } from './Entry'
 import { emptyTodoMap } from './Journal'
 import * as STM from './STM/core'
+import * as _ from './STM/primitives'
 import { Versioned } from './Versioned'
 
 export const TRefTypeId = Symbol()
@@ -200,11 +201,11 @@ function getOrMakeEntry<A>(self: Atomic<A>, journal: Journal): Entry {
 /**
  * Retrieves the value of the `XTRef`.
  */
-export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): STM.STM<unknown, EB, B> {
+export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): _.STM<unknown, EB, B> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry = getOrMakeEntry(self, journal)
         return entry.use((_) => _.unsafeGet<B>())
       })
@@ -228,11 +229,11 @@ export function unsafeGet_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, journal: Jou
 /**
  * Sets the value of the `XTRef`.
  */
-export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): STM.STM<unknown, EA, void> {
+export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): _.STM<unknown, EA, void> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry = getOrMakeEntry(self, journal)
         return entry.use((_) => _.unsafeSet(a))
       })
@@ -258,11 +259,11 @@ export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): STM.STM<unk
  * Updates the value of the variable, returning a function of the specified
  * value.
  */
-export function modify_<E, A, B>(self: ETRef<E, A>, f: (a: A) => readonly [B, A]): STM.STM<unknown, E, B> {
+export function modify_<E, A, B>(self: ETRef<E, A>, f: (a: A) => readonly [B, A]): _.STM<unknown, E, B> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry                = getOrMakeEntry(self, journal)
         const oldValue             = entry.use((_) => _.unsafeGet<A>())
         const [retValue, newValue] = f(oldValue)
@@ -315,7 +316,7 @@ export function modify_<E, A, B>(self: ETRef<E, A>, f: (a: A) => readonly [B, A]
  *
  * @dataFirst modify_
  */
-export function modify<A, B>(f: (a: A) => readonly [B, A]): <E>(self: ETRef<E, A>) => STM.STM<unknown, E, B> {
+export function modify<A, B>(f: (a: A) => readonly [B, A]): <E>(self: ETRef<E, A>) => _.STM<unknown, E, B> {
   return (self) => modify_(self, f)
 }
 
@@ -327,7 +328,7 @@ export function modifySome_<E, A, B>(
   self: ETRef<E, A>,
   b: B,
   f: (a: A) => O.Option<readonly [B, A]>
-): STM.STM<unknown, E, B> {
+): _.STM<unknown, E, B> {
   return modify_(self, (a) => O.match_(f(a), () => [b, a], identity))
 }
 
@@ -340,18 +341,18 @@ export function modifySome_<E, A, B>(
 export function modifySome<A, B>(
   b: B,
   f: (a: A) => O.Option<readonly [B, A]>
-): <E>(self: ETRef<E, A>) => STM.STM<unknown, E, B> {
+): <E>(self: ETRef<E, A>) => _.STM<unknown, E, B> {
   return (self) => modifySome_(self, b, f)
 }
 
 /**
  * Sets the value of the `XTRef` and returns the old value.
  */
-export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): STM.STM<unknown, EA, A> {
+export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): _.STM<unknown, EA, A> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
         const oldValue = entry.use((_) => _.unsafeGet<A>())
         entry.use((_) => _.unsafeSet(a))
@@ -369,18 +370,18 @@ export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): STM.STM<unknown, EA
  *
  * @dataFirst getAndSet_
  */
-export function getAndSet<A>(a: A): <EA>(self: ETRef<EA, A>) => STM.STM<unknown, EA, A> {
+export function getAndSet<A>(a: A): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
   return (self) => getAndSet_(self, a)
 }
 
 /**
  * Updates the value of the variable and returns the old value.
  */
-export function getAndUpdate_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): STM.STM<unknown, EA, A> {
+export function getAndUpdate_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): _.STM<unknown, EA, A> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
         const oldValue = entry.use((_) => _.unsafeGet<A>())
         entry.use((_) => _.unsafeSet(f(oldValue)))
@@ -398,7 +399,7 @@ export function getAndUpdate_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): STM.ST
  *
  * @dataFirst getAndUpdate_
  */
-export function getAndUpdate<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => STM.STM<unknown, EA, A> {
+export function getAndUpdate<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
   return (self) => getAndUpdate_(self, f)
 }
 
@@ -406,11 +407,11 @@ export function getAndUpdate<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => STM
  * Updates some values of the variable but leaves others alone, returning the
  * old value.
  */
-export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Option<A>): STM.STM<unknown, EA, A> {
+export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Option<A>): _.STM<unknown, EA, A> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
         const oldValue = entry.use((_) => _.unsafeGet<A>())
         const v        = f(oldValue)
@@ -438,7 +439,7 @@ export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Opti
  *
  * @dataFirst getAndUpdateSome_
  */
-export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): <EA>(self: ETRef<EA, A>) => STM.STM<unknown, EA, A> {
+export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
   return (self) => getAndUpdateSome_(self, f)
 }
 
@@ -447,18 +448,18 @@ export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): <EA>(self: ETRef<
  *
  * @dataFirst set_
  */
-export function set<A>(a: A): <EA, EB, B>(self: XTRef<EA, EB, A, B>) => STM.STM<unknown, EA, void> {
+export function set<A>(a: A): <EA, EB, B>(self: XTRef<EA, EB, A, B>) => _.STM<unknown, EA, void> {
   return (self) => set_(self, a)
 }
 
 /**
  * Updates the value of the variable.
  */
-export function update_<E, A>(self: ETRef<E, A>, f: (a: A) => A): STM.STM<unknown, E, void> {
+export function update_<E, A>(self: ETRef<E, A>, f: (a: A) => A): _.STM<unknown, E, void> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
         const newValue = f(entry.use((_) => _.unsafeGet<A>()))
         entry.use((_) => _.unsafeSet(newValue))
@@ -474,14 +475,14 @@ export function update_<E, A>(self: ETRef<E, A>, f: (a: A) => A): STM.STM<unknow
  *
  * @dataFirst update_
  */
-export function update<A>(f: (a: A) => A): <E>(self: ETRef<E, A>) => STM.STM<unknown, E, void> {
+export function update<A>(f: (a: A) => A): <E>(self: ETRef<E, A>) => _.STM<unknown, E, void> {
   return (self) => update_(self, f)
 }
 
 /**
  * Updates some values of the variable but leaves others alone.
  */
-export function updateSome_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): STM.STM<unknown, E, void> {
+export function updateSome_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): _.STM<unknown, E, void> {
   return update_(self, (a) => O.match_(f(a), () => a, identity))
 }
 
@@ -490,14 +491,14 @@ export function updateSome_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): 
  *
  * @dataFirst updateSome_
  */
-export function updateSome<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => STM.STM<unknown, E, void> {
+export function updateSome<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, void> {
   return (self) => updateSome_(self, f)
 }
 
 /**
  * Updates some values of the variable but leaves others alone.
  */
-export function updateSomeAndGet_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): STM.STM<unknown, E, A> {
+export function updateSomeAndGet_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): _.STM<unknown, E, A> {
   return updateAndGet_(self, (a) => O.match_(f(a), () => a, identity))
 }
 
@@ -506,18 +507,18 @@ export function updateSomeAndGet_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option
  *
  * @dataFirst updateSomeAndGet_
  */
-export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => STM.STM<unknown, E, A> {
+export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, A> {
   return (self) => updateSomeAndGet_(self, f)
 }
 
 /**
  * Updates the value of the variable and returns the new value.
  */
-export function updateAndGet_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): STM.STM<unknown, EA, A> {
+export function updateAndGet_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): _.STM<unknown, EA, A> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
-      return new STM.Effect((journal) => {
+      return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
         const oldValue = entry.use((_) => _.unsafeGet<A>())
         const x        = f(oldValue)
@@ -539,7 +540,7 @@ export function updateAndGet_<EA, A>(self: ETRef<EA, A>, f: (a: A) => A): STM.ST
  *
  * @dataFirst getAndUpdate_
  */
-export function updateAndGet<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => STM.STM<unknown, EA, A> {
+export function updateAndGet<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
   return (self) => updateAndGet_(self, f)
 }
 
@@ -556,8 +557,8 @@ export function concrete<EA, EB, A, B>(
 /**
  * Makes a new `XTRef` that is initialized to the specified value.
  */
-export function makeWith<A>(a: () => A): STM.STM<unknown, never, TRef<A>> {
-  return new STM.Effect((journal) => {
+export function makeWith<A>(a: () => A): _.STM<unknown, never, TRef<A>> {
+  return new _.Effect((journal) => {
     const value     = a()
     const versioned = new Versioned(value)
     const todo      = new AtomicReference(emptyTodoMap)
@@ -570,8 +571,8 @@ export function makeWith<A>(a: () => A): STM.STM<unknown, never, TRef<A>> {
 /**
  * Makes a new `XTRef` that is initialized to the specified value.
  */
-export function make<A>(a: A): STM.STM<unknown, never, TRef<A>> {
-  return new STM.Effect((journal) => {
+export function make<A>(a: A): _.STM<unknown, never, TRef<A>> {
+  return new _.Effect((journal) => {
     const value     = a
     const versioned = new Versioned(value)
     const todo      = new AtomicReference(emptyTodoMap)
