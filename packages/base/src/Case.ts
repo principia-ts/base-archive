@@ -1,5 +1,6 @@
 import type { Equatable } from './Structural/Equatable'
 import type { Hashable } from './Structural/Hashable'
+import type { IsEqualTo } from '@principia/base/util/types'
 
 import { isObject } from './prelude'
 import { $equals, equals } from './Structural/Equatable'
@@ -13,12 +14,12 @@ export interface CaseArgs {
 }
 
 export interface Copy<T> {
-  copy(args: {} extends T ? void : Partial<T>): this
+  copy(args: IsEqualTo<T, {}> extends true ? void : Partial<T>): this
 }
 
 export interface CaseConstructor {
   [CaseTypeId]: ReadonlyArray<string>
-  new <T>(args: {} extends T ? void : T): T & Copy<T> & CaseArgs
+  new <T>(args: IsEqualTo<T, {}> extends true ? void : T): T & Copy<T> & CaseArgs
 }
 
 export function isCaseClass(u: unknown): u is CaseConstructor {
@@ -82,4 +83,33 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
     // @ts-expect-error
     return new this.constructor({ ...this.args, ...args })
   }
+}
+
+export interface CaseConstructorTagged<Tag extends string | symbol, K extends string | symbol> {
+  new <T>(args: IsEqualTo<T, {}> extends true ? void : T): T & Copy<T> & { readonly [k in K]: Tag }
+}
+
+export function Tagged<Tag extends string | symbol, Key extends string | symbol>(
+  tag: Tag,
+  key: Key
+): CaseConstructorTagged<Tag, Key>
+export function Tagged<Tag extends string | symbol>(tag: Tag): CaseConstructorTagged<Tag, '_tag'>
+export function Tagged<Tag extends string | symbol, Key extends string | symbol>(
+  tag: Tag,
+  key?: Key
+): CaseConstructorTagged<Tag, string> {
+  if (key) {
+    class X extends CaseClass<{}> {
+      // @ts-expect-error
+      readonly [key] = tag
+    }
+    // @ts-expect-error
+    return X
+  }
+  class X extends CaseClass<{}> {
+    readonly _tag = tag
+  }
+
+  // @ts-expect-error
+  return X
 }
