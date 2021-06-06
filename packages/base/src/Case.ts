@@ -84,7 +84,7 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
 
   copy(args: Partial<T>): this {
     // @ts-expect-error
-    return new this.constructor({ ...this.args, ...args })
+    return new this.constructor({ ...this[$args], ...args })
   }
 }
 
