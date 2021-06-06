@@ -1343,17 +1343,35 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
   return bind_(ma, () => unit())
 }
 
+function catch_<N extends keyof E, K extends E[N] & string, R, E, A, R1, E1, A1>(
+  ma: IO<R, E, A>,
+  tag: N,
+  k: K,
+  f: (e: Extract<E, { [n in N]: K }>) => IO<R1, E1, A1>
+): IO<R & R1, Exclude<E, { [n in N]: K }> | E1, A | A1> {
+  return catchAll_(ma, (e) => {
+    if (tag in e && e[tag] === k) {
+      return f(e as any)
+    }
+    return fail(e as any)
+  })
+}
+
+function _catch<N extends keyof E, K extends E[N] & string, E, R1, E1, A1>(
+  tag: N,
+  k: K,
+  f: (e: Extract<E, { [n in N]: K }>) => IO<R1, E1, A1>
+): <R, A>(ma: IO<R, E, A>) => IO<R & R1, Exclude<E, { [n in N]: K }> | E1, A | A1> {
+  return (ma) => catch_(ma, tag, k, f)
+}
+export { _catch as catch }
+
 export function catchTag_<K extends E['_tag'] & string, R, E extends { _tag: string }, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   k: K,
   f: (e: Extract<E, { _tag: K }>) => IO<R1, E1, A1>
 ): IO<R & R1, Exclude<E, { _tag: K }> | E1, A | A1> {
-  return catchAll_(ma, (e) => {
-    if ('_tag' in e && e['_tag'] === k) {
-      return f(e as any)
-    }
-    return fail(e as any)
-  })
+  return catch_(ma, '_tag', k, f)
 }
 
 export function catchTag<K extends E['_tag'] & string, E extends { _tag: string }, R1, E1, A1>(
