@@ -9,6 +9,9 @@ import { _combineHash, $hash, hash, hashString } from './Structural/Hashable'
 export const CaseTypeId = Symbol('@principia/base/Case')
 export type CaseTypeId = typeof CaseTypeId
 
+const $keys = Symbol('@principia/base/Case/$keys')
+const $args = Symbol('@principia/base/Case/$args')
+
 export interface CaseArgs {
   readonly [CaseTypeId]: ReadonlyArray<string>
 }
@@ -30,26 +33,26 @@ const h0 = hashString('@principia/base/Case')
 
 // @ts-expect-error
 export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable, CaseArgs {
-  private args: T
-  private keys: ReadonlyArray<string> = []
+  private [$args]: T
+  private [$keys]: ReadonlyArray<string> = []
   constructor(args: T) {
-    this.args = args
+    this[$args] = args
     if (isObject(args)) {
       const keys = Object.keys(args)
       for (let i = 0; i < keys.length; i++) {
         this[keys[i]] = args[keys[i]]
       }
-      this.keys = keys.sort()
+      this[$keys] = keys.sort()
     }
   }
 
   get [CaseTypeId](): ReadonlyArray<string> {
-    return this.keys
+    return this[$keys]
   }
 
   get [$hash](): number {
     let h = h0
-    for (const k of this.keys) {
+    for (const k of this[$keys]) {
       h = _combineHash(h, hash(this[k]))
     }
     return h
@@ -62,7 +65,7 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
     if (that instanceof this.constructor) {
       const kthat = that[CaseTypeId]
       const len   = kthat.length
-      if (len !== this.keys.length) {
+      if (len !== this[$keys].length) {
         return false
       }
 
@@ -70,7 +73,7 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
       let i      = 0
 
       while (result && i < len) {
-        result = this.keys[i] === kthat[i] && equals(this[this.keys[i]], that[kthat[i]])
+        result = this[$keys][i] === kthat[i] && equals(this[this[$keys][i]], that[kthat[i]])
         i++
       }
 
