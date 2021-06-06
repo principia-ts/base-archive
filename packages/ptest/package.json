@@ -1,6 +1,6 @@
 {
   "name": "@principia/ptest",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "description": "A simple runner for @principia/test",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -46,7 +46,7 @@
     "prepublish": "yarn buildAll && rimraf ./dist/dist/.intermediary-build && rimraf ./dist/dist/.traced-intermediary-build"
   },
   "dependencies": {
-    "@principia/test": "^0.9.10",
+    "@principia/test": "^0.9.11",
     "glob": "^7.1.7",
     "ts-node": "^10.0.0",
     "yargs": "^17.0.1"
