@@ -400,4 +400,25 @@ export function unit(): These<never, void> {
   return right(undefined)
 }
 
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Combinators
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function condemn<E, A>(ma: These<E, A>): These<E, A> {
+  return isBoth(ma) ? left(ma.left) : ma
+}
+
+export function condemnWhen_<E, A>(ma: These<E, A>, predicate: P.Predicate<E>): These<E, A> {
+  if (isBoth(ma) && predicate(ma.left)) {
+    return left(ma.left)
+  }
+  return ma
+}
+
+export function condemnWhen<E>(predicate: P.Predicate<E>): <A>(ma: These<E, A>) => These<E, A> {
+  return (ma) => condemnWhen_(ma, predicate)
+}
+
 export { TheseURI } from './Modules'
