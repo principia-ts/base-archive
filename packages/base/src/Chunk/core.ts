@@ -2107,6 +2107,30 @@ export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
   return drop_(self, 1)
 }
 
+export function zipWithIndexOffset_<A>(as: Chunk<A>, offset: number): Chunk<readonly [A, number]> {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let next: IteratorResult<ArrayLike<A>>
+  let i          = offset
+  let out        = builder<readonly [A, number]>()
+  while (!(next = iterator.next()).done) {
+    const array = next.value
+    const len   = array.length
+    for (let j = 0; i < len; j++, i++) {
+      out.append([array[j], i])
+    }
+  }
+  return out.result()
+}
+
+export function zipWithIndexOffset(offset: number): <A>(as: Chunk<A>) => Chunk<readonly [A, number]> {
+  return (as) => zipWithIndexOffset_(as, offset)
+}
+
+export function zipWithIndex<A>(as: Chunk<A>): Chunk<readonly [A, number]> {
+  return zipWithIndexOffset_(as, 0)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Instances
