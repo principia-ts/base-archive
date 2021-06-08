@@ -1,11 +1,13 @@
 import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { Predicate } from '@principia/base/Predicate'
+import type { _A, _R, Eq, UnionToIntersection } from '@principia/base/prelude'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Stream } from '@principia/base/Stream'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import * as C from '@principia/base/Chunk'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { sequential } from '@principia/base/ExecutionStrategy'
 import { identity, pipe } from '@principia/base/function'
@@ -21,6 +23,7 @@ import { tuple } from '@principia/base/tuple'
 import { Sample, shrinkFractional } from './Sample'
 import * as Sa from './Sample'
 import { Sized } from './Sized'
+import {Chunk} from '@principia/base/Chunk'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -29,6 +32,8 @@ import { Sized } from './Sized'
  */
 
 export class Gen<R, A> {
+  readonly _R!: (_: R) => void
+  readonly _A!: () => A
   constructor(readonly sample: Stream<R, never, Sample<R, A>>) {}
 }
 
@@ -203,6 +208,16 @@ export function filterNot<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
+export function setOfN_<A>(E: Eq<A>): <R>(g: Gen<R, A>, n: number) => Gen<R, Chunk<A>> {
+  return <R>(g: Gen<R, A>, n: number) =>
+    pipe(
+      C.fill(n, () => g),
+      C.foldl(constant(C.empty()) as Gen<R, Chunk<A>>, (gen, a) =>
+        crossWith_(gen, a, (as, a) => (C.elem_(E)(as, a) ? as : A.append_(as, a)))
+      )
+    )
+}
+
 export function arrayOfN_<R, A>(g: Gen<R, A>, n: number): Gen<R, ReadonlyArray<A>> {
   return pipe(
     A.replicate(n, g),
@@ -214,8 +229,19 @@ export function arrayOfN(n: number): <R, A>(g: Gen<R, A>) => Gen<R, ReadonlyArra
   return (g) => arrayOfN_(g, n)
 }
 
-export function arrayOf<R, A>(g: Gen<R, A>): Gen<R & Has<Random> & Has<Sized>, ReadonlyArray<A>> {
-  return small((n) => arrayOfN_(g, n))
+export interface ArrayOfConstraints {
+  minLength?: number
+  maxLength?: number
+}
+
+export function arrayOf<R, A>(
+  g: Gen<R, A>,
+  constraints: ArrayOfConstraints = {}
+): Gen<R & Has<Random> & Has<Sized>, ReadonlyArray<A>> {
+  const minLength = constraints.minLength || 0
+  return constraints.maxLength
+    ? bind_(int(minLength, constraints.maxLength), (n) => arrayOfN_(g, n))
+    : small((n) => arrayOfN_(g, n), minLength)
 }
 
 export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R, A>): Gen<R & Has<Random>, A> {
@@ -261,12 +287,65 @@ export function medium<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<R & Has<
   )
 }
 
+export function partial<P extends Record<string, Gen<any, any>>>(
+  properties: P
+): Gen<UnionToIntersection<_R<P[keyof P]>>, Partial<{ [K in keyof P]: _A<P[K]> }>> {
+  return defer(() => {
+    let mut_gen = constant({})
+    for (const key in properties) {
+      mut_gen = bind_(
+        mut_gen,
+        (r) =>
+          new Gen(
+            pipe(
+              Random.next,
+              I.map((n) => n > 0.5),
+              I.ifM(
+                () =>
+                  I.succeed(
+                    pipe(
+                      properties[key].sample,
+                      S.map((sample) => new Sample({ ...r, [key]: sample.value }, S.empty))
+                    )
+                  ),
+                () =>
+                  I.succeed(
+                    pipe(
+                      properties[key].sample,
+                      S.map(() => new Sample(r, S.empty))
+                    )
+                  )
+              ),
+              S.unwrap
+            )
+          )
+      ) as any
+    }
+    return mut_gen
+  })
+}
+
 export function reshrink_<R, A, R1, B>(gen: Gen<R, A>, f: (a: A) => Sample<R1, B>): Gen<R & R1, B> {
   return new Gen(S.map_(gen.sample, (s) => f(s.value)) as Stream<R & R1, never, Sample<R & R1, B>>)
 }
 
 export function reshrink<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(gen: Gen<R, A>) => Gen<R & R1, B> {
   return (gen) => reshrink_(gen, f)
+}
+
+export interface SetConstraints<A> {
+  minLength?: number
+  maxLength?: number
+  eq?: Eq<A>
+}
+
+export function setOf<R, A>(gen: Gen<R, A>, constraints: SetConstraints<A> = {}): Gen<R, ReadonlyArray<A>> {
+  const minLength = constraints.minLength || 0
+  const equals    = constraints.eq?.equals_ || ((x, y) => x === y)
+  return pipe(
+    A.replicate(n, g),
+    A.foldl(constant(A.empty()) as Gen<R, ReadonlyArray<A>>, (gen, a) => crossWith_(gen, a, A.append_))
+  )
 }
 
 export const size: Gen<Has<Sized>, number> = fromEffect(Sized.size)
@@ -294,6 +373,28 @@ export function stringBounded<R>(char: Gen<R, string>, min: number, max: number)
 
 export function stringN<R>(char: Gen<R, string>, n: number): Gen<R, string> {
   return map_(arrayOfN_(char, n), A.join(''))
+}
+
+export function struct<P extends Record<string, Gen<any, any>>>(
+  properties: P
+): Gen<UnionToIntersection<_R<P[keyof P]>>, { readonly [K in keyof P]: _A<P[K]> }> {
+  // @ts-expect-error
+  return G.defer(() => {
+    let mut_gen = constant({})
+    for (const key in properties) {
+      mut_gen = bind_(
+        mut_gen,
+        (r) =>
+          new Gen(
+            pipe(
+              properties[key].sample,
+              S.map((sample) => new Sample({ ...r, [key]: sample.value }, S.empty))
+            )
+          )
+      ) as any
+    }
+    return mut_gen
+  })
 }
 
 export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {

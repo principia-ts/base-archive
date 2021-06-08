@@ -1,6 +1,7 @@
 /* eslint-disable functional/immutable-data */
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
+import type { Eq } from '../Eq'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
@@ -13,7 +14,7 @@ import * as It from '../Iterable/core'
 import * as O from '../Option'
 import { isByte } from '../prelude'
 import * as P from '../prelude'
-import * as Eq from '../Structural/Equatable'
+import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import * as Th from '../These'
 import { AtomicNumber } from '../util/support/AtomicNumber'
@@ -36,7 +37,7 @@ export const ChunkTag = {
   BinArr: 'BinArr'
 } as const
 
-export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable {
+export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Equ.Equatable {
   readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
@@ -51,8 +52,8 @@ export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Eq.Equatable
     return Ha.hashIterator(this[Symbol.iterator]())
   }
 
-  [Eq.$equals](that: unknown): boolean {
-    return isChunk(that) && corresponds_(this, that, Eq.equals)
+  [Equ.$equals](that: unknown): boolean {
+    return isChunk(that) && corresponds_(this, that, Equ.equals)
   }
 
   /**
@@ -907,6 +908,10 @@ export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
 
 export function range(start: number, end: number): Chunk<number> {
   return fromArray(A.range(start, end))
+}
+
+export function replicate<A>(n: number, a: A): Chunk<A> {
+  return fill(n, () => a)
 }
 
 export function single<A>(a: A): Chunk<A> {
@@ -2303,6 +2308,26 @@ export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
  * util
  * -------------------------------------------------------------------------------------------------
  */
+
+/**
+ * Determines whether at least one element of the Chunk is equal to the given element
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function elem_<A>(E: Eq<A>): (as: Chunk<A>, el: A) => boolean {
+  return (as, el) => exists_(as, (a) => E.equals_(a, el))
+}
+
+/**
+ * Determines whether at least one element of the Chunk is equal to the given element
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function elem<A>(E: Eq<A>): (el: A) => (as: Chunk<A>) => boolean {
+  return (el) => (as) => elem_(E)(as, el)
+}
 
 /**
  * Determines whether every element of the Chunk satisfies the given predicate
