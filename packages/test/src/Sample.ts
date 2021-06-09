@@ -2,6 +2,7 @@ import type { IO } from '@principia/base/IO'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Stream } from '@principia/base/Stream'
+import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
 
 import * as Ca from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
@@ -11,6 +12,8 @@ import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Stream'
 import { tuple } from '@principia/base/tuple'
+
+import { add64, halve64, isEqual64, substract64 } from './util/math'
 
 export class Sample<R, A> {
   constructor(readonly value: A, readonly shrink: Stream<R, never, Sample<R, A>>) {}
@@ -394,6 +397,23 @@ export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown,
             return O.some([mid, max])
           } else {
             return O.some([mid, mid])
+          }
+        })
+      )
+    )
+}
+
+export function shrinkArrayInt64(target: ArrayInt64): (value: ArrayInt64) => Sample<unknown, ArrayInt64> {
+  return (value) =>
+    unfold(value, (max) =>
+      tuple(
+        max,
+        S.unfold(target, (min) => {
+          const mid = add64(min, halve64(substract64(max, min)))
+          if (isEqual64(mid, max)) {
+            return O.none()
+          } else {
+            return O.some([mid, max])
           }
         })
       )

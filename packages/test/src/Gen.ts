@@ -1,13 +1,16 @@
+import type { ArrayInt64 } from './util/math'
+import type { Chunk } from '@principia/base/Chunk'
 import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { Predicate } from '@principia/base/Predicate'
-import type { _A, _R, Eq, UnionToIntersection } from '@principia/base/prelude'
+import type { _A, _R, UnionToIntersection } from '@principia/base/prelude'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Stream } from '@principia/base/Stream'
 
 import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
 import * as C from '@principia/base/Chunk'
+import * as E from '@principia/base/Either'
+import * as Eq from '@principia/base/Eq'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { sequential } from '@principia/base/ExecutionStrategy'
 import { identity, pipe } from '@principia/base/function'
@@ -18,12 +21,28 @@ import { OrderedMap } from '@principia/base/OrderedMap'
 import * as OM from '@principia/base/OrderedMap'
 import { Random } from '@principia/base/Random'
 import * as S from '@principia/base/Stream'
+import * as Str from '@principia/base/string'
+import * as St from '@principia/base/Structural'
+import * as Th from '@principia/base/These'
 import { tuple } from '@principia/base/tuple'
 
 import { Sample, shrinkFractional } from './Sample'
 import * as Sa from './Sample'
 import { Sized } from './Sized'
-import {Chunk} from '@principia/base/Chunk'
+import {
+  add64,
+  clamp,
+  computeArrayInt64GenerateRange,
+  indexToDouble,
+  indexToFloat,
+  isStrictlyPositive64,
+  isStrictlySmaller64,
+  MAX_VALUE_32,
+  safeDoubleToIndex,
+  safeFloatToIndex,
+  substract64,
+  Unit64
+} from './util/math'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -37,11 +56,57 @@ export class Gen<R, A> {
   constructor(readonly sample: Stream<R, never, Sample<R, A>>) {}
 }
 
+export interface LengthConstraints {
+  minLength?: number
+  maxLength?: number
+}
+
+export interface EqConstraint<A> {
+  eq?: Eq.Eq<A>
+}
+
+export interface DateConstraints {
+  min?: Date
+  max?: Date
+}
+
+export interface ObjectConstraints {
+  maxDepth?: number
+  maxKeys?: number
+  key?: Gen<any, string>
+  values?: Gen<any, any>[]
+  withSet?: boolean
+  withMap?: boolean
+  withBigint?: boolean
+  withDate?: boolean
+  withTypedArray?: boolean
+}
+
+export interface IntArrayConstraints {
+  min?: number
+  max?: number
+}
+
+export interface FloatConstraints {
+  min?: number
+  max?: number
+  noDefaultInfinity?: boolean
+  noNaN?: boolean
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
  * -------------------------------------------------------------------------------------------------
  */
+
+export function constant<A>(a: A): Gen<unknown, A> {
+  return new Gen(S.succeed(Sa.noShrink(a)))
+}
+
+export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
+  return pipe(I.effectTotal(gen), fromEffect, flatten)
+}
 
 export function fromEffect<R, A>(effect: IO<R, never, A>): Gen<R, A> {
   return new Gen(S.fromEffect(I.map_(effect, Sa.noShrink)))
@@ -51,48 +116,139 @@ export function fromEffectSample<R, A>(effect: IO<R, never, Sample<R, A>>): Gen<
   return new Gen(S.fromEffect(effect))
 }
 
-export function constant<A>(a: A): Gen<unknown, A> {
-  return new Gen(S.succeed(Sa.noShrink(a)))
-}
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Primitives
  * -------------------------------------------------------------------------------------------------
  */
 
-export const uniform: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.next, Sa.shrinkFractional(0.0)))
-
-export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.next, shrinkFractional(0)))
-
-export const anyBigInt: Gen<Has<Random>, bigint> = fromEffectSample(
-  I.map_(
-    Random.nextBigIntBetween(BigInt(-1) << BigInt(255), (BigInt(1) << BigInt(255)) - BigInt(1)),
-    Sa.shrinkBigInt(BigInt(0))
-  )
-)
-
-export const anyInt: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
-
-export const alphaNumericChar: Gen<Has<Random>, string> = weighted(
-  [char(48, 57), 10],
-  [char(65, 90), 26],
-  [char(97, 122), 26]
-)
-
-export function alphaNumericStringBounded(min: number, max: number): Gen<Has<Random>, string> {
-  return stringBounded(alphaNumericChar, min, max)
+export function alphaNumericChar(): Gen<Has<Random>, string> {
+  return weighted([char(48, 57), 10], [char(65, 90), 26], [char(97, 122), 26])
 }
 
-export const empty: Gen<unknown, never> = new Gen(S.empty)
+export function alphaNumericString(constraints: LengthConstraints = {}): Gen<Has<Random> & Has<Sized>, string> {
+  return string(alphaNumericChar(), constraints)
+}
 
-export const exponential: Gen<Has<Random>, number> = map_(uniform, (n) => -Math.log(1 - n))
+export function anyBigInt(): Gen<Has<Random>, bigint> {
+  return fromEffectSample(
+    I.map_(
+      Random.nextBigIntBetween(BigInt(-1) << BigInt(255), (BigInt(1) << BigInt(255)) - BigInt(1)),
+      Sa.shrinkBigInt(BigInt(0))
+    )
+  )
+}
 
-export const printableChar = char(33, 126)
+export function anyDouble(): Gen<Has<Random>, number> {
+  return fromEffectSample(I.map_(Random.next, shrinkFractional(0)))
+}
 
-export const none: Gen<unknown, O.Option<never>> = constant(O.none())
+export function anyInt(): Gen<Has<Random>, number> {
+  return fromEffectSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
+}
 
-export const unit: Gen<unknown, void> = constant(undefined)
+export function arrayInt64(min: ArrayInt64, max: ArrayInt64): Gen<Has<Random>, ArrayInt64> {
+  return pipe(
+    computeArrayInt64GenerateRange(min, max, undefined, undefined),
+    S.fromEffect,
+    S.bind(({ min, max }) => S.repeatEffect(Random.nextArrayInt(min, max))),
+    S.map((uncheckedValue) => {
+      if (uncheckedValue.data.length === 1) {
+        uncheckedValue.data.unshift(0)
+      }
+      return Sa.shrinkArrayInt64(min)(uncheckedValue as ArrayInt64)
+    }),
+    (_) => new Gen(_)
+  )
+}
+
+export function ascii(): Gen<Has<Random>, string> {
+  return char(0x00, 0x7f)
+}
+
+export function float(constraints: FloatConstraints = {}): Gen<Has<Random>, number> {
+  const {
+    noDefaultInfinity = false,
+    min = noDefaultInfinity ? -MAX_VALUE_32 : Number.NEGATIVE_INFINITY,
+    max = noDefaultInfinity ? MAX_VALUE_32 : Number.POSITIVE_INFINITY,
+    noNaN = false
+  } = constraints
+  return pipe(
+    I.gen(function* (_) {
+      const minIndex = yield* _(safeFloatToIndex(min, 'min'))
+      const maxIndex = yield* _(safeFloatToIndex(max, 'max'))
+      if (minIndex > maxIndex) {
+        return yield* _(I.die(new Error('Gen.float constraints.min must be less than or equal to constraints.max')))
+      }
+      if (noNaN) {
+        return pipe(int(minIndex, maxIndex), map(indexToFloat))
+      }
+      const minIndexWithNaN = maxIndex > 0 ? minIndex : minIndex - 1
+      const maxIndexWithNaN = maxIndex > 0 ? maxIndex + 1 : maxIndex
+      return pipe(
+        int(minIndexWithNaN, maxIndexWithNaN),
+        map((index) => {
+          if (index > maxIndex || index < minIndex) return Number.NaN
+          else return indexToFloat(index)
+        })
+      )
+    }),
+    unwrap
+  )
+}
+
+export function double(constraints: FloatConstraints = {}): Gen<Has<Random>, number> {
+  const {
+    noDefaultInfinity = false,
+    noNaN = false,
+    min = noDefaultInfinity ? -Number.MAX_VALUE : Number.NEGATIVE_INFINITY,
+    max = noDefaultInfinity ? Number.MAX_VALUE : Number.POSITIVE_INFINITY
+  } = constraints
+  return pipe(
+    I.gen(function* (_) {
+      const minIndex = yield* _(safeDoubleToIndex(min, 'min'))
+      const maxIndex = yield* _(safeDoubleToIndex(max, 'max'))
+      if (isStrictlySmaller64(maxIndex, minIndex)) {
+        return yield* _(I.die(new IllegalArgumentError('min must be less than or equal to max', 'Gen.double')))
+      }
+      if (noNaN) {
+        return map_(arrayInt64(minIndex, maxIndex), indexToDouble)
+      }
+      const positiveMaxIdx  = isStrictlyPositive64(maxIndex)
+      const minIndexWithNaN = positiveMaxIdx ? minIndex : substract64(minIndex, Unit64)
+      const maxIndexWithNaN = positiveMaxIdx ? add64(maxIndex, Unit64) : maxIndex
+      return map_(arrayInt64(minIndexWithNaN, maxIndexWithNaN), (index) => {
+        if (isStrictlySmaller64(maxIndex, index) || isStrictlySmaller64(index, minIndex)) return Number.NaN
+        else return indexToDouble(index)
+      })
+    }),
+    unwrap
+  )
+}
+
+export function empty(): Gen<unknown, never> {
+  return new Gen(S.empty)
+}
+
+export function exponential(): Gen<Has<Random>, number> {
+  return map_(uniform(), (n) => -Math.log(1 - n))
+}
+
+export function printableChar(): Gen<Has<Random>, string> {
+  return char(33, 126)
+}
+
+export function none(): Gen<unknown, O.Option<never>> {
+  return constant(O.none())
+}
+
+export function uniform(): Gen<Has<Random>, number> {
+  return fromEffectSample(I.map_(Random.next, Sa.shrinkFractional(0.0)))
+}
+
+export function unit(): Gen<unknown, void> {
+  return constant(undefined)
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -208,40 +364,94 @@ export function filterNot<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function setOfN_<A>(E: Eq<A>): <R>(g: Gen<R, A>, n: number) => Gen<R, Chunk<A>> {
-  return <R>(g: Gen<R, A>, n: number) =>
+export function anything<C extends ObjectConstraints>(
+  constraints: C = {} as any
+): Gen<
+  ObjectConstraints extends C
+    ? Has<Random> & Has<Sized>
+    : unknown extends C['key']
+    ? Has<Random> & Has<Sized>
+    : _R<C['key']> & C['values'] extends Array<infer A>
+    ? _R<A>
+    : Has<Random> & Has<Sized> & Has<Random> & Has<Sized>,
+  unknown
+> {
+  const key      = constraints.key || alphaNumericString()
+  const maxDepth = constraints.maxDepth || 2
+  const maxKeys  = constraints.maxKeys || 5
+  const values   = constraints.values || [
+    boolean(),
+    alphaNumericString(),
+    double(),
+    anyInt(),
+    oneOf(alphaNumericString(), constant(null), constant(undefined))
+  ]
+
+  const mapOf = <R, K, R1, V>(key: Gen<R, K>, value: Gen<R1, V>) =>
     pipe(
-      C.fill(n, () => g),
-      C.foldl(constant(C.empty()) as Gen<R, Chunk<A>>, (gen, a) =>
-        crossWith_(gen, a, (as, a) => (C.elem_(E)(as, a) ? as : A.append_(as, a)))
-      )
+      tupleOf(key, value),
+      uniqueChunkOf({ eq: Eq.contramap_(St.DefaultEq, ([k]) => k) }),
+      map((c) => new Map(c))
     )
+
+  const setOf = <R, V>(value: Gen<R, V>) =>
+    pipe(
+      value,
+      uniqueChunkOf({ eq: St.DefaultEq, maxLength: maxKeys }),
+      map((c) => new Set(c))
+    )
+
+  const base       = oneOf(...values)
+  const arrayBase  = oneOf(...A.map_(values, (gen) => arrayOf(gen, { maxLength: maxKeys })))
+  const arrayGen   = memo((n) => oneOf(arrayBase, arrayOf(gen(n), { maxLength: maxKeys })))
+  const objectBase = oneOf(...A.map_(values, (gen) => dictionary(key, gen)))
+  const objectGen  = memo((n) => oneOf(objectBase, dictionary(key, gen(n))))
+  const setBase    = oneOf(...A.map_(values, setOf))
+  const setGen     = memo((n) => oneOf(setBase, setOf(gen(n))))
+  const mapBase    = oneOf(...A.map_(values, (_) => mapOf(key, _)))
+  const mapGen     = memo((n) => oneOf(mapBase, mapOf(oneOf(key, gen(n)), gen(n))))
+
+  const gen: (n: number) => Gen<any, any> = memo((n) => {
+    if (n <= 0) return base
+    return oneOf(
+      base,
+      arrayGen(),
+      objectGen(),
+      ...(constraints.withDate ? [date()] : []),
+      ...(constraints.withSet ? [setGen()] : []),
+      ...(constraints.withMap ? [mapGen()] : []),
+      ...(constraints.withTypedArray
+        ? [oneOf(int8Array(), uint8Array(), int16Array(), uint16Array(), int32Array(), uint32Array())]
+        : [])
+    )
+  })
+  return gen(maxDepth)
+}
+
+export function arrayOf<R, A>(
+  g: Gen<R, A>,
+  constraints: LengthConstraints = {}
+): Gen<R & Has<Random> & Has<Sized>, ReadonlyArray<A>> {
+  const minLength = constraints.minLength || 0
+  return constraints.maxLength
+    ? bind_(int(minLength, constraints.maxLength), (n) => arrayOfN_(g, n))
+    : small((n) => arrayOfN_(g, n), minLength)
 }
 
 export function arrayOfN_<R, A>(g: Gen<R, A>, n: number): Gen<R, ReadonlyArray<A>> {
-  return pipe(
-    A.replicate(n, g),
-    A.foldl(constant(A.empty()) as Gen<R, ReadonlyArray<A>>, (gen, a) => crossWith_(gen, a, A.append_))
-  )
+  return pipe(chunkOfN_(g, n), map(C.toArray))
 }
 
 export function arrayOfN(n: number): <R, A>(g: Gen<R, A>) => Gen<R, ReadonlyArray<A>> {
   return (g) => arrayOfN_(g, n)
 }
 
-export interface ArrayOfConstraints {
-  minLength?: number
-  maxLength?: number
+export function asciiString<R>(constraints?: LengthConstraints): Gen<R & Has<Random> & Has<Sized>, string> {
+  return map_(arrayOf(ascii(), constraints), A.join(''))
 }
 
-export function arrayOf<R, A>(
-  g: Gen<R, A>,
-  constraints: ArrayOfConstraints = {}
-): Gen<R & Has<Random> & Has<Sized>, ReadonlyArray<A>> {
-  const minLength = constraints.minLength || 0
-  return constraints.maxLength
-    ? bind_(int(minLength, constraints.maxLength), (n) => arrayOfN_(g, n))
-    : small((n) => arrayOfN_(g, n), minLength)
+export function boolean(): Gen<Has<Random>, boolean> {
+  return oneOf(constant(true), constant(false))
 }
 
 export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R, A>): Gen<R & Has<Random>, A> {
@@ -250,6 +460,48 @@ export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R,
 
 export function char(min: number, max: number): Gen<Has<Random>, string> {
   return map_(int(min, max), (n) => String.fromCharCode(n))
+}
+
+export function chunkOf<R, A>(
+  g: Gen<R, A>,
+  constraints: LengthConstraints = {}
+): Gen<R & Has<Random> & Has<Sized>, Chunk<A>> {
+  const minLength = constraints.minLength || 0
+  return constraints.maxLength
+    ? bind_(int(minLength, constraints.maxLength), (n) => chunkOfN_(g, n))
+    : small((n) => chunkOfN_(g, n), minLength)
+}
+
+export function chunkOfN_<R, A>(g: Gen<R, A>, n: number): Gen<R, Chunk<A>> {
+  return pipe(
+    C.replicate(n, g),
+    C.foldl(constant(C.empty()) as Gen<R, Chunk<A>>, (gen, a) => crossWith_(gen, a, C.append_))
+  )
+}
+
+export function chunkOfN(n: number): <R, A>(g: Gen<R, A>) => Gen<R, Chunk<A>> {
+  return (g) => chunkOfN_(g, n)
+}
+
+export function date(constraints: DateConstraints = {}): Gen<Has<Random>, Date> {
+  const min = constraints.min ? constraints.min.getTime() : -8_640_000_000_000_000
+  const max = constraints.max ? constraints.max.getTime() : 8_640_000_000_000_000
+  return pipe(
+    int(min, max),
+    map((n) => new Date(n))
+  )
+}
+
+export function dictionary<R, R1, V>(
+  key: Gen<R, string>,
+  value: Gen<R1, V>,
+  constraints?: LengthConstraints
+): Gen<Has<Random> & Has<Sized> & R & R1, Record<string, V>> {
+  return pipe(
+    tupleOf(key, value),
+    uniqueChunkOf({ eq: Eq.contramap_(Str.Eq, ([k]) => k), ...constraints }),
+    map(C.foldl({} as Record<string, V>, (b, [k, v]) => ({ ...b, [k]: v })))
+  )
 }
 
 export function int(min: number, max: number): Gen<Has<Random>, number> {
@@ -264,13 +516,70 @@ export function int(min: number, max: number): Gen<Has<Random>, number> {
   )
 }
 
-export function option<R, A>(gen: Gen<R, A>): Gen<R & Has<Random>, O.Option<A>> {
-  return oneOf(none, some(gen))
+function typedArray<A>(
+  constraints: LengthConstraints & IntArrayConstraints,
+  minBound: number,
+  maxBound: number,
+  ctor: { new (arg: ReadonlyArray<number>): A }
+): Gen<Has<Random> & Has<Sized>, A> {
+  const min = constraints.min ? clamp(constraints.min, minBound, maxBound) : minBound
+  const max = constraints.max ? clamp(constraints.max, minBound, maxBound) : maxBound
+  return pipe(
+    arrayOf(int(min, max), constraints),
+    map((n) => new ctor(n))
+  )
 }
 
-export function oneOf<R, A>(...gens: ReadonlyArray<Gen<R, A>>): Gen<R & Has<Random>, A> {
-  if (A.isEmpty(gens)) return empty
-  else return bind_(int(0, gens.length - 1), (i) => gens[i])
+export function int8Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Int8Array> {
+  return typedArray(constraints, -128, 127, Int8Array)
+}
+
+export function int16Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Int16Array> {
+  return typedArray(constraints, -32768, 32767, Int16Array)
+}
+
+export function int32Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Int32Array> {
+  return typedArray(constraints, -0x80000000, 0x7fffffff, Int32Array)
+}
+
+export function uint8Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Uint8Array> {
+  return typedArray(constraints, 0, 255, Uint8Array)
+}
+
+export function uint16Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Uint16Array> {
+  return typedArray(constraints, 0, 65535, Uint16Array)
+}
+
+export function uint32Array(
+  constraints: LengthConstraints & IntArrayConstraints = {}
+): Gen<Has<Random> & Has<Sized>, Uint32Array> {
+  return typedArray(constraints, 0, 0xffffffff, Uint32Array)
+}
+
+export function memo<R, A>(builder: (maxDepth: number) => Gen<R, A>): (maxDepth?: number) => Gen<R, A> {
+  const previous: { [depth: number]: Gen<R, A> } = {}
+  let remainingDepth                             = 10
+  return (maxDepth?: number): Gen<R, A> => {
+    const n = maxDepth !== undefined ? maxDepth : remainingDepth
+    if (!Object.prototype.hasOwnProperty.call(previous, n)) {
+      const prev     = remainingDepth
+      remainingDepth = n - 1
+      // eslint-disable-next-line functional/immutable-data
+      previous[n]    = builder(n)
+      remainingDepth = prev
+    }
+    return previous[n]
+  }
 }
 
 /**
@@ -281,48 +590,42 @@ export function oneOf<R, A>(...gens: ReadonlyArray<Gen<R, A>>): Gen<R & Has<Rand
 export function medium<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<R & Has<Random> & Has<Sized>, A> {
   return pipe(
     size,
-    bind((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 10.0), min, max))),
+    bind((max) => map_(exponential(), (n) => clamp(Math.round((n * max) / 10.0), min, max))),
     reshrink(Sa.shrinkIntegral(min)),
     bind(f)
   )
 }
 
+export function nat(max = 0x7fffffff): Gen<Has<Random>, number> {
+  return int(0, clamp(max, 0, max))
+}
+
+export function option<R, A>(gen: Gen<R, A>): Gen<R & Has<Random>, O.Option<A>> {
+  return oneOf(none(), some(gen))
+}
+
+export function oneOf<A extends ReadonlyArray<Gen<any, any>>>(
+  ...gens: A
+): Gen<_R<A[number]> & Has<Random>, _A<A[number]>> {
+  if (A.isEmpty(gens)) return empty()
+  else return bind_(int(0, gens.length - 1), (i) => gens[i])
+}
+
 export function partial<P extends Record<string, Gen<any, any>>>(
   properties: P
-): Gen<UnionToIntersection<_R<P[keyof P]>>, Partial<{ [K in keyof P]: _A<P[K]> }>> {
-  return defer(() => {
-    let mut_gen = constant({})
-    for (const key in properties) {
-      mut_gen = bind_(
-        mut_gen,
-        (r) =>
-          new Gen(
-            pipe(
-              Random.next,
-              I.map((n) => n > 0.5),
-              I.ifM(
-                () =>
-                  I.succeed(
-                    pipe(
-                      properties[key].sample,
-                      S.map((sample) => new Sample({ ...r, [key]: sample.value }, S.empty))
-                    )
-                  ),
-                () =>
-                  I.succeed(
-                    pipe(
-                      properties[key].sample,
-                      S.map(() => new Sample(r, S.empty))
-                    )
-                  )
-              ),
-              S.unwrap
-            )
-          )
-      ) as any
-    }
-    return mut_gen
-  })
+): Gen<_R<P[keyof P]>, Partial<{ [K in keyof P]: _A<P[K]> }>> {
+  const entries = Object.entries(properties)
+  return A.foldl_(entries, constant({}) as Gen<any, any>, (b, [k, genV]) =>
+    pipe(
+      Random.next,
+      I.map((n) => n > 0.5),
+      I.ifM(
+        () => I.succeed(crossWith_(b, genV, (r, v) => ({ ...r, [k]: v }))),
+        () => I.succeed(b)
+      ),
+      unwrap
+    )
+  )
 }
 
 export function reshrink_<R, A, R1, B>(gen: Gen<R, A>, f: (a: A) => Sample<R1, B>): Gen<R & R1, B> {
@@ -331,21 +634,6 @@ export function reshrink_<R, A, R1, B>(gen: Gen<R, A>, f: (a: A) => Sample<R1, B
 
 export function reshrink<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(gen: Gen<R, A>) => Gen<R & R1, B> {
   return (gen) => reshrink_(gen, f)
-}
-
-export interface SetConstraints<A> {
-  minLength?: number
-  maxLength?: number
-  eq?: Eq<A>
-}
-
-export function setOf<R, A>(gen: Gen<R, A>, constraints: SetConstraints<A> = {}): Gen<R, ReadonlyArray<A>> {
-  const minLength = constraints.minLength || 0
-  const equals    = constraints.eq?.equals_ || ((x, y) => x === y)
-  return pipe(
-    A.replicate(n, g),
-    A.foldl(constant(A.empty()) as Gen<R, ReadonlyArray<A>>, (gen, a) => crossWith_(gen, a, A.append_))
-  )
 }
 
 export const size: Gen<Has<Sized>, number> = fromEffect(Sized.size)
@@ -357,14 +645,24 @@ export function sized<R, A>(f: (size: number) => Gen<R, A>): Gen<R & Has<Sized>,
 export function small<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<Has<Sized> & Has<Random> & R, A> {
   return pipe(
     size,
-    bind((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 25), min, max))),
+    bind((max) => map_(exponential(), (n) => clamp(Math.round((n * max) / 25), min, max))),
     reshrink(Sa.shrinkIntegral(min)),
     bind(f)
   )
 }
 
-export function string<R>(char: Gen<R, string>): Gen<R & Has<Random> & Has<Sized>, string> {
-  return map_(arrayOf(char), A.join(''))
+export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {
+  return map_(gen, O.some)
+}
+
+export function string<R>(
+  char: Gen<R, string>,
+  constraints: LengthConstraints = {}
+): Gen<R & Has<Random> & Has<Sized>, string> {
+  const min = constraints.minLength || 0
+  return constraints.maxLength
+    ? bounded(min, constraints.maxLength, (n) => stringN(char, n))
+    : small((n) => stringN(char, n), min)
 }
 
 export function stringBounded<R>(char: Gen<R, string>, min: number, max: number): Gen<R & Has<Random>, string> {
@@ -378,31 +676,70 @@ export function stringN<R>(char: Gen<R, string>, n: number): Gen<R, string> {
 export function struct<P extends Record<string, Gen<any, any>>>(
   properties: P
 ): Gen<UnionToIntersection<_R<P[keyof P]>>, { readonly [K in keyof P]: _A<P[K]> }> {
-  // @ts-expect-error
-  return G.defer(() => {
-    let mut_gen = constant({})
-    for (const key in properties) {
-      mut_gen = bind_(
-        mut_gen,
-        (r) =>
-          new Gen(
-            pipe(
-              properties[key].sample,
-              S.map((sample) => new Sample({ ...r, [key]: sample.value }, S.empty))
-            )
-          )
-      ) as any
-    }
-    return mut_gen
-  })
+  const entries = Object.entries(properties)
+  return A.foldl_(entries, constant({}) as Gen<any, any>, (b, [k, genV]) =>
+    crossWith_(b, genV, (out, v) => ({ ...out, [k]: v }))
+  )
 }
 
-export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {
-  return map_(gen, O.some)
+export function tupleOf<C extends ReadonlyArray<Gen<any, any>>>(
+  ...components: C
+): Gen<_R<C[number]>, { [K in keyof C]: _A<C[K]> }> {
+  return A.foldl_(components, constant<Array<any>>([]) as Gen<_R<C[keyof C]>, any>, (b, a) =>
+    crossWith_(b, a, (bs, x) => [...bs, x])
+  )
 }
 
-export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
-  return pipe(I.effectTotal(gen), fromEffect, flatten)
+export function uniqueChunkOf_<R, A>(
+  gen: Gen<R, A>,
+  constraints: LengthConstraints & EqConstraint<A> = {}
+): Gen<Has<Random> & Has<Sized> & R, Chunk<A>> {
+  const minLength = constraints.minLength || 0
+  const eq        = constraints.eq || St.DefaultEq
+  return constraints.maxLength
+    ? bounded(minLength, constraints.maxLength, (n) => uniqueChunkOfN_(eq)(gen, n))
+    : small((n) => uniqueChunkOfN_(eq)(gen, n), minLength)
+}
+
+export function uniqueChunkOf<A>(
+  constraints: LengthConstraints & EqConstraint<A> = {}
+): <R>(gen: Gen<R, A>) => Gen<Has<Random> & Has<Sized> & R, Chunk<A>> {
+  return (gen) => uniqueChunkOf_(gen, constraints)
+}
+
+export function uniqueArrayOf_<R, A>(
+  gen: Gen<R, A>,
+  constraints: LengthConstraints & EqConstraint<A> = {}
+): Gen<Has<Random> & Has<Sized> & R, ReadonlyArray<A>> {
+  return pipe(uniqueChunkOf_(gen, constraints), map(C.toArray))
+}
+
+export function uniqueArrayOf<A>(
+  constraints: LengthConstraints & EqConstraint<A> = {}
+): <R>(gen: Gen<R, A>) => Gen<Has<Random> & Has<Sized> & R, ReadonlyArray<A>> {
+  return (gen) => uniqueArrayOf_(gen, constraints)
+}
+
+export function uniqueChunkOfN_<A>(E: Eq.Eq<A>): <R>(g: Gen<R, A>, n: number) => Gen<R, Chunk<A>> {
+  return <R>(g: Gen<R, A>, n: number) =>
+    pipe(
+      C.replicate(n, g),
+      C.foldl(constant(C.empty()) as Gen<R, Chunk<A>>, (gen, a) =>
+        crossWith_(gen, a, (as, a) => (C.elem_(E)(as, a) ? as : C.append_(as, a)))
+      )
+    )
+}
+
+export function uniqueChunkOfN<A>(E: Eq.Eq<A>): (n: number) => <R>(g: Gen<R, A>) => Gen<R, Chunk<A>> {
+  return (n) => (g) => uniqueChunkOfN_(E)(g, n)
+}
+
+export function uniqueArrayOfN_<A>(E: Eq.Eq<A>): <R>(g: Gen<R, A>, n: number) => Gen<R, ReadonlyArray<A>> {
+  return <R>(g: Gen<R, A>, n: number) => pipe(uniqueChunkOfN_(E)(g, n), map(C.toArray))
+}
+
+export function uniqueArrayOfN<A>(E: Eq.Eq<A>): (n: number) => <R>(g: Gen<R, A>) => Gen<R, ReadonlyArray<A>> {
+  return (n) => (g) => uniqueArrayOfN_(E)(g, n)
 }
 
 export function unfoldGen<S, R, A>(
@@ -423,18 +760,22 @@ export function unfoldGenN<S, R, A>(n: number, s: S, f: (s: S) => Gen<R, readonl
   }
 }
 
+export function unwrap<R, R1, A>(effect: I.URIO<R, Gen<R1, A>>): Gen<R & R1, A> {
+  return pipe(fromEffect(effect), flatten)
+}
+
 export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]>): Gen<R & Has<Random>, A> {
-  const sum      = pipe(
+  const sum   = pipe(
     gs,
     A.map(([, w]) => w),
     A.sum
   )
-  const [map, _] = A.foldl_(gs, tuple(new OrderedMap<number, Gen<R, A>>(N.Ord, null), 0), ([map, acc], [gen, d]) => {
+  const [map] = A.foldl_(gs, tuple(new OrderedMap<number, Gen<R, A>>(N.Ord, null), 0), ([map, acc], [gen, d]) => {
     if ((acc + d) / sum > acc / sum) return tuple(OM.insert_(map, (acc + d) / sum, gen), acc + d)
     else return tuple(map, acc)
   })
   return pipe(
-    uniform,
+    uniform(),
     bind((n) => {
       return pipe(
         map,
@@ -463,23 +804,20 @@ export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A
   return new Gen(
     pipe(
       left,
-      S.zipAllWithExec(
-        right,
-        sequential,
-        (l) => tuple(O.some(l), O.none()),
-        (r) => tuple(O.none(), O.some(r)),
-        (l, r) => tuple(O.some(l), O.some(r))
-      ),
-      S.collectWhile(([x, y]) =>
-        O.isSome(x) && O.isSome(y)
-          ? E.isRight(x.value) && E.isRight(y.value)
-            ? O.some(Sa.zipWith_(x.value.right, y.value.right, f))
-            : E.isRight(x.value) && E.isLeft(y.value)
-            ? O.some(Sa.zipWith_(x.value.right, y.value.left, f))
-            : E.isLeft(x.value) && E.isRight(y.value)
-            ? O.some(Sa.zipWith_(x.value.left, y.value.right, f))
-            : O.none()
-          : O.none()
+      S.zipAllWithExec(right, sequential, Th.left, Th.right, Th.both),
+      S.collectWhile(
+        Th.match(
+          () => O.none(),
+          () => O.none(),
+          (l, r) =>
+            E.isRight(l) && E.isRight(r)
+              ? O.some(Sa.zipWith_(l.right, r.right, f))
+              : E.isRight(l) && E.isLeft(r)
+              ? O.some(Sa.zipWith_(l.right, r.left, f))
+              : E.isLeft(l) && E.isRight(r)
+              ? O.some(Sa.zipWith_(l.left, r.right, f))
+              : O.none()
+        )
       )
     )
   )
@@ -488,11 +826,5 @@ export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A
 export function zipWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R>(fa: Gen<R, A>) => Gen<R & R1, C> {
   return (fa) => zipWith_(fa, fb, f)
 }
-
-function clamp(n: number, min: number, max: number): number {
-  return n < min ? min : n > max ? max : n
-}
-
-export const alphaNumericString: Gen<Has<Random> & Has<Sized>, string> = string(alphaNumericChar)
 
 export { GenURI } from './Modules'

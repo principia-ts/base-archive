@@ -3,6 +3,8 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
+import type { ArrayInt } from './util/pure-rand/distribution/internals/ArrayInt'
+
 import { tag } from './Has'
 import * as I from './IO/core'
 import * as L from './Layer/core'
@@ -34,6 +36,9 @@ export class LiveRandom implements Random {
 
   nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint> = (low, high) =>
     I.effectTotal(() => this.PRNG.nextBigInt(low, high))
+
+  nextArrayInt: (low: ArrayInt, high: ArrayInt) => I.UIO<ArrayInt> = (low, high) =>
+    I.effectTotal(() => this.PRNG.nextArrayInt(low, high))
 }
 
 export const defaultRandom = new LiveRandom((Math.random() * 4294967296) >>> 0)
@@ -47,6 +52,7 @@ export abstract class Random {
   abstract readonly nextRange: (low: number, high: number) => I.UIO<number>
   abstract readonly nextIntBetween: (low: number, high: number) => I.UIO<number>
   abstract readonly nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint>
+  abstract readonly nextArrayInt: (low: ArrayInt, high: ArrayInt) => I.UIO<ArrayInt>
 
   static live = L.succeed(RandomTag)(defaultRandom)
 
@@ -56,6 +62,7 @@ export abstract class Random {
   static nextInt           = I.deriveLifted(RandomTag)([], ['nextInt'], []).nextInt
   static nextRange         = I.deriveLifted(RandomTag)(['nextRange'], [], []).nextRange
   static nextBigIntBetween = I.deriveLifted(RandomTag)(['nextBigIntBetween'], [], []).nextBigIntBetween
+  static nextArrayInt      = I.deriveLifted(RandomTag)(['nextArrayInt'], [], []).nextArrayInt
 }
 
 export function withSeed(seed: number) {
