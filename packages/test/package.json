@@ -30,6 +30,14 @@
       "import": "./dist/dist/esm/Assertion/index.js",
       "require": "./dist/dist/cjs/Assertion/index.js"
     },
+    "./Gen": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Gen/index.js",
+        "require": "./dist/dist-traced/cjs/Gen/index.js"
+      },
+      "import": "./dist/dist/esm/Gen/index.js",
+      "require": "./dist/dist/cjs/Gen/index.js"
+    },
     "./Mock": {
       "traced": {
         "import": "./dist/dist-traced/esm/Mock/index.js",

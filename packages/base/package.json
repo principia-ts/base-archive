@@ -110,14 +110,6 @@
       "import": "./dist/dist/esm/FiberRef/index.js",
       "require": "./dist/dist/cjs/FiberRef/index.js"
     },
-    "./Hub": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Hub/index.js",
-        "require": "./dist/dist-traced/cjs/Hub/index.js"
-      },
-      "import": "./dist/dist/esm/Hub/index.js",
-      "require": "./dist/dist/cjs/Hub/index.js"
-    },
     "./IO/combinators": {
       "traced": {
         "import": "./dist/dist-traced/esm/IO/combinators/index.js",
@@ -221,6 +213,14 @@
       },
       "import": "./dist/dist/esm/Schedule/index.js",
       "require": "./dist/dist/cjs/Schedule/index.js"
+    },
+    "./stm/STM": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/stm/STM/index.js",
+        "require": "./dist/dist-traced/cjs/stm/STM/index.js"
+      },
+      "import": "./dist/dist/esm/stm/STM/index.js",
+      "require": "./dist/dist/cjs/stm/STM/index.js"
     },
     "./Stream": {
       "traced": {
