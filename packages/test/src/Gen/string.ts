@@ -6,7 +6,7 @@ import type { Random } from '@principia/base/Random'
 import * as A from '@principia/base/Array'
 
 import { arrayN_ } from './array'
-import { alphaNumericChar, asciiChar, base64Char, char16, hexChar, unicodeChar } from './char'
+import { alphaNumericChar, asciiChar, base64Char, char16, fullUnicodeChar, hexChar, unicodeChar } from './char'
 import * as G from './core'
 
 export function asciiString<R>(constraints?: LengthConstraints): Gen<R & Has<Random> & Has<Sized>, string> {
@@ -19,6 +19,10 @@ export function alphaNumericString(constraints: LengthConstraints = {}): Gen<Has
 
 export function base64String(constraints: LengthConstraints = {}): Gen<Has<Random> & Has<Sized>, string> {
   return string(base64Char, constraints)
+}
+
+export function fullUnicodeString(constraints: LengthConstraints = {}): Gen<Has<Random> & Has<Sized>, string> {
+  return string(fullUnicodeChar, constraints)
 }
 
 export function hexString(constraints: LengthConstraints = {}): Gen<Has<Random> & Has<Sized>, string> {

@@ -16,6 +16,8 @@ export const alphaNumericChar: Gen<Has<Random>, string> = G.weighted(
 
 export const asciiChar: Gen<Has<Random>, string> = _char(0x00, 0x7f, indexToPrintableIndex)
 
+export const base64Char: Gen<Has<Random>, string> = _char(0, 63, base64ToCharCode)
+
 export function char(constraints: Required<NumberConstraints>): Gen<Has<Random>, string> {
   return _char(constraints.min, constraints.max, identity)
 }
@@ -26,7 +28,7 @@ function _char(min: number, max: number, mapToCode: (v: number) => number): Gen<
   return pipe(G.int({ min, max }), G.map(flow(mapToCode, String.fromCharCode)))
 }
 
-export const base64Char: Gen<Has<Random>, string> = _char(0, 63, base64ToCharCode)
+export const fullUnicodeChar: Gen<Has<Random>, string> = _char(0x0000, 0x10ffff - gapSize, unicodeToCharCode)
 
 export const hexChar: Gen<Has<Random>, string> = _char(0, 15, hexToCharCode)
 
