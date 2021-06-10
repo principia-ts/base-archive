@@ -13,7 +13,7 @@ import * as Gen from '../src/Gen'
 import { Sized } from '../src/Sized'
 
 pipe(
-  Gen.double({ min: 0 }).sample,
+  Gen.unicodeString().sample,
   S.map((sample) => sample.value),
   S.forever,
   S.take(100),

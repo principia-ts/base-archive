@@ -1,4 +1,4 @@
-import type { Gen } from './Gen'
+import type { Gen } from './Gen/core'
 
 export const GenURI = 'Gen'
 export type GenURI = typeof GenURI

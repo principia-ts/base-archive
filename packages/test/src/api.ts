@@ -1,7 +1,7 @@
 import type { Assertion, AssertionM, AssertResult } from './Assertion'
 import type { TestEnvironment } from './environment/TestEnvironment'
 import type { ExecutedSpec } from './ExecutedSpec'
-import type { Gen } from './Gen'
+import type { Gen } from './Gen/core'
 import type { TestResult } from './Render'
 import type { Sample } from './Sample'
 import type { TestLogger } from './TestLogger'
