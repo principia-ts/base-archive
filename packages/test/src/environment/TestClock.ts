@@ -84,7 +84,7 @@ export class TestClock implements Clock {
   sleep = (ms: number) => {
     const self = this
     return I.gen(function* (_) {
-      const promise = yield* _(P.make<never, void>())
+      const promise = yield* _(P.promise<never, void>())
       const wait    = yield* _(
         Ref.modify_(self.clockState, (data) => {
           const end = data.duration + ms
