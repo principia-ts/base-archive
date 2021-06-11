@@ -829,7 +829,7 @@ function stepLoop<A>(
         if (L.isEmpty(stack)) {
           return tuple(parallel, sequential)
         } else {
-          fa    = L.unsafeFirst(stack)!
+          fa    = L.unsafeHead(stack)!
           stack = L.tail(stack)
         }
         break
@@ -866,7 +866,7 @@ function stepLoop<A>(
         if (L.isEmpty(stack)) {
           return tuple(HS.add_(parallel, fa), sequential)
         } else {
-          fa       = L.unsafeFirst(stack)!
+          fa       = L.unsafeHead(stack)!
           stack    = L.tail(stack)
           parallel = HS.add_(parallel, fa)
           break
@@ -919,8 +919,8 @@ function hashCode<A>(fa: FreeSemiring<any, A>): number {
   let head
   if (size === 0) {
     return _emptyHash
-  } else if (size === 1 && (head = L.unsafeFirst(flattened)!) && HS.size(head) === 1) {
-    return L.unsafeFirst(L.from(head))![Ha.$hash]
+  } else if (size === 1 && (head = L.unsafeHead(flattened)!) && HS.size(head) === 1) {
+    return L.unsafeHead(L.from(head))![Ha.$hash]
   } else {
     return Ha.hashIterator(flattened[Symbol.iterator]())
   }

@@ -1489,7 +1489,7 @@ export function findLastMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>
  * @category combinators
  * @since 1.0.0
  */
-export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<number> {
+export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<number> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
@@ -1506,17 +1506,17 @@ export function findFirstIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<
  * @since 1.0.0
  * @dataFirst findFirstIndex_
  */
-export function findFirstIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<number> {
-  return (as) => findFirstIndex_(as, predicate)
+export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<number> {
+  return (as) => findIndex_(as, predicate)
 }
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export function findFirst_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Option<B>
-export function findFirst_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A>
-export function findFirst_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A> {
+export function find_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Option<B>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
@@ -1531,17 +1531,17 @@ export function findFirst_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): 
  * @since 1.0.0
  * @dataFirst findFirst_
  */
-export function findFirst<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>
-export function findFirst<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A>
-export function findFirst<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A> {
-  return (as) => findFirst_(as, predicate)
+export function find<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>
+export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A>
+export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A> {
+  return (as) => find_(as, predicate)
 }
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export function findFirstMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): Option<B> {
+export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): Option<B> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     const v = f(as[i])
@@ -1555,10 +1555,10 @@ export function findFirstMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>
 /**
  * @category combinators
  * @since 1.0.0
- * @dataFirst findFirstMap_
+ * @dataFirst findMap_
  */
-export function findFirstMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
-  return (as) => findFirstMap_(as, f)
+export function findMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
+  return (as) => findMap_(as, f)
 }
 
 /**

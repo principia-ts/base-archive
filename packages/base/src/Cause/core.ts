@@ -2031,7 +2031,7 @@ function stepLoop<A>(
         if (L.isEmpty(stack)) {
           return tuple(parallel, sequential)
         } else {
-          cause = L.unsafeFirst(stack)!
+          cause = L.unsafeHead(stack)!
           stack = L.tail(stack)
         }
         break
@@ -2076,7 +2076,7 @@ function stepLoop<A>(
         if (L.isEmpty(stack)) {
           return tuple(HS.add_(parallel, cause), sequential)
         } else {
-          cause    = L.unsafeFirst(stack)!
+          cause    = L.unsafeHead(stack)!
           stack    = L.tail(stack)
           parallel = HS.add_(parallel, cause)
           break
@@ -2126,8 +2126,8 @@ function hashCode<A>(cause: Cause<A>): number {
   let head
   if (size === 0) {
     return _emptyHash
-  } else if (size === 1 && (head = L.unsafeFirst(flattened)!) && HS.size(head) === 1) {
-    return L.unsafeFirst(L.from(head))![St.$hash]
+  } else if (size === 1 && (head = L.unsafeHead(flattened)!) && HS.size(head) === 1) {
+    return L.unsafeHead(L.from(head))![St.$hash]
   } else {
     return St.hashIterator(flattened[Symbol.iterator]())
   }

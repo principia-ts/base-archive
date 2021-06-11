@@ -102,7 +102,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     exit: Exit<unknown, unknown>
   ): IO<Env, unknown, unknown> {
     while (!L.isEmpty(conts)) {
-      const head = L.unsafeFirst(conts)!
+      const head = L.unsafeHead(conts)!
       C.concreteContinuation(head)
       if (head._tag === C.ChannelTag.ContinuationK) {
         // eslint-disable-next-line no-param-reassign
@@ -129,7 +129,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     builder: MutableList<C.ContinuationFinalizer<Env, unknown, unknown>>
   ) {
     while (!L.isEmpty(stack)) {
-      const head = L.unsafeFirst(stack)!
+      const head = L.unsafeHead(stack)!
       C.concreteContinuation(head)
       if (head._tag === C.ChannelTag.ContinuationK) {
         return stack
@@ -426,7 +426,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       this.currentChannel = undefined
       return State._Done
     }
-    const head = L.unsafeFirst(this.doneStack)!
+    const head = L.unsafeHead(this.doneStack)!
     C.concreteContinuation(head)
 
     if (head._tag === C.ChannelTag.ContinuationK) {
@@ -469,7 +469,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       this.currentChannel = undefined
       return State._Done
     }
-    const head = L.unsafeFirst(this.doneStack)!
+    const head = L.unsafeHead(this.doneStack)!
     C.concreteContinuation(head)
 
     if (head._tag === C.ChannelTag.ContinuationK) {
