@@ -938,7 +938,7 @@ export function bind<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(ma: IO<R,
  * @category Monad
  * @since 1.0.0
  */
-export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>) {
+export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>): IO<R & R1, E | E1, A> {
   return bind_(ffa, identity)
 }
 

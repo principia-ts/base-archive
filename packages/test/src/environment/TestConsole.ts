@@ -13,7 +13,7 @@ import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
 import * as Ref from '@principia/base/Ref'
-import { intersect } from '@principia/base/struct'
+import { intersect } from '@principia/base/Struct'
 import { inspect } from 'util'
 
 import { LiveTag } from './Live'

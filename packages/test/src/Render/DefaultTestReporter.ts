@@ -256,7 +256,7 @@ class RenderedResult<T> {
       return this
     } else {
       const renderedAnnotations     = ` - ${L.join_(annotations, ', ')}`
-      const head                    = O.match_(L.first(this.rendered), () => '', identity)
+      const head                    = O.match_(L.head(this.rendered), () => '', identity)
       const tail                    = L.tail(this.rendered)
       const renderedWithAnnotations = L.prepend_(tail, head + renderedAnnotations)
       return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)

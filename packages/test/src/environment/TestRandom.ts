@@ -64,22 +64,22 @@ export class TestRandom implements Random {
   }
 
   private bufferedBoolean = (buffer: Buffer): readonly [Option<boolean>, Buffer] => {
-    return [Li.first(buffer.booleans), buffer.copy({ booleans: Li.drop_(buffer.booleans, 1) })]
+    return [Li.head(buffer.booleans), buffer.copy({ booleans: Li.drop_(buffer.booleans, 1) })]
   }
   private bufferedByte    = (buffer: Buffer): readonly [Option<ReadonlyArray<Byte>>, Buffer] => {
-    return [Li.first(buffer.bytes), buffer.copy({ bytes: Li.drop_(buffer.bytes, 1) })]
+    return [Li.head(buffer.bytes), buffer.copy({ bytes: Li.drop_(buffer.bytes, 1) })]
   }
   private bufferedChar    = (buffer: Buffer): readonly [Option<string>, Buffer] => {
-    return [Li.first(buffer.chars), buffer.copy({ chars: Li.drop_(buffer.chars, 1) })]
+    return [Li.head(buffer.chars), buffer.copy({ chars: Li.drop_(buffer.chars, 1) })]
   }
   private bufferedDouble  = (buffer: Buffer): readonly [Option<number>, Buffer] => {
-    return [Li.first(buffer.doubles), buffer.copy({ doubles: Li.drop_(buffer.doubles, 1) })]
+    return [Li.head(buffer.doubles), buffer.copy({ doubles: Li.drop_(buffer.doubles, 1) })]
   }
   private bufferedInt     = (buffer: Buffer): readonly [Option<number>, Buffer] => {
-    return [Li.first(buffer.integers), buffer.copy({ integers: Li.drop_(buffer.doubles, 1) })]
+    return [Li.head(buffer.integers), buffer.copy({ integers: Li.drop_(buffer.doubles, 1) })]
   }
   private bufferedString  = (buffer: Buffer): readonly [Option<string>, Buffer] => {
-    return [Li.first(buffer.strings), buffer.copy({ strings: Li.drop_(buffer.strings, 1) })]
+    return [Li.head(buffer.strings), buffer.copy({ strings: Li.drop_(buffer.strings, 1) })]
   }
 
   private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
@@ -362,7 +362,8 @@ export function substractArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt)
   const dataB = arrayIntB.data
   if (isStrictlySmaller(dataA, dataB)) {
     const out = substractArrayIntToNew(arrayIntB, arrayIntA)
-    out.sign  = -out.sign as -1 | 1
+    // eslint-disable-next-line functional/immutable-data
+    out.sign = -out.sign as -1 | 1
     return out
   }
   const data: number[] = []
@@ -382,6 +383,7 @@ export function substractArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt)
  * and uniform notation for zero: {sign: 1, data: [0]}
  */
 export function trimArrayIntInplace(arrayInt: ArrayInt) {
+  /* eslint-disable functional/immutable-data */
   const data       = arrayInt.data
   let firstNonZero = 0
   for (; firstNonZero !== data.length && data[firstNonZero] === 0; ++firstNonZero) {}
@@ -393,6 +395,7 @@ export function trimArrayIntInplace(arrayInt: ArrayInt) {
   }
   data.splice(0, firstNonZero)
   return arrayInt
+  /* eslint-enable */
 }
 
 /**
@@ -425,6 +428,7 @@ export function addArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt): Arra
  * @internal
  */
 export function addOneToPositiveArrayInt(arrayInt: ArrayInt): ArrayInt {
+  /* eslint-disable functional/immutable-data */
   arrayInt.sign = 1 // handling case { sign: -1, data: [0,...,0] }
   const data    = arrayInt.data
   for (let index = data.length - 1; index >= 0; --index) {
@@ -437,4 +441,5 @@ export function addOneToPositiveArrayInt(arrayInt: ArrayInt): ArrayInt {
   }
   data.unshift(1)
   return arrayInt
+  /* eslint-enable */
 }

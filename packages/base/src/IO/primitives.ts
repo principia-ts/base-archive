@@ -61,6 +61,9 @@ export const IOTag = {
 } as const
 
 abstract class IOSyntax<R, E, A> {
+  readonly [_R]: (_: R) => void
+  readonly [_E]: () => E
+  readonly [_A]: () => A
   ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
     return new Bind(this, f)
   }
@@ -458,9 +461,9 @@ export function concrete(_: IO<any, any, any>): Instruction {
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 
-export interface UIO<A> extends IO<unknown, never, A> {}
-export interface URIO<R, A> extends IO<R, never, A> {}
-export interface FIO<E, A> extends IO<unknown, E, A> {}
+export type UIO<A> = IO<unknown, never, A>
+export type URIO<R, A> = IO<R, never, A>
+export type FIO<E, A> = IO<unknown, E, A>
 
 export type Canceler<R> = URIO<R, void>
 

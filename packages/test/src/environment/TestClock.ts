@@ -30,7 +30,7 @@ import * as O from '@principia/base/Option'
 import * as P from '@principia/base/Promise'
 import * as Ref from '@principia/base/Ref'
 import * as RefM from '@principia/base/RefM'
-import { intersect } from '@principia/base/struct'
+import { intersect } from '@principia/base/Struct'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
 
@@ -184,7 +184,7 @@ export class TestClock implements Clock {
         const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
         return pipe(
           sorted,
-          Li.first,
+          Li.head,
           O.bind(([duration, promise]) =>
             duration <= end ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.none()
           ),

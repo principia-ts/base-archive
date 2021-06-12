@@ -161,7 +161,7 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
     ? filterLabels_(spec, (label) =>
         pipe(
           args.testSearchTerms,
-          A.findFirst((term) => Str.contains_(label, term)),
+          A.find((term) => Str.contains_(label, term)),
           O.isSome
         )
       )
@@ -171,7 +171,7 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
           filterLabels_(spec, (label) =>
             pipe(
               args.testSearchTerms,
-              A.findFirst((term) => Str.contains_(label, term)),
+              A.find((term) => Str.contains_(label, term)),
               O.isSome
             )
           )

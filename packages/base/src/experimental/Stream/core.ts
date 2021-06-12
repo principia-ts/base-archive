@@ -1,7 +1,6 @@
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type * as SK from '../Sink'
-import type { Canceler } from '@principia/base/IO'
 
 import * as AI from '../../AsyncIterable'
 import * as Ca from '../../Cause'
