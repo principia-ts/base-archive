@@ -1,6 +1,7 @@
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type * as SK from '../Sink'
+import type { Canceler } from '@principia/base/IO'
 
 import * as AI from '../../AsyncIterable'
 import * as Ca from '../../Cause'
@@ -1516,12 +1517,19 @@ export function flattenExitOption<R, E, E1, A>(self: Stream<R, E, Ex.Exit<O.Opti
     )
   }
 
-  const process: Ch.Channel<R, E, C.Chunk<Ex.Exit<O.Option<E1>, A>>, unknown, E | E1, C.Chunk<A>, any> =
-    Ch.readWithCause(
-      (chunk) => processChunk(chunk, process),
-      (cause) => Ch.halt(cause),
-      (_) => Ch.end(undefined)
-    )
+  const process: Ch.Channel<
+    R,
+    E,
+    C.Chunk<Ex.Exit<O.Option<E1>, A>>,
+    unknown,
+    E | E1,
+    C.Chunk<A>,
+    any
+  > = Ch.readWithCause(
+    (chunk) => processChunk(chunk, process),
+    (cause) => Ch.halt(cause),
+    (_) => Ch.end(undefined)
+  )
 
   return new Stream(self.channel['>>>'](process))
 }
@@ -1706,6 +1714,44 @@ export function repeatWith<R, A>(a: A, schedule: SC.Schedule<R, A, unknown>): St
   return repeatEffectWith(I.succeed(a), schedule)
 }
 
+export function effectAsyncInterrupt<R, E, A>(
+  register: (
+    resolve: (
+      next: I.IO<R, O.Option<E>, C.Chunk<A>>,
+      offerCb?: (e: Ex.Exit<never, boolean>) => void
+    ) => I.UIO<Ex.Exit<never, boolean>>
+  ) => E.Either<I.Canceler<R>, Stream<R, E, A>>,
+  outputBuffer = 16
+): Stream<R, E, A> {
+  return unwrapManaged(
+    M.gen(function* (_) {
+      const output       = yield* _(M.make_(Q.boundedQueue<Take.Take<E, A>>(outputBuffer), (q) => q.shutdown))
+      const runtime      = yield* _(I.runtime<R>())
+      const eitherStream = yield* _(
+        M.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
+      )
+      return E.match_(
+        eitherStream,
+        (canceler) => {
+          const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+            output.take,
+            I.bind(Take.done),
+            I.match(flow(O.match(() => Ch.end(undefined), Ch.fail)), (a) => Ch.write(a)['*>'](loop)),
+            Ch.unwrap
+          )
+          return ensuring_(new Stream(loop), canceler)
+        },
+        (stream) =>
+          pipe(
+            output.shutdown,
+            I.as(() => stream),
+            unwrap
+          )
+      )
+    })
+  )
+}
+
 /**
  * Creates a stream from an asynchronous callback that can be called multiple times.
  * The registration of the callback can possibly return the stream synchronously.
@@ -1721,21 +1767,7 @@ export function effectAsyncOption<R, E, A>(
   ) => O.Option<Stream<R, E, A>>,
   outputBuffer = 16
 ): Stream<R, E, A> {
-  return pipe(
-    I.gen(function* (_) {
-      const output      = yield* _(Q.boundedQueue<Take.Take<E, A>>(outputBuffer))
-      const runtime     = yield* _(I.runtime<R>())
-      const maybeStream = yield* _(
-        I.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
-      )
-      if (O.isSome(maybeStream)) {
-        return maybeStream.value
-      } else {
-        return pipe(output, fromQueueWithShutdown(), flattenTake)
-      }
-    }),
-    unwrap
-  )
+  return effectAsyncInterrupt((k) => O.match_(register(k), () => E.left(I.unit()), E.right), outputBuffer)
 }
 
 export function effectAsync<R, E, A>(
@@ -1751,6 +1783,45 @@ export function effectAsync<R, E, A>(
     register(cb)
     return O.none()
   }, outputBuffer)
+}
+
+export function effectAsyncM<R, E, A, R1 = R, E1 = E>(
+  register: (
+    resolve: (
+      next: I.IO<R, O.Option<E>, C.Chunk<A>>,
+      offerCb?: (e: Ex.Exit<never, boolean>) => void
+    ) => I.UIO<Ex.Exit<never, boolean>>
+  ) => I.IO<R1, E1, unknown>,
+  outputBuffer = 16
+): Stream<R & R1, E | E1, A> {
+  return new Stream(
+    Ch.unwrapManaged(
+      M.gen(function* (_) {
+        const output  = yield* _(M.make_(Q.boundedQueue<Take.Take<E, A>>(outputBuffer), (q) => q.shutdown))
+        const runtime = yield* _(I.runtime<R>())
+        yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
+        const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+          output.take,
+          I.bind(Take.done),
+          I.matchCauseM(
+            (maybeError) =>
+              output.shutdown['$>'](() =>
+                pipe(
+                  Ca.failureOrCause(maybeError),
+                  E.match(
+                    O.match(() => Ch.end(undefined), Ch.fail),
+                    Ch.halt
+                  )
+                )
+              ),
+            (a) => I.succeed(Ch.write(a)['*>'](loop))
+          ),
+          Ch.unwrap
+        )
+        return loop
+      })
+    )
+  )
 }
 
 /**

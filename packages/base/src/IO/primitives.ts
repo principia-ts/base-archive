@@ -8,6 +8,7 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
 import type * as HKT from '../HKT'
+import type { IOAspect } from '../IOAspect'
 import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
@@ -77,6 +78,12 @@ abstract class IOSyntax<R, E, A> {
   }
   ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
     return this['>>=']((a) => mb['<$>']((b) => [a, b]))
+  }
+  ['@@']<R, E extends EC, A extends A1, R1, E1, A1, EC>(
+    this: IO<R, E, A>,
+    aspect: IOAspect<R1, E1, A1, EC>
+  ): IO<R & R1, E | E1, A> {
+    return aspect.apply(this)
   }
 }
 
@@ -451,9 +458,9 @@ export function concrete(_: IO<any, any, any>): Instruction {
 
 export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 
-export type UIO<A> = IO<unknown, never, A>
-export type URIO<R, A> = IO<R, never, A>
-export type FIO<E, A> = IO<unknown, E, A>
+export interface UIO<A> extends IO<unknown, never, A> {}
+export interface URIO<R, A> extends IO<R, never, A> {}
+export interface FIO<E, A> extends IO<unknown, E, A> {}
 
 export type Canceler<R> = URIO<R, void>
 
