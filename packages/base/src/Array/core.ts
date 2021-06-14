@@ -2336,6 +2336,28 @@ export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
   unfold
 })
 
+export const Witherable = P.Witherable<URI>({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_,
+  traverse_,
+  compactA_,
+  separateA_
+})
+
+export const WitherableWithIndex = P.WitherableWithIndex<URI>({
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_,
+  itraverse_,
+  icompactA_,
+  iseparateA_
+})
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Do

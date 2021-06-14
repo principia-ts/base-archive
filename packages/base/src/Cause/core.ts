@@ -2117,7 +2117,7 @@ function flattenLoop<A>(causes: L.List<Cause<A>>, flattened: L.List<HashSet<Caus
 }
 
 function flat<A>(cause: Cause<A>): L.List<HashSet<Cause<A>>> {
-  return flattenLoop(L.of(cause), L.empty())
+  return flattenLoop(L.single(cause), L.empty())
 }
 
 function hashCode<A>(cause: Cause<A>): number {

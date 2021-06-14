@@ -102,8 +102,15 @@ export function contramapChunksM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
 ): Sink<R & R1, InErr | InErr1, In1, OutErr, L, Z> {
-  const loop: Ch.Channel<R & R1, InErr | InErr1, C.Chunk<In1>, unknown, InErr | InErr1, C.Chunk<In>, unknown> =
-    Ch.readWith((chunk) => Ch.fromEffect(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
+  const loop: Ch.Channel<
+    R & R1,
+    InErr | InErr1,
+    C.Chunk<In1>,
+    unknown,
+    InErr | InErr1,
+    C.Chunk<In>,
+    unknown
+  > = Ch.readWith((chunk) => Ch.fromEffect(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
   return new Sink(
     loop['>>>'](sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
   )

@@ -11,7 +11,9 @@ import * as A from '../Array/core'
 import { pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
+import * as N from '../number'
 import * as O from '../Option'
+import { EQ } from '../Ordering'
 import { isByte } from '../prelude'
 import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
@@ -1187,6 +1189,16 @@ export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chu
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Eq
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getEq<A>(E: P.Eq<A>): P.Eq<Chunk<A>> {
+  return P.Eq((xs, ys) => corresponds_(xs, ys, E.equals_))
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Functor
  * -------------------------------------------------------------------------------------------------
  */
@@ -1630,6 +1642,59 @@ export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chu
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Ord
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
+  return P.Ord((a, b) => {
+    concrete(a)
+    concrete(b)
+
+    const leftLength  = a.length
+    const rightLength = b.length
+    const length      = Math.min(leftLength, rightLength)
+
+    const leftIterator                  = a.arrayIterator()
+    const rightIterator                 = b.arrayIterator()
+    let left: ArrayLike<A> | undefined  = undefined
+    let right: ArrayLike<A> | undefined = undefined
+    let leftArrayLength                 = 0
+    let rightArrayLength                = 0
+    let i                               = 0
+    let j                               = 0
+    let k                               = 0
+
+    let leftNext
+    let rightNext
+
+    while (k < length) {
+      if (i < leftArrayLength && j < rightArrayLength) {
+        const a        = left![i]
+        const b        = right![j]
+        const ordering = O.compare_(a, b)
+        if (ordering === EQ) {
+          return ordering
+        }
+        i++
+        j++
+        k++
+      } else if (i === leftArrayLength && !(leftNext = leftIterator.next()).done) {
+        left            = leftNext.value
+        leftArrayLength = left.length
+        i               = 0
+      } else if (j === rightArrayLength && !(rightNext = rightIterator.next()).done) {
+        right            = rightNext.value
+        rightArrayLength = right.length
+        j                = 0
+      }
+    }
+    return N.Ord.compare_(leftLength, rightLength)
+  })
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */
@@ -1900,7 +1965,7 @@ export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
   return builder
 }
 
-export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
+export function find_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
   concrete(as)
   const iterator = as.arrayIterator()
   let out        = O.none<A>()
@@ -1918,8 +1983,8 @@ export function findFirst_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
   return out
 }
 
-export function findFirst<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
-  return (as) => findFirst_(as, f)
+export function find<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
+  return (as) => find_(as, f)
 }
 
 export function foldWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): B {

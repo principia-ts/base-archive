@@ -13,7 +13,12 @@ import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 
+import { flow } from '@principia/base/function'
+import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
+
 import { Die } from '../Cause/core'
+import * as C from '../Cause/core'
+import * as E from '../Either'
 import { IOURI } from '../Modules'
 import { isObject } from '../prelude'
 
@@ -61,32 +66,81 @@ export const IOTag = {
 } as const
 
 abstract class IOSyntax<R, E, A> {
-  readonly [_R]: (_: R) => void
-  readonly [_E]: () => E
-  readonly [_A]: () => A
+  readonly [_R]: (_: R) => void;
+  readonly [_E]: () => E;
+  readonly [_A]: () => A;
+  /**
+   * A symbolic alias for `bind`
+   *
+   * @trace 0
+   */
   ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
     return new Bind(this, f)
   }
+  /**
+   * A symbolic alias for `map`
+   *
+   * @trace 0
+   */
   ['<$>']<B>(this: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-    return this['>>=']((a) => new Succeed(f(a)))
+    return this['>>='](traceAs(f, (a) => new Succeed(f(a))))
   }
+  /**
+   * A symbolic alias for `as`
+   *
+   * @trace 0
+   */
   ['$>']<B>(this: IO<R, E, A>, b: () => B): IO<R, E, B> {
     return this['<$>'](b)
   }
+  /**
+   * @trace call
+   */
   ['*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-    return this['>>='](() => mb)
+    const trace = accessCallTrace()
+    return this['>>='](traceFrom(trace, () => mb))
   }
+  /**
+   * @trace call
+   */
   ['<*']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
-    return this['>>=']((a) => mb['$>'](() => a))
+    const trace = accessCallTrace()
+    return this['>>='](traceFrom(trace, (a) => mb['$>'](() => a)))
   }
+  /**
+   * @trace call
+   */
   ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
-    return this['>>=']((a) => mb['<$>']((b) => [a, b]))
+    const trace = accessCallTrace()
+    return this['>>='](traceFrom(trace, (a) => mb['<$>']((b) => [a, b])))
   }
   ['@@']<R, E extends EC, A extends A1, R1, E1, A1, EC>(
     this: IO<R, E, A>,
     aspect: IOAspect<R1, E1, A1, EC>
   ): IO<R & R1, E | E1, A> {
     return aspect.apply(this)
+  }
+  /**
+   * A symbolic alias for `orDie`
+   *
+   * @trace call
+   */
+  ['!']<R, E, A>(this: IO<R, E, A>): IO<R, never, A> {
+    const trace = accessCallTrace()
+    return new Match(
+      this,
+      traceFrom(
+        trace,
+        flow(
+          C.failureOrCause,
+          E.match(
+            (e) => new Fail(() => C.die(e)),
+            (c) => new Fail(() => c)
+          )
+        )
+      ),
+      (a) => new Succeed(a)
+    )
   }
 }
 

@@ -265,7 +265,11 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   private finishWithExit(exit: Exit<unknown, unknown>): IO<Env, unknown, unknown> {
-    const state: ChannelState<Env, unknown> | undefined = Ex.match_(exit, this.doneHalt, this.doneSucceed)
+    const state: ChannelState<Env, unknown> | undefined = Ex.match_(
+      exit,
+      (cause) => this.doneHalt(cause),
+      (out) => this.doneSucceed(out)
+    )
 
     this.subexecutorStack = undefined
 

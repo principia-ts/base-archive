@@ -910,7 +910,7 @@ function flattenLoop<A>(
 }
 
 function flat<A>(fa: FreeSemiring<any, A>): L.List<HashSet<FreeSemiring<any, A>>> {
-  return flattenLoop(L.of(fa), L.empty())
+  return flattenLoop(L.single(fa), L.empty())
 }
 
 function hashCode<A>(fa: FreeSemiring<any, A>): number {

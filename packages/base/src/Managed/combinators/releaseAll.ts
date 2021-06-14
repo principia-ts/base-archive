@@ -31,7 +31,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
               Array.from(RM.finalizers(s)).reverse(),
               foreachExecIO(
                 execStrategy,
-                traceFrom(trace, ([, f]) => I.result(f(exit)))
+                traceFrom(trace, ([, f]) => I.result(s.update(f)(exit)))
               ),
               I.bind((e) =>
                 pipe(
@@ -41,7 +41,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
                 )
               )
             ),
-            new RM.Exited(s.nextKey, exit)
+            new RM.Exited(s.nextKey, exit, s.update)
           ]
         }
       }

@@ -119,7 +119,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             pipe(
               fibers,
               I.foreach((f) => f.await),
-              I.map(flow(Ch.findFirst(Ex.isFailure), O.isSome))
+              I.map(flow(Ch.find(Ex.isFailure), O.isSome))
             )
           ),
           I.refailWithTrace
@@ -236,10 +236,10 @@ function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
         case 'Running': {
           return [
             I.bind_(
-              I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(f(exit))),
+              I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
               (e) => I.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),
-            new RM.Exited(s.nextKey, exit)
+            new RM.Exited(s.nextKey, exit, s.update)
           ]
         }
       }

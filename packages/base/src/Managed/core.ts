@@ -25,7 +25,7 @@ import * as R from '../Record'
 import * as Ref from '../Ref/core'
 import { tuple } from '../tuple'
 import * as I from './internal/io'
-import { add, addIfOpen, noopFinalizer, release } from './ReleaseMap'
+import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1757,6 +1757,33 @@ export function ignore<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, void> {
     traceFrom(trace, () => {
       /* */
     })
+  )
+}
+
+/**
+ * Returns a new managed effect that ignores defects in finalizers.
+ *
+ * @trace call
+ */
+export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
+  const trace = accessCallTrace()
+  return new Managed(
+    pipe(
+      I.ask<readonly [R, ReleaseMap]>(),
+      I.tap(
+        traceFrom(trace, ([, rm]) =>
+          updateAll(
+            rm,
+            (finalizer) => (exit) =>
+              pipe(
+                finalizer(exit),
+                I.catchAllCause(() => I.unit())
+              )
+          )
+        )
+      ),
+      I.apr(ma.io)
+    )
   )
 }
 

@@ -1,5 +1,7 @@
 import type { MutableQueue } from './util/support/MutableQueue'
 
+import { identity } from '@principia/base/function'
+
 import * as C from './Chunk'
 import { parallel } from './ExecutionStrategy'
 import * as Ex from './Exit'
@@ -126,7 +128,7 @@ export function boundedHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeBoundedHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
 
   return _unsafeHub(
     _makeBounded<A>(requestedCapacity),
@@ -160,7 +162,7 @@ export function droppingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeDroppingHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
 
   return _unsafeHub(
     _makeBounded<A>(requestedCapacity),
@@ -194,7 +196,7 @@ export function slidingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeSlidingHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
 
   return _unsafeHub(
     _makeBounded<A>(requestedCapacity),
@@ -222,7 +224,7 @@ export function unboundedHub<A>(): I.UIO<UHub<A>> {
  * Creates an unbounded hub.
  */
 export function unsafeUnboundedHub<A>(): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map())))
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
 
   return _unsafeHub(
     _makeUnbounded<A>(),

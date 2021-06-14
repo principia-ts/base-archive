@@ -23,6 +23,7 @@ import * as O from '../../Option'
 import * as PR from '../../Promise'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
+import * as Sem from '../../Semaphore'
 import { tuple } from '../../tuple'
 import {
   bind,
@@ -1601,6 +1602,82 @@ export function mapOutM<Env1, OutErr1, OutElem, OutElem1>(f: (o: OutElem) => IO<
   return <Env, InErr, InElem, InDone, OutErr, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   ) => mapOutM_(self, f)
+}
+
+export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1>(
+  self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
+  n: number,
+  f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
+): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
+  return managed_(
+    M.withChildren((getChildren) =>
+      M.gen(function* (_) {
+        yield* _(M.finalizer(getChildren['>>='](F.interruptAll)))
+        const queue       = yield* _(
+          M.make_(Q.boundedQueue<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
+        )
+        const errorSignal = yield* _(PR.promise<OutErr1, never>())
+        const permits     = yield* _(Sem.make(n))
+        const pull        = yield* _(toPull(self))
+        yield* _(
+          pipe(
+            pull,
+            I.matchCauseM(
+              flow(
+                Ca.flipCauseEither,
+                E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
+                  pipe(
+                    Sem.withPermits(n, permits)(I.unit()),
+                    I.makeInterruptible,
+                    I.apr(pipe(E.right(outDone), I.fail, queue.offer))
+                  )
+                )
+              ),
+              (outElem) =>
+                I.gen(function* (_) {
+                  const p     = yield* _(PR.promise<OutErr1, OutElem1>())
+                  const latch = yield* _(PR.promise<never, void>())
+                  yield* _(queue.offer(pipe(p.await, I.mapError(E.left))))
+                  yield* _(
+                    I.fork(
+                      Sem.withPermit(permits)(
+                        PR.succeed_(latch, undefined)['*>'](
+                          pipe(errorSignal.await, I.raceFirst(f(outElem)), I.tapCause(errorSignal.halt), I.to(p))
+                        )
+                      )
+                    )
+                  )
+                  yield* _(latch.await)
+                })
+            ),
+            I.forever,
+            I.makeInterruptible,
+            I.forkManaged
+          )
+        )
+        return queue
+      })
+    ),
+    (queue) => {
+      const consumer: Channel<Env & Env1, unknown, unknown, unknown, OutErr | OutErr1, OutElem1, OutDone> = unwrap(
+        pipe(
+          queue.take,
+          I.flatten,
+          I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => write(outElem)['*>'](consumer))
+        )
+      )
+      return consumer
+    }
+  )
+}
+
+export function mapOutMPar<OutElem, Env1, OutErr1, OutElem1>(
+  n: number,
+  f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
+): <Env, InErr, InElem, InDone, OutErr, OutDone>(
+  self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+) => Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
+  return (self) => mapOutMPar_(self, n, f)
 }
 
 export const never: Channel<unknown, unknown, unknown, unknown, never, never, never> = fromEffect(I.never)

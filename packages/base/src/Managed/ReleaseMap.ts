@@ -2,6 +2,8 @@ import type { Exit } from '../Exit'
 import type { Option } from '../Option'
 import type { URef } from '../Ref/core'
 
+import { flow, identity } from '@principia/base/prelude'
+
 import { absurd, increment, pipe } from '../function'
 import * as I from '../IO/core'
 import * as M from '../Map'
@@ -17,15 +19,19 @@ export class ReleaseMap {
 
 export class Exited {
   readonly _tag = 'Exited'
-  constructor(readonly nextKey: number, readonly exit: Exit<any, any>) {}
+  constructor(readonly nextKey: number, readonly exit: Exit<any, any>, readonly update: (_: Finalizer) => Finalizer) {}
 }
 
 export class Running {
   readonly _tag = 'Running'
-  constructor(readonly nextKey: number, readonly _finalizers: ReadonlyMap<number, Finalizer>) {}
+  constructor(
+    readonly nextKey: number,
+    readonly _finalizers: ReadonlyMap<number, Finalizer>,
+    readonly update: (_: Finalizer) => Finalizer
+  ) {}
 
   finalizers(): ReadonlyMap<number, Finalizer> {
-    return this._finalizers as any
+    return this._finalizers
   }
 }
 
@@ -43,12 +49,12 @@ export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Option<num
     XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
       switch (s._tag) {
         case 'Exited': {
-          return [I.map_(finalizer(s.exit), () => none()), new Exited(increment(s.nextKey), s.exit)]
+          return [I.map_(finalizer(s.exit), () => none()), new Exited(increment(s.nextKey), s.exit, s.update)]
         }
         case 'Running': {
           return [
             I.pure(some(s.nextKey)),
-            new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)))
+            new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)), s.update)
           ]
         }
       }
@@ -57,7 +63,7 @@ export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Option<num
   )
 }
 
-export function release(_: ReleaseMap, key: number, exit: Exit<any, any>) {
+export function release(_: ReleaseMap, key: number, exit: Exit<any, any>): I.IO<unknown, never, any> {
   return pipe(
     _.ref,
     XR.modify((s) => {
@@ -70,13 +76,14 @@ export function release(_: ReleaseMap, key: number, exit: Exit<any, any>) {
             O.match_(
               M.lookup_(s.finalizers(), key),
               () => I.unit(),
-              (f) => f(exit)
+              (f) => s.update(f)(exit)
             ),
-            new Running(s.nextKey, M.remove_(s.finalizers(), key))
+            new Running(s.nextKey, M.remove_(s.finalizers(), key), s.update)
           ]
         }
       }
-    })
+    }),
+    I.flatten
   )
 }
 
@@ -98,11 +105,11 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
     XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
       switch (s._tag) {
         case 'Exited':
-          return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit)]
+          return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit, s.update)]
         case 'Running':
           return [
             I.succeed(M.lookup_(finalizers(s), key)),
-            new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer))
+            new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer), s.update)
           ]
         default:
           return absurd(s)
@@ -112,4 +119,15 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
   )
 }
 
-export const make = I.map_(XR.ref<State>(new Running(0, new Map())), (s) => new ReleaseMap(s))
+export function updateAll(_: ReleaseMap, f: (_: Finalizer) => Finalizer): I.UIO<void> {
+  return XR.update_(_.ref, (s) => {
+    switch (s._tag) {
+      case 'Exited':
+        return new Exited(s.nextKey, s.exit, flow(s.update, f))
+      case 'Running':
+        return new Running(s.nextKey, s.finalizers(), flow(s.update, f))
+    }
+  })
+}
+
+export const make = I.map_(XR.ref<State>(new Running(0, new Map(), identity)), (s) => new ReleaseMap(s))

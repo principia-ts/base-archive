@@ -10,20 +10,28 @@
  */
 
 import type { Either } from '../Either'
-import type * as HKT from '../HKT'
 import type { ListURI } from '../Modules'
 import type { Ordering } from '../Ordering'
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
+import type { These } from '../These'
 
 import { identity } from '../function'
+import * as HKT from '../HKT'
 import * as O from '../Option'
 import * as P from '../prelude'
+import * as Equ from '../Structural/Equatable'
+import * as Ha from '../Structural/Hashable'
+import * as Th from '../These'
+
+export const ListTypeId = Symbol()
+export type ListTypeId = typeof ListTypeId
 
 /**
  * Represents a list of elements.
  */
 export class List<A> implements Iterable<A> {
+  readonly [ListTypeId]: ListTypeId = ListTypeId
   constructor(
     /** @private */
     readonly bits: number,
@@ -45,6 +53,18 @@ export class List<A> implements Iterable<A> {
   toJSON(): readonly A[] {
     return foldl_<A, A[]>(this, [], arrayPush)
   }
+
+  get [Ha.$hash](): number {
+    return Ha.hashIterator(this[Symbol.iterator]())
+  }
+
+  [Equ.$equals](that: unknown): boolean {
+    return isList(that) && corresponds_(this, that, Equ.equals)
+  }
+}
+
+export function isList(u: unknown): u is List<unknown> {
+  return P.isObject(u) && ListTypeId in u
 }
 
 export type MutableList<A> = { -readonly [K in keyof List<A>]: List<A>[K] } & {
@@ -96,7 +116,7 @@ export function empty<A = any>(): List<A> {
  * @complexity O(1)
  * @category Constructors
  */
-export function of<A>(a: A): List<A> {
+export function single<A>(a: A): List<A> {
   return list(a)
 }
 
@@ -204,10 +224,23 @@ export function isNonEmpty<A>(l: List<A>): boolean {
  *
  * @complexity O(1)
  */
-export function backwards<A>(l: List<A>): Iterable<A> {
+export function backwardIterable<A>(l: List<A>): Iterable<A> {
   return {
     [Symbol.iterator](): Iterator<A> {
-      return new BackwardsListIterator(l)
+      return new BackwardListIterator(l)
+    }
+  }
+}
+
+/**
+ * Returns an iterable that iterates forwards over the given list.
+ *
+ * @complexity O(1)
+ */
+export function forwardIterable<A>(l: List<A>): Iterable<A> {
+  return {
+    [Symbol.iterator](): Iterator<A> {
+      return new ForwardListIterator(l)
     }
   }
 }
@@ -313,6 +346,107 @@ export function last<A>(l: List<A>): O.Option<NonNullable<A>> {
  */
 export function toArray<A>(l: List<A>): readonly A[] {
   return foldl_<A, A[]>(l, [], arrayPush)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Align
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function alignWith_<A, B, C>(fa: List<A>, fb: List<B>, f: (_: These<A, B>) => C): List<C> {
+  const minLen        = Math.min(fa.length, fb.length)
+  const maxLen        = Math.max(fa.length, fb.length)
+  const out           = emptyPushable<C>()
+  const leftIterator  = fa[Symbol.iterator]()
+  const rightIterator = fb[Symbol.iterator]()
+  let i               = 0
+  let left
+  let right
+  while (i < minLen && !(left = leftIterator.next()).done && !(right = rightIterator.next()).done) {
+    push(f(Th.both(left.value, right.value)), out)
+    i++
+  }
+  if (minLen === maxLen) {
+    return out
+  } else if (fa.length > fb.length) {
+    i = minLen
+    while (i < maxLen && !(left = leftIterator.next()).done) {
+      push(f(Th.left(left.value)), out)
+    }
+  } else {
+    i = minLen
+    while (i < maxLen && !(right = rightIterator.next()).done) {
+      push(f(Th.right(right.value)), out)
+    }
+  }
+  return out
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function alignWith<A, B, C>(fb: List<B>, f: (_: These<A, B>) => C): (fa: List<A>) => List<C> {
+  return (fa) => alignWith_(fa, fb, f)
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function align_<A, B>(fa: List<A>, fb: List<B>): List<These<A, B>> {
+  return alignWith_(fa, fb, P.identity)
+}
+
+/**
+ * @category Align
+ * @since 1.0.0
+ */
+export function align<B>(fb: List<B>): <A>(fa: List<A>) => List<These<A, B>> {
+  return (fa) => align_(fa, fb)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Alt
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function alt_<A>(fa: List<A>, f: () => List<A>): List<A> {
+  return concat_(fa, f())
+}
+
+export function alt<A>(f: () => List<A>): (fa: List<A>) => List<A> {
+  return (fa) => alt_(fa, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Applicative
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Lifts a pure value into a list
+ *
+ * @section Applicative
+ * @since 1.0.0
+ */
+export const pure: <A>(a: A) => List<A> = single
+
+/**
+ * Returns the unit list
+ *
+ * @section Applicative
+ * @since 1.0.0
+ */
+export function unit(): List<void> {
+  return single(undefined)
 }
 
 /*
@@ -431,6 +565,16 @@ export function compact<A>(fa: List<O.Option<A>>): List<A> {
  */
 export function separate<B, C>(fa: List<Either<B, C>>): readonly [List<B>, List<C>] {
   return partitionMap_(fa, identity)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Eq
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getEq<A>(E: P.Eq<A>): P.Eq<List<A>> {
+  return P.Eq((xs, ys) => corresponds_(xs, ys, E.equals_))
 }
 
 /*
@@ -713,6 +857,29 @@ export const sequence = P.implementSequence<[HKT.URI<ListURI>]>()(() => (G) => t
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Unfoldable
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): List<A> {
+  const out = emptyPushable<A>()
+  let state = b
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const mt = f(state)
+    if (mt._tag === 'Some') {
+      const [a, b] = mt.value
+      push(a, out)
+      state = b
+    } else {
+      break
+    }
+  }
+  return out
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Witherable
  * -------------------------------------------------------------------------------------------------
  */
@@ -858,6 +1025,24 @@ export function concat_<A>(xs: List<A>, ys: List<A>): List<A> {
  */
 export function concat<A>(xs: List<A>): (ys: List<A>) => List<A> {
   return (left) => concat_(left, xs)
+}
+
+/**
+ * Concatenates two lists and widens the type
+ *
+ * @complexity O(log(n))
+ */
+export function concatW_<A, B>(as: List<A>, bs: List<B>): List<A | B> {
+  return concat_(as, P.unsafeCoerce(bs))
+}
+
+/**
+ * Concatenates two lists and widens the type
+ *
+ * @complexity O(log(n))
+ */
+export function concatW<B>(bs: List<B>): <A>(as: List<A>) => List<A | B> {
+  return (as) => concatW_(as, bs)
 }
 
 /**
@@ -1009,7 +1194,7 @@ export function elem<A>(E: P.Eq<A>): (a: A) => (as: List<A>) => boolean {
  * @complexity O(n)
  */
 export function equals_<A>(xs: List<A>, yx: List<A>): boolean {
-  return equalsWith_(xs, yx, elementEquals)
+  return corresponds_(xs, yx, elementEquals)
 }
 
 /**
@@ -1027,14 +1212,12 @@ export function equals<A>(ys: List<A>): (xs: List<A>) => boolean {
  *
  * @complexity O(n)
  */
-export function equalsWith_<A>(xs: List<A>, ys: List<A>, f: (a: A, b: A) => boolean): boolean {
-  if (xs === ys) {
-    return true
-  } else if (xs.length !== ys.length) {
+export function corresponds_<A, B>(as: List<A>, bs: List<B>, f: (a: A, b: B) => boolean): boolean {
+  if (as.length !== bs.length) {
     return false
   } else {
-    const s = { iterator: ys[Symbol.iterator](), equals: true, f }
-    return foldlCb<A, EqualsState<A>>(equalsCb, s, xs).equals
+    const s = { iterator: bs[Symbol.iterator](), equals: true, f }
+    return foldlCb<A, EqualsState<A, B>>(equalsCb, s, as).equals
   }
 }
 
@@ -1044,8 +1227,8 @@ export function equalsWith_<A>(xs: List<A>, ys: List<A>, f: (a: A, b: A) => bool
  *
  * @complexity O(n)
  */
-export function equalsWith<A>(ys: List<A>, f: (a: A, b: A) => boolean): (xs: List<A>) => boolean {
-  return (l1) => equalsWith_(l1, ys, f)
+export function corresponds<A, B>(bs: List<B>, f: (a: A, b: B) => boolean): (as: List<A>) => boolean {
+  return (as) => corresponds_(as, bs, f)
 }
 
 /**
@@ -1929,6 +2112,125 @@ export function unsafeFindLast<A>(predicate: Predicate<A>): (as: List<A>) => A |
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Instances
+ * -------------------------------------------------------------------------------------------------
+ */
+
+type URI = [HKT.URI<ListURI>]
+
+export const Align = P.Align<URI>({
+  map_,
+  alignWith_,
+  align_,
+  nil: empty
+})
+
+export const Functor = P.Functor<URI>({
+  map_
+})
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+  map_,
+  cross_,
+  crossWith_
+})
+
+export const Apply = P.Apply<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  ap_
+})
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  unit
+})
+
+export const Applicative = P.Applicative<URI>({
+  map_,
+  cross_,
+  crossWith_,
+  ap_,
+  pure,
+  unit
+})
+
+export const Zip = P.Zip<URI>({
+  zipWith_,
+  zip_
+})
+
+export const Alt = P.Alt<URI>({
+  map_,
+  alt_
+})
+
+export const Alternative = P.Alternative<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure,
+  unit,
+  alt_,
+  nil: empty
+})
+
+export const Compactable = HKT.instance<P.Compactable<URI>>({
+  compact,
+  separate
+})
+
+export const Filterable = P.Filterable<URI>({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_
+})
+
+export const Foldable = P.Foldable<URI>({
+  foldl_,
+  foldr_,
+  foldMap_
+})
+
+export const Monad = P.Monad<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure,
+  unit,
+  bind_,
+  flatten
+})
+
+export const Traversable = P.Traversable<URI>({
+  map_,
+  traverse_
+})
+
+export const Witherable = P.Witherable<URI>({
+  map_,
+  filter_,
+  filterMap_,
+  partition_,
+  partitionMap_,
+  traverse_,
+  compactA_,
+  separateA_
+})
+
+export const Unfolable = HKT.instance<P.Unfoldable<URI>>({
+  unfold
+})
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Internal
  * -------------------------------------------------------------------------------------------------
  */
@@ -2000,7 +2302,7 @@ class ForwardListIterator<A> extends ListIterator<A> {
 /**
  * @internal
  */
-class BackwardsListIterator<A> extends ListIterator<A> {
+class BackwardListIterator<A> extends ListIterator<A> {
   constructor(l: List<A>) {
     super(l, -1)
   }
@@ -3357,15 +3659,15 @@ function elemCb(value: any, state: ElemState): boolean {
   return !(state.result = state.equals(value, state.element))
 }
 
-type EqualsState<A> = {
-  iterator: Iterator<A>
-  f: (a: A, b: A) => boolean
+type EqualsState<A, B> = {
+  iterator: Iterator<B>
+  f: (a: A, b: B) => boolean
   equals: boolean
 }
 
-function equalsCb<A>(value2: A, state: EqualsState<A>): boolean {
+function equalsCb<A, B>(a: A, state: EqualsState<A, B>): boolean {
   const { value } = state.iterator.next()
-  return (state.equals = state.f(value, value2))
+  return (state.equals = state.f(a, value))
 }
 
 type FindNotIndexState = {

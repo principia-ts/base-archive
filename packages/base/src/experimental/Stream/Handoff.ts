@@ -98,6 +98,7 @@ export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
 export const HandoffSignalTypeId = Symbol()
 
 export const EmitTypeId = Symbol()
+export type EmitTypeId = typeof EmitTypeId
 export class Emit<A> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
   readonly _typeId: typeof EmitTypeId                       = EmitTypeId
@@ -106,6 +107,7 @@ export class Emit<A> {
 }
 
 export const HaltTypeId = Symbol()
+export type HaltTypeId = typeof HaltTypeId
 export class Halt<E> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
   readonly _typeId: typeof HaltTypeId                       = HaltTypeId
@@ -114,6 +116,7 @@ export class Halt<E> {
 }
 
 export const EndTypeId = Symbol()
+export type EndTypeId = typeof EndTypeId
 export class End<C> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
   readonly _typeId: typeof EndTypeId                        = EndTypeId
@@ -122,3 +125,29 @@ export class End<C> {
 }
 
 export type HandoffSignal<C, E, A> = Emit<A> | Halt<E> | End<C>
+
+export function matchSignal_<C, E, A, B, D, F>(
+  signal: HandoffSignal<C, E, A>,
+  cases: {
+    Emit: (_: Emit<A>) => B
+    Halt: (_: Halt<E>) => D
+    End: (_: End<C>) => F
+  }
+): B | D | F {
+  switch (signal._typeId) {
+    case EmitTypeId:
+      return cases.Emit(signal)
+    case HaltTypeId:
+      return cases.Halt(signal)
+    case EndTypeId:
+      return cases.End(signal)
+  }
+}
+
+export function matchSignal<C, E, A, B, D, F>(cases: {
+  Emit: (_: Emit<A>) => B
+  Halt: (_: Halt<E>) => D
+  End: (_: End<C>) => F
+}): (signal: HandoffSignal<C, E, A>) => B | D | F {
+  return (signal) => matchSignal_(signal, cases)
+}

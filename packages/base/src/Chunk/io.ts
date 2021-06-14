@@ -3,6 +3,7 @@ import type { Chunk, ChunkBuilder } from './core'
 
 import { identity, pipe } from '../function'
 import * as I from '../IO/core'
+import * as O from '../Option'
 import { builder, concrete, foldl_ } from './core'
 
 /*
@@ -32,6 +33,43 @@ export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => 
 
 export function collectAllM<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
   return mapM_(as, identity)
+}
+
+function findMLoop_<R, E, A>(
+  iterator: Iterator<ArrayLike<A>>,
+  f: (a: A) => I.IO<R, E, boolean>,
+  array: ArrayLike<A>,
+  i: number,
+  length: number
+): I.IO<R, E, O.Option<A>> {
+  if (i < length) {
+    const a = array[i]
+    return f(a)['>>=']((b) => (b ? I.succeed(O.some(a)) : findMLoop_(iterator, f, array, i + 1, length)))
+  }
+  let result
+  if (!(result = iterator.next()).done) {
+    const arr = result.value
+    const len = arr.length
+    return findMLoop_(iterator, f, arr, 0, len)
+  }
+  return I.succeed(O.none())
+}
+
+export function findM_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  let result
+  if (!(result = iterator.next()).done) {
+    const array  = result.value
+    const length = array.length
+    return findMLoop_(iterator, f, array, 0, length)
+  } else {
+    return I.succeed(O.none())
+  }
+}
+
+export function findM<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, O.Option<A>> {
+  return (as) => findM_(as, f)
 }
 
 export function foldlM_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
