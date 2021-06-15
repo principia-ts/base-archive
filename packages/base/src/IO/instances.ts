@@ -7,7 +7,20 @@ import type { V } from './core'
 import { mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
 import { apPar_, crossPar_, crossWithPar_ } from './combinators'
-import { ap_, bimap_, bind_, catchAll_, cross_, crossWith_, fail, flatten, map_, mapError_, pure, unit } from './core'
+import {
+  ap_,
+  bimap_,
+  bind_,
+  catchAll_,
+  cross_,
+  crossWith_,
+  failNow,
+  flatten,
+  map_,
+  mapError_,
+  pure,
+  unit
+} from './core'
 
 type URI = [HKT.URI<IOURI>]
 
@@ -106,5 +119,5 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   bind_,
   flatten,
   catchAll_,
-  fail
+  fail: failNow
 })

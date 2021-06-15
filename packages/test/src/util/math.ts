@@ -26,7 +26,7 @@ export function safeFloatToIndex(f: number, label: string): I.IO<unknown, never,
   if (!Number.isInteger(index)) {
     return I.die(new Error(errorMessage))
   }
-  return I.succeed(index)
+  return I.succeedNow(index)
 }
 
 export function decomposeFloat(f: number): { exponent: number, significand: number } {
@@ -408,7 +408,7 @@ export function safeDoubleToIndex(d: number, label: string): I.IO<unknown, never
     // Number.NaN does not have any associated index in the current implementation
     return I.die(new Error('fc.doubleNext constraints.' + label + ' must be a 32-bit float'))
   }
-  return I.succeed(doubleToIndex(d))
+  return I.succeedNow(doubleToIndex(d))
 }
 
 let EPSILON   = Math.pow(2, -52)

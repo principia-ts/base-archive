@@ -61,7 +61,7 @@ export class Promise<E, A> {
    * Exits the promise with the specified exit, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  done = (ex: Exit<E, A>): I.UIO<boolean> => this.completeWith(I.done(ex))
+  done = (ex: Exit<E, A>): I.UIO<boolean> => this.completeWith(I.doneNow(ex))
 
   /**
    * Kills the promise with the specified error, which will be propagated to all
@@ -73,13 +73,13 @@ export class Promise<E, A> {
    * Fails the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  fail = (e: E): I.UIO<boolean> => this.completeWith(I.fail(e))
+  fail = (e: E): I.UIO<boolean> => this.completeWith(I.failNow(e))
 
   /**
    * Halts the promise with the specified cause, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  halt = (e: Cause<E>): I.UIO<boolean> => this.complete(I.halt(e))
+  halt = (e: Cause<E>): I.UIO<boolean> => this.complete(I.haltNow(e))
 
   /**
    * Completes the promise with interruption. This will interrupt all fibers
@@ -156,7 +156,7 @@ export class Promise<E, A> {
    * Completes the promise with the specified value.
    */
   succeed(a: A): I.UIO<boolean> {
-    return this.completeWith(I.succeed(a))
+    return this.completeWith(I.succeedNow(a))
   }
 
   /**

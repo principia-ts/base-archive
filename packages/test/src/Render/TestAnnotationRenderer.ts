@@ -16,7 +16,7 @@ export class LeafRenderer<V> {
     return O.match_(
       this.render(L.prepend(child.get(this.annotation))(L.map_(ancestors, (m) => m.get(this.annotation)))),
       () => L.empty<string>(),
-      L.of
+      L.single
     )
   }
 }

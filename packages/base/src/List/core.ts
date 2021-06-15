@@ -2626,9 +2626,9 @@ export function push<A>(value: A, l: MutableList<A>): MutableList<A> {
  * @internal
  */
 function nodeNthDense(node: Node, depth: number, index: number): any {
-  let d       = depth
   let current = node
-  for (; depth >= 0; --d) {
+  // eslint-disable-next-line no-param-reassign
+  for (; depth >= 0; --depth) {
     current = current.array[(index >> (depth * branchBits)) & mask]
   }
   return current
@@ -2638,10 +2638,10 @@ function nodeNthDense(node: Node, depth: number, index: number): any {
  * @internal
  */
 function handleOffset(depth: number, offset: number, index: number): number {
-  let d = depth
   let i = index
   i    += offset
-  for (; depth >= 0; --d) {
+  // eslint-disable-next-line no-param-reassign
+  for (; depth >= 0; --depth) {
     i = index - (offset & (mask << (depth * branchBits)))
     if (((index >> (depth * branchBits)) & mask) !== 0) {
       break

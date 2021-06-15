@@ -99,7 +99,7 @@ export class DerivedAllM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A
         new DerivedAllM<RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            P.flow(getEither, I.matchM(P.flow(eb, I.failNow), bd)),
             (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
           )
         )
@@ -118,10 +118,10 @@ export class DerivedAllM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A
         new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            P.flow(getEither, I.matchM(P.flow(eb, I.failNow), bd)),
             (c) => (s) =>
               I.bind_(
-                I.matchM_(getEither(s), (e) => I.fail(ec(e)), ca(c)),
+                I.matchM_(getEither(s), (e) => I.failNow(ec(e)), ca(c)),
                 (a) => I.mapError_(setEither(a)(s), ea)
               )
           )
@@ -164,7 +164,7 @@ export class DerivedM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, B
         new DerivedM<RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            P.flow(getEither, I.matchM(P.flow(eb, I.failNow), bd)),
             P.flow(ca, I.bind(P.flow(setEither, I.mapError(ea))))
           )
         )
@@ -183,9 +183,9 @@ export class DerivedM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, B
         new DerivedAllM<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchM(P.flow(eb, I.fail), bd)),
+            P.flow(getEither, I.matchM(P.flow(eb, I.failNow), bd)),
             (c) => (s) =>
-              P.pipe(getEither(s), I.matchM(P.flow(ec, I.fail), ca(c)), I.bind(P.flow(setEither, I.mapError(ea))))
+              P.pipe(getEither(s), I.matchM(P.flow(ec, I.failNow), ca(c)), I.bind(P.flow(setEither, I.mapError(ea))))
           )
         )
     )
@@ -368,7 +368,7 @@ export function filterInputM_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
         I.ifM_(
           I.asSomeError(f(a)),
           () => I.pure(a),
-          () => I.fail<O.Option<EA | EC>>(O.none())
+          () => I.failNow<O.Option<EA | EC>>(O.none())
         ),
       I.pure
     )
@@ -427,7 +427,7 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RC, EC>(
       I.ifM_(
         I.asSomeError(f(b)),
         () => I.pure(b),
-        () => I.fail(O.none())
+        () => I.failNow(O.none())
       )
   )
 }
@@ -582,7 +582,7 @@ export function mapM_<RA, RB, EA, EB, A, B, RC, EC, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): RefM<RA, RB & RC, EA, EB | EC, A, C> {
-  return P.pipe(ref, dimapM(I.succeed, f))
+  return P.pipe(ref, dimapM(I.succeedNow, f))
 }
 
 /**
@@ -602,7 +602,7 @@ export function map_<RA, RB, EA, EB, A, B, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): RefM<RA, RB, EA, EB, A, C> {
-  return mapM_(ref, (b) => I.succeed(f(b)))
+  return mapM_(ref, (b) => I.succeedNow(f(b)))
 }
 
 /**
@@ -1066,7 +1066,7 @@ export function collectM_<RA, RB, EA, EB, A, B, RC, EC, C>(
       P.pipe(
         f(b),
         O.map((a) => I.asSomeError(a)),
-        O.getOrElse(() => I.fail(O.none()))
+        O.getOrElse(() => I.failNow(O.none()))
       )
   )
 }

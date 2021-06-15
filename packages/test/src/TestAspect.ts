@@ -109,8 +109,8 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
     pipe(
       test,
       I.result,
-      I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.apl_),
-      I.bind(I.done)
+      I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.failNow(new RuntimeFailure(cause)))), Ex.apl_),
+      I.bind(I.doneNow)
     )
   )
 }
@@ -122,7 +122,7 @@ export function around<R, E, A, R1>(
   return new PerTest((test) =>
     pipe(
       before,
-      I.catchAllCause((c) => I.fail(new RuntimeFailure(c))),
+      I.catchAllCause((c) => I.failNow(new RuntimeFailure(c))),
       I.bracket(() => test, after)
     )
   )
@@ -262,7 +262,7 @@ function warn<R, E>(
   return I.raceWith_(
     test,
     withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
-    (result, fiber) => Fi.interrupt(fiber)['*>'](I.done(result)),
+    (result, fiber) => Fi.interrupt(fiber)['*>'](I.doneNow(result)),
     (_, fiber) => Fi.join(fiber)
   )
 }

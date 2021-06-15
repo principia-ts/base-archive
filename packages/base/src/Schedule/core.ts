@@ -89,7 +89,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
         I.bind(([o, _]) =>
           O.match_(
             o,
-            () => I.fail(new NoSuchElementError('Driver.last')),
+            () => I.failNow(new NoSuchElementError('Driver.last')),
             (b) => I.pure(b)
           )
         )
@@ -102,7 +102,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
-              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.apr(I.fail(O.none()))))
+              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.apr(I.failNow(O.none()))))
             }
             case 'Continue': {
               return yield* _(
@@ -823,7 +823,7 @@ const foldMLoop =
     I.bind_(sf(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
-          return I.pure<Decision<R & R1, I, B>>(makeDone(b))
+          return I.pure(makeDone(b))
         }
         case 'Continue': {
           return I.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldMLoop(d.next, b2, f)))
@@ -974,7 +974,7 @@ const modifyDelayMLoop =
     I.bind_(sf(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
-          return I.pure<Decision<R & R1, I, O>>(makeDone(d.out))
+          return I.pure(makeDone(d.out))
         }
         case 'Continue': {
           const delay = d.interval - now

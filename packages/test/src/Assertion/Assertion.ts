@@ -30,7 +30,7 @@ export type AssertResult<A> = BA.FreeBooleanAlgebra<AssertionValue<A>>
 
 export class Assertion<A> extends AssertionM<A> {
   constructor(readonly render: Render, readonly run: (actual: A) => AssertResult<A>) {
-    super(render, (actual) => I.succeed(run(actual)))
+    super(render, (actual) => I.succeedNow(run(actual)))
   }
 
   test(a: A): boolean {
@@ -98,7 +98,7 @@ export function assertionDirect<A>(
   params: ReadonlyArray<RenderParam>,
   run: (actual: A) => BA.FreeBooleanAlgebra<AssertionValue<A>>
 ): Assertion<A> {
-  return new Assertion(fn(name, L.of(L.from(params))), run)
+  return new Assertion(fn(name, L.single(L.from(params))), run)
 }
 
 export function assertionRec<A, B>(

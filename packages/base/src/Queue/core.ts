@@ -619,19 +619,21 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RB1, EB1>(
     offerAll                                  = (as: Iterable<A>): IO<RA, EA, boolean> => queue.offerAll(as)
     shutdown: UIO<void>                       = queue.shutdown
     size: UIO<number>                         = queue.size
-    take: IO<RB & RB1, EB1 | EB, B>           = I.bind_(queue.take, (b) => I.bind_(f(b), (p) => (p ? I.succeed(b) : this.take)))
+    take: IO<RB & RB1, EB1 | EB, B>           = I.bind_(queue.take, (b) =>
+      I.bind_(f(b), (p) => (p ? I.succeedNow(b) : this.take))
+    )
     takeAll: IO<RB & RB1, EB | EB1, Chunk<B>> = I.bind_(queue.takeAll, (bs) => I.filter_(bs, f))
     loop                                      = (max: number, acc: Chunk<B>): IO<RB & RB1, EB | EB1, Chunk<B>> =>
       I.bind_(queue.takeUpTo(max), (bs) => {
         if (C.isEmpty(bs)) {
-          return I.succeed(acc)
+          return I.succeedNow(acc)
         }
 
         return I.bind_(I.filter_(bs, f), (filtered) => {
           const length = filtered.length
 
           if (length === max) {
-            return I.succeed(C.concat_(acc, filtered))
+            return I.succeedNow(C.concat_(acc, filtered))
           } else {
             return this.loop(max - length, C.concat_(acc, filtered))
           }
@@ -676,7 +678,7 @@ export function map_<RA, RB, EA, EB, A, B, C>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): Queue<RA, RB, EA, EB, A, C> {
-  return mapM_(queue, flow(f, I.succeed))
+  return mapM_(queue, flow(f, I.succeedNow))
 }
 
 export function map<B, C>(

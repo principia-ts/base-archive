@@ -1,12 +1,10 @@
 import type { MutableQueue } from './util/support/MutableQueue'
 
-import { identity } from '@principia/base/function'
-
 import * as C from './Chunk'
 import { parallel } from './ExecutionStrategy'
 import * as Ex from './Exit'
 import * as F from './Fiber'
-import { pipe } from './function'
+import { identity, pipe } from './function'
 import * as I from './IO'
 import * as M from './Managed'
 import * as RM from './Managed/ReleaseMap'
@@ -278,7 +276,7 @@ function _unsafeHub<A>(
         return I.interrupt
       }
 
-      return I.succeed(hub.size())
+      return I.succeedNow(hub.size())
     })
 
     subscribe = pipe(
@@ -301,7 +299,7 @@ function _unsafeHub<A>(
 
         if (hub.publish(a)) {
           strategy.unsafeCompleteSubscribers(hub, subscribers)
-          return I.succeed(true)
+          return I.succeedNow(true)
         }
 
         return strategy.handleSurplus(hub, subscribers, C.single(a), shutdownFlag)
@@ -318,7 +316,7 @@ function _unsafeHub<A>(
         strategy.unsafeCompleteSubscribers(hub, subscribers)
 
         if (C.isEmpty(surplus)) {
-          return I.succeed(true)
+          return I.succeedNow(true)
         }
 
         return strategy.handleSurplus(hub, subscribers, surplus, shutdownFlag)
@@ -344,10 +342,10 @@ export function toQueue<RA, RB, EA, EB, A, B>(source: Hub<RA, RB, EA, EB, A, B>)
     shutdown      = source.shutdown
     size          = source.size
     take          = I.never
-    takeAll       = I.succeed(C.empty<never>())
+    takeAll       = I.succeedNow(C.empty<never>())
     offer         = (a: A): I.IO<RA, EA, boolean> => source.publish(a)
     offerAll      = (as: Iterable<A>): I.IO<RA, EA, boolean> => source.publishAll(as)
-    takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeed(C.empty())
+    takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeedNow(C.empty())
   })()
 }
 
@@ -411,12 +409,12 @@ function unsafeSubscription<A>(
         return I.interrupt
       }
 
-      return I.succeed(subscription.size())
+      return I.succeedNow(subscription.size())
     })
 
-    offer = (_: never): I.IO<never, unknown, boolean> => I.succeed(false)
+    offer = (_: never): I.IO<never, unknown, boolean> => I.succeedNow(false)
 
-    offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeed(false)
+    offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeedNow(false)
 
     take: I.IO<unknown, never, A> = pipe(
       I.fiberId(),
@@ -450,7 +448,7 @@ function unsafeSubscription<A>(
             )
           } else {
             strategy.unsafeOnHubEmptySpace(hub, subscribers)
-            return I.succeed(message)
+            return I.succeedNow(message)
           }
         })
       )
@@ -465,7 +463,7 @@ function unsafeSubscription<A>(
 
       strategy.unsafeOnHubEmptySpace(hub, subscribers)
 
-      return I.succeed(as)
+      return I.succeedNow(as)
     })
 
     takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
@@ -477,7 +475,7 @@ function unsafeSubscription<A>(
         const as = pollers.isEmpty ? _unsafePollN(subscription, n) : C.empty<A>()
 
         strategy.unsafeOnHubEmptySpace(hub, subscribers)
-        return I.succeed(as)
+        return I.succeedNow(as)
       })
     }
   })()
@@ -501,7 +499,7 @@ export function mapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): Hub<RA, RC & RB, EA, EB | EC, A, C> {
-  return dimapM_(self, (a) => I.succeed<A>(a), f)
+  return dimapM_(self, I.succeedNow, f)
 }
 
 /**
@@ -521,7 +519,7 @@ export function map_<RA, RB, EA, EB, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): Hub<RA, RB, EA, EB, A, C> {
-  return mapM_(self, (b) => I.succeed(f(b)))
+  return mapM_(self, (b) => I.succeedNow(f(b)))
 }
 
 /**
@@ -547,7 +545,7 @@ export function contramapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): Hub<RC & RA, RB, EA | EC, EB, C, B> {
-  return dimapM_(self, f, I.succeed)
+  return dimapM_(self, f, I.succeedNow)
 }
 
 /**
@@ -608,8 +606,8 @@ export function dimap_<RA, RB, EA, EB, A, B, C, D>(
 ): Hub<RA, RB, EA, EB, C, D> {
   return dimapM_(
     self,
-    (c) => I.succeed(f(c)),
-    (b) => I.succeed(g(b))
+    (c) => I.succeedNow(f(c)),
+    (b) => I.succeedNow(g(b))
   )
 }
 
@@ -644,9 +642,9 @@ export function filterInputM_<RA, RA1, RB, EA, EA1, EB, A, B>(
     shutdown      = source.shutdown
     size          = source.size
     subscribe     = source.subscribe
-    publish       = (a: A) => I.bind_(f(a), (b) => (b ? source.publish(a) : I.succeed(false)))
+    publish       = (a: A) => I.bind_(f(a), (b) => (b ? source.publish(a) : I.succeedNow(false)))
     publishAll    = (as: Iterable<A>) =>
-      I.bind_(I.filter_(as, f), (as) => (C.isNonEmpty(as) ? source.publishAll(as) : I.succeed(false)))
+      I.bind_(I.filter_(as, f), (as) => (C.isNonEmpty(as) ? source.publishAll(as) : I.succeedNow(false)))
   })()
 }
 
@@ -664,7 +662,7 @@ export function filterInputM<RA1, EA1, A>(f: (a: A) => I.IO<RA1, EA1, boolean>) 
  * Filters messages published to the hub using the specified function.
  */
 export function filterInput_<RA, RB, EA, EB, A, B>(self: Hub<RA, RB, EA, EB, A, B>, f: (a: A) => boolean) {
-  return filterInputM_(self, (a) => I.succeed(f(a)))
+  return filterInputM_(self, (a) => I.succeedNow(f(a)))
 }
 
 /**
@@ -713,7 +711,7 @@ export function filterOutput_<RA, RB, EA, EB, A, B>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => boolean
 ): Hub<RA, RB, EA, EB, A, B> {
-  return filterOutputM_(self, (b) => I.succeed(f(b)))
+  return filterOutputM_(self, (b) => I.succeedNow(f(b)))
 }
 
 /**
@@ -1025,7 +1023,7 @@ export class Dropping<A> extends Strategy<A> {
     _as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.succeed(false)
+    return I.succeedNow(false)
   }
 
   shutdown: I.UIO<void> = I.unit()
@@ -1845,7 +1843,7 @@ export function _makeUnbounded<A>(): HubInternal<A> {
  * Unsafely completes a promise with the specified value.
  */
 export function _unsafeCompletePromise<A>(promise: P.Promise<never, A>, a: A): void {
-  P.unsafeDone(I.succeed(a))(promise)
+  P.unsafeDone(I.succeedNow(a))(promise)
 }
 
 /**

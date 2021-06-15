@@ -22,7 +22,7 @@ export function fromCallback<L, R>(f: Function): () => I.FIO<L, R> {
     const args = Array.prototype.slice.call(arguments)
 
     return I.effectAsync((resolve) => {
-      const cb = (e: L, r: R) => (e != null ? resolve(I.fail(e)) : resolve(I.succeed(r)))
+      const cb = (e: L, r: R) => (e != null ? resolve(I.failNow(e)) : resolve(I.succeedNow(r)))
       // eslint-disable-next-line prefer-spread
       f.apply(null, args.concat(cb))
     })

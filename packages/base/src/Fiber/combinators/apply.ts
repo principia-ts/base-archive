@@ -55,7 +55,7 @@ export function crossWith_<E, E1, A, A1, B>(
     poll: I.crossWith_(fa.poll, fb.poll, (fa, fb) =>
       O.bind_(fa, (ea) => O.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
     ),
-    await: I.result(crossWithPar_(I.bind_(fa.await, I.done), I.bind_(fb.await, I.done), f))
+    await: I.result(crossWithPar_(I.bind_(fa.await, I.doneNow), I.bind_(fb.await, I.doneNow), f))
   }
 }
 

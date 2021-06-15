@@ -12,17 +12,17 @@ import * as XR from '../Ref'
 export type Push<R, E, I, L, Z> = (_: O.Option<Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, Chunk<L>], void>
 
 export function emit<I, Z>(z: Z, leftover: Chunk<I>): I.FIO<[E.Either<never, Z>, Chunk<I>], never> {
-  return I.fail([E.right(z), leftover])
+  return I.failNow([E.right(z), leftover])
 }
 
 export const more = I.unit()
 
 export function fail<E, I>(e: E, leftover: Chunk<I>): I.FIO<[E.Either<E, never>, Chunk<I>], never> {
-  return I.fail([E.left(e), leftover])
+  return I.failNow([E.left(e), leftover])
 }
 
 export function halt<E>(c: Cause<E>): I.FIO<[E.Either<E, never>, Chunk<never>], never> {
-  return I.mapError_(I.halt(c), (e) => [E.left(e), C.empty()])
+  return I.mapError_(I.haltNow(c), (e) => [E.left(e), C.empty()])
 }
 
 export function restartable<R, E, I, L, Z>(

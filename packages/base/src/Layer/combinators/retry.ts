@@ -29,7 +29,7 @@ export function retry_<R, E, A, R1>(
             s(now, e),
             I.bind(
               matchTag({
-                Done: (_) => I.fail(e),
+                Done: (_) => I.failNow(e),
                 Continue: (c) => I.as_(Clock.sleep(Math.abs(now - c.interval)), () => tuple(r, c.next))
               })
             )
@@ -41,7 +41,7 @@ export function retry_<R, E, A, R1>(
 
     return pipe(first<R>()['>=>'](la), catchAll(update['>=>'](defer(() => fresh(loop())))))
   }
-  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeed(schedule.step)))['>=>'](loop())
+  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeedNow(schedule.step)))['>=>'](loop())
 }
 
 /**

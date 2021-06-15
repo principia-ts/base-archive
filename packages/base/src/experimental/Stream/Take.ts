@@ -23,7 +23,7 @@ export class Take<E, A> {
  * Transforms `Take[E, A]` to `Effect[R, E, B]`.
  */
 export function done<E, A>(self: Take<E, A>): T.FIO<O.Option<E>, A.Chunk<A>> {
-  return T.done(self.exit)
+  return T.doneNow(self.exit)
 }
 
 /**

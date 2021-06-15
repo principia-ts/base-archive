@@ -159,10 +159,10 @@ export function tryCommit<R, E, A>(fiberId: FiberId, stm: STM<R, E, A>, r: R): T
       return new Suspend(journal)
     }
     case SucceedTypeId: {
-      return completeTodos(I.succeed(value.value), journal)
+      return completeTodos(I.succeedNow(value.value), journal)
     }
     case FailTypeId: {
-      return completeTodos(I.fail(value.value), journal)
+      return completeTodos(I.failNow(value.value), journal)
     }
     case DieTypeId: {
       return completeTodos(I.die(value.value), journal)

@@ -648,7 +648,7 @@ export function apPar<R1, E1, A>(
 export function mapError_<R, E, A, E1>(la: Layer<R, E, A>, f: (e: E) => E1): Layer<R, E1, A> {
   return catchAll_(
     la,
-    fromRawFunctionM(([_, e]: readonly [unknown, E]) => I.fail(f(e)))
+    fromRawFunctionM(([_, e]: readonly [unknown, E]) => I.failNow(f(e)))
   )
 }
 
@@ -778,8 +778,8 @@ export function catchAll_<R, E, A, R1, E1, B>(
         cause,
         Ca.failureOrCause,
         E.match(
-          (e) => I.succeed(tuple(r, e)),
-          (c) => I.halt(c)
+          (e) => I.succeedNow(tuple(r, e)),
+          (c) => I.haltNow(c)
         )
       )
   )
@@ -823,7 +823,7 @@ export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
 export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return match_(
     from,
-    fromRawFunctionM((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [unknown, Cause<E2>]) => I.haltNow(_[1])),
     to
   )
 }
@@ -851,7 +851,7 @@ export function match<E, A, R1, E1, B, E2, C>(
 export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
   return match_(
     from,
-    fromRawFunctionM((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [unknown, Cause<E>]) => I.haltNow(_[1])),
     to
   )
 }
@@ -906,7 +906,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
   return <E2, A2>(to: Layer<A, E2, A2>): Layer<R, E | E2, A2> =>
     match_(
       from,
-      fromRawFunctionM((_: readonly [R, Cause<E>]) => I.halt(_[1])),
+      fromRawFunctionM((_: readonly [R, Cause<E>]) => I.haltNow(_[1])),
       to
     )
 }
@@ -919,7 +919,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
 export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return match_(
     from,
-    fromRawFunctionM((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionM((_: readonly [R2, Cause<E2>]) => I.haltNow(_[1])),
     to
   )
 }
@@ -1011,7 +1011,7 @@ export class MemoMap {
                             pipe(
                               promise.halt(cause),
                               I.bind(() => M.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
-                              I.bind(() => I.halt(cause))
+                              I.bind(() => I.haltNow(cause))
                             ),
                           ([, a]) =>
                             I.gen(function* (_) {

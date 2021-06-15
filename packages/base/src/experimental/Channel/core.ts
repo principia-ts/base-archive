@@ -22,7 +22,7 @@ export const ChannelTag = {
   Ensuring: 'Ensuring',
   ConcatAll: 'ConcatAll',
   BracketOut: 'BracketOut',
-  Provide: 'Provide'
+  Give: 'Give'
 } as const
 
 export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
@@ -300,7 +300,7 @@ export class BracketOut<R, E, Z, OutDone> extends Channel<R, unknown, unknown, u
   }
 }
 
-export class Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> extends Channel<
+export class Give<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> extends Channel<
   unknown,
   InErr,
   InElem,
@@ -309,7 +309,7 @@ export class Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> exten
   OutElem,
   OutDone
 > {
-  readonly _tag = ChannelTag.Provide
+  readonly _tag = ChannelTag.Give
   constructor(
     readonly environment: Env,
     readonly inner: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
@@ -355,7 +355,7 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   | ConcatAll<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
   | Bridge<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   | Fold<Env, InErr, InElem, InDone, OutErr, any, OutElem, OutDone, any>
-  | Provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+  | Give<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   | BracketOut<Env, OutErr, OutElem, OutDone>
   | Ensuring<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   | EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>

@@ -4,9 +4,12 @@ import * as S from '../src/experimental/Stream'
 import { flow, pipe } from '../src/function'
 import * as I from '../src/IO'
 
+const s1 = S.fromChunk(C.range(0, 10))
+const s2 = (n: number) => S.fromEffect(I.delay(100)(I.succeedNow(n * 2)))
+
 pipe(
-  S.fromChunk(C.range(0, 100)),
-  S.mapM((n) => I.delay_(I.succeed(n + 1), 100)),
+  s1,
+  S.bindPar(s2, 10),
   S.runCollect,
   I.tap(flow(C.toArray, Console.put)),
   I.timed,

@@ -105,12 +105,12 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
     label,
     I.matchCauseM_(
       I.deferTotal(assertion),
-      flow(TF.halt, I.fail),
+      flow(TF.halt, I.failNow),
       flow(
         BA.failures,
         O.match(
-          () => I.succeed(new TS.Succeeded(BA.success(undefined))),
-          (failures) => I.fail(TF.assertion(failures))
+          () => I.succeedNow(new TS.Succeeded(BA.success(undefined))),
+          (failures) => I.failNow(TF.assertion(failures))
         )
       )
     ),
@@ -123,7 +123,7 @@ export function test(label: string, assertion: () => TestResult): Spec.XSpec<unk
 }
 
 export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {
-  return checkM(rv, flow(test, I.succeed))
+  return checkM(rv, flow(test, I.succeedNow))
 }
 
 export function checkM<R, A, R1, E>(
@@ -185,7 +185,7 @@ function shrinkStream<R, R1, E, A>(
           C.last,
           O.match(
             () =>
-              I.succeed(
+              I.succeedNow(
                 BA.success(
                   FailureDetails([new AssertionValue(undefined, Ev.now(anything), Ev.now(anything.run(undefined)))])
                 )

@@ -83,7 +83,7 @@ export class TestRandom implements Random {
   }
 
   private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
-    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeed))
+    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeedNow))
   }
 
   private leastSignificantBits = (x: number): number => {
@@ -115,13 +115,13 @@ export class TestRandom implements Random {
       if (i === length) {
         return acc['<$>'](Li.reverse)
       } else if (n > 0) {
-        return rnd['>>=']((rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, acc['<$>'](Li.prepend(Byte.wrap(rnd)))))
+        return rnd['>>=']((rnd) => loop(i + 1, I.succeedNow(rnd >> 8), n - 1, acc['<$>'](Li.prepend(Byte.wrap(rnd)))))
       } else {
         return loop(i, this.nextInt, Math.min(length - i, 4), acc)
       }
     }
 
-    return loop(0, this.randomInt, Math.min(length, 4), I.succeed(Li.empty()))['<$>'](Li.toArray)
+    return loop(0, this.randomInt, Math.min(length, 4), I.succeedNow(Li.empty()))['<$>'](Li.toArray)
   }
 
   private randomIntBounded = (n: number) => {
@@ -133,14 +133,14 @@ export class TestRandom implements Random {
       const loop: UIO<number> = this.randomBits(31)['>>=']((i) => {
         const value = i % n
         if (i - value + (n - 1) < 0) return loop
-        else return I.succeed(value)
+        else return I.succeedNow(value)
       })
       return loop
     }
   }
 
   private randomLong: UIO<bigint> = this.randomBits(32)['>>=']((i1) =>
-    this.randomBits(32)['>>=']((i2) => I.succeed(BigInt(i1 << 32) + BigInt(i2)))
+    this.randomBits(32)['>>=']((i2) => I.succeedNow(BigInt(i1 << 32) + BigInt(i2)))
   )
 
   private randomInt = this.randomBits(32)

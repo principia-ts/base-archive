@@ -13,12 +13,12 @@ import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 
-import { flow } from '@principia/base/function'
 import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 
 import { Die } from '../Cause/core'
 import * as C from '../Cause/core'
 import * as E from '../Either'
+import { flow } from '../function'
 import { IOURI } from '../Modules'
 import { isObject } from '../prelude'
 

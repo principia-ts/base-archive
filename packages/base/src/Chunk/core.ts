@@ -2026,6 +2026,29 @@ export function join(separator: string): (chunk: Chunk<string>) => string {
   return (chunk) => join_(chunk, separator)
 }
 
+export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readonly [S, B]): readonly [S, Chunk<B>] {
+  concrete(as)
+  const iterator = as.arrayIterator()
+  const out      = builder<B>()
+  let state      = s
+  let result
+  while (!(result = iterator.next()).done) {
+    const array  = result.value
+    const length = array.length
+    for (let i = 0; i < length; i++) {
+      const a   = array[i]
+      const tup = f(state, a)
+      state     = tup[0]
+      out.append(tup[1])
+    }
+  }
+  return P.tuple(s, out.result())
+}
+
+export function mapAccum<A, S, B>(s: S, f: (s: S, a: A) => readonly [S, B]): (as: Chunk<A>) => readonly [S, Chunk<B>] {
+  return (as) => mapAccum_(as, s, f)
+}
+
 export function reverse<A>(as: Chunk<A>): Iterable<A> {
   concrete(as)
   const arr = as.arrayLike()

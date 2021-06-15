@@ -10,5 +10,5 @@ import { awaitAll } from './awaitAll'
  * a catchable error, _if_ that error does not result from interruption.
  */
 export function joinAll<E, A>(as: Iterable<Fiber<E, A>>): I.FIO<E, Chunk<A>> {
-  return I.tap_(I.bind_(awaitAll(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+  return I.tap_(I.bind_(awaitAll(as), I.doneNow), () => I.foreach_(as, (f) => f.inheritRefs))
 }

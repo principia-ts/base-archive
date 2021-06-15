@@ -424,11 +424,11 @@ export function isFalseM<R, E, A>(ma: FreeBooleanAlgebraM<R, E, A>): IO<R, E, bo
 }
 
 export function successM<A>(a: A): FreeBooleanAlgebraM<unknown, never, A> {
-  return I.succeed(success(a))
+  return I.succeedNow(success(a))
 }
 
 export function failureM<A>(a: A): FreeBooleanAlgebraM<unknown, never, A> {
-  return I.succeed(failure(a))
+  return I.succeedNow(failure(a))
 }
 
 export function fromIO<R, E, A>(io: IO<R, E, A>): FreeBooleanAlgebraM<R, E, A> {

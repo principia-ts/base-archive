@@ -34,7 +34,9 @@ export function cachedInvalidate_<R, E, A>(
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
     const cache = yield* _(RefM.refM<Option<readonly [number, Promise<E, A>]>>(O.none()))
-    return yield* _(traceCall(I.succeed, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))))
+    return yield* _(
+      traceCall(I.succeedNow, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache)))
+    )
   })
 }
 

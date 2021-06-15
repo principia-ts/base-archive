@@ -44,7 +44,7 @@ function findMLoop_<R, E, A>(
 ): I.IO<R, E, O.Option<A>> {
   if (i < length) {
     const a = array[i]
-    return f(a)['>>=']((b) => (b ? I.succeed(O.some(a)) : findMLoop_(iterator, f, array, i + 1, length)))
+    return f(a)['>>=']((b) => (b ? I.succeedNow(O.some(a)) : findMLoop_(iterator, f, array, i + 1, length)))
   }
   let result
   if (!(result = iterator.next()).done) {
@@ -52,7 +52,7 @@ function findMLoop_<R, E, A>(
     const len = arr.length
     return findMLoop_(iterator, f, arr, 0, len)
   }
-  return I.succeed(O.none())
+  return I.succeedNow(O.none())
 }
 
 export function findM_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
@@ -64,7 +64,7 @@ export function findM_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>):
     const length = array.length
     return findMLoop_(iterator, f, array, 0, length)
   } else {
-    return I.succeed(O.none())
+    return I.succeedNow(O.none())
   }
 }
 
@@ -73,7 +73,7 @@ export function findM<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>)
 }
 
 export function foldlM_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
+  return foldl_(as, I.succeedNow(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
 }
 
 export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
@@ -83,7 +83,7 @@ export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as:
 export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.deferTotal(() => {
     concrete(as)
-    let taking: I.IO<R, E, boolean> = I.succeed(true)
+    let taking: I.IO<R, E, boolean> = I.succeedNow(true)
     const out                       = builder<A>()
     const iterator                  = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
@@ -93,7 +93,7 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
         const j = i
         taking  = I.bind_(taking, (b) => {
           const a = array[j]
-          return I.map_(b ? p(a) : I.succeed(false), (b1) => {
+          return I.map_(b ? p(a) : I.succeedNow(false), (b1) => {
             if (b1) {
               out.append(a)
               return true
@@ -115,7 +115,7 @@ export function takeWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chun
 export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.deferTotal(() => {
     concrete(as)
-    let dropping: I.IO<R, E, boolean> = I.succeed(true)
+    let dropping: I.IO<R, E, boolean> = I.succeedNow(true)
     const out                         = builder<A>()
     const iterator                    = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
@@ -125,7 +125,7 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
         const j  = i
         dropping = I.bind_(dropping, (d) => {
           const a = array[j]
-          return I.map_(d ? p(a) : I.succeed(false), (b) => {
+          return I.map_(d ? p(a) : I.succeedNow(false), (b) => {
             if (b) {
               return true
             } else {
@@ -148,7 +148,7 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
   return I.deferTotal(() => {
     concrete(as)
     const c                              = builder<A>()
-    let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
+    let out: I.IO<R, E, ChunkBuilder<A>> = I.succeedNow(c)
     const iterator                       = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {

@@ -1,6 +1,7 @@
 import * as C from '../../Chunk'
 import { flow, pipe } from '../../function'
 import * as I from '../../IO'
+import { tuple } from '../../prelude'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import * as Ch from '../Channel'
 
@@ -12,6 +13,11 @@ import * as Ch from '../Channel'
  */
 export class Sink<R, InErr, In, OutErr, L, Z> {
   constructor(readonly channel: Ch.Channel<R, InErr, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>) {}
+  ['*>']<R1, InErr1, In1 extends In, OutErr1, L1 extends L, Z1>(
+    that: Sink<R1, InErr1, In1, OutErr1, L1, Z1>
+  ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+    return apr_(this, that)
+  }
 }
 
 export function succeed<A>(a: A): Sink<unknown, unknown, unknown, never, never, A> {
@@ -20,6 +26,10 @@ export function succeed<A>(a: A): Sink<unknown, unknown, unknown, never, never, 
 
 export function effectTotal<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
   return new Sink(Ch.effectTotal(a))
+}
+
+export function fromEffect<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, unknown, unknown, E, never, Z> {
+  return new Sink(Ch.fromEffect(io))
 }
 
 export function fail<E>(e: E): Sink<unknown, unknown, unknown, E, never, never> {
@@ -130,7 +140,7 @@ function collectLoop<Err, A>(
   state: C.Chunk<A>
 ): Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, C.Chunk<A>> {
   return Ch.readWithCause(
-    (i) => collectLoop(state['++'](i)),
+    (i) => collectLoop(C.concat_(state, i)),
     Ch.halt,
     (_) => Ch.end(state)
   )
@@ -293,22 +303,27 @@ export function mapError<OutErr, OutErr2>(
 export function matchM_<
   R,
   InErr,
-  In extends L,
+  In,
   OutErr,
-  L extends L1,
+  L,
   Z,
   R1,
   InErr1,
-  OutErr1,
   In1 extends In,
-  L1,
+  OutErr1,
+  L1 extends L,
   Z1,
-  OutErr2
+  R2,
+  InErr2,
+  In2 extends In,
+  OutErr2,
+  L2 extends L,
+  Z2
 >(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
-  onSuccess: (z: Z) => Sink<R1, InErr1, In1, OutErr2, L1, Z1>
-): Sink<R & R1, InErr & InErr1, In1, OutErr1 | OutErr2, L1, Z1> {
+  onSuccess: (z: Z) => Sink<R2, InErr2, In2, OutErr2, L2, Z2>
+): Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2> {
   return new Sink(
     pipe(
       sink.channel,
@@ -317,11 +332,13 @@ export function matchM_<
         (err) => onFailure(err).channel,
         ([leftovers, z]) =>
           Ch.deferTotal(() => {
-            const leftoversRef     = new AtomicReference(C.filter_(leftovers, C.isNonEmpty))
-            const refReader        = Ch.effectTotal(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
-              Ch.writeChunk(chunk as C.Chunk<C.Chunk<In1>>)
+            const leftoversRef     = new AtomicReference(
+              C.filter_(leftovers, (a): a is C.Chunk<L1 | L2> => C.isNonEmpty(a))
             )
-            const passthrough      = Ch.id<InErr1, C.Chunk<In1>, unknown>()
+            const refReader        = Ch.effectTotal(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
+              Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
+            )
+            const passthrough      = Ch.id<InErr2, C.Chunk<In1 & In2>, unknown>()
             const continuationSink = refReader['*>'](passthrough)['>>>'](onSuccess(z).channel)
 
             return Ch.doneCollect(continuationSink)['>>='](([newLeftovers, z1]) =>
@@ -335,10 +352,29 @@ export function matchM_<
   )
 }
 
-export function matchM<In extends L, OutErr, L extends L1, Z, R1, InErr1, OutErr1, In1 extends In, L1, Z1, OutErr2>(
+export function matchM<
+  In,
+  OutErr,
+  L0,
+  Z,
+  R1,
+  InErr1,
+  OutErr1,
+  In1 extends In,
+  L1 extends L0,
+  Z1,
+  R2,
+  InErr2,
+  In2 extends In,
+  OutErr2,
+  L2 extends L0,
+  Z2
+>(
   onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
-  onSuccess: (z: Z) => Sink<R1, InErr1, In1, OutErr2, L1, Z1>
-): <R, InErr>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr1 | OutErr2, L1, Z1> {
+  onSuccess: (z: Z) => Sink<R2, InErr2, In2, OutErr2, L2, Z2>
+): <R, InErr, L extends L0>(
+  sink: Sink<R, InErr, In, OutErr, L0 | L, Z>
+) => Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2> {
   return (sink) => matchM_(sink, onFailure, onSuccess)
 }
 
@@ -348,17 +384,49 @@ export function matchM<In extends L, OutErr, L extends L1, Z, R1, InErr1, OutErr
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<R, InErr, In extends L, OutErr, L extends L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+export function bind_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1 extends In, OutErr1, L1 extends L, Z1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
 ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
   return matchM_(sink, (err) => fail(err), f)
 }
 
-export function bind<In extends L, L extends L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+export function bind<In, L, Z, R1, InErr1, In1 extends In, OutErr1, L1 extends L, Z1>(
   f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
 ): <R, InErr, OutErr>(
   sink: Sink<R, InErr, In, OutErr, L, Z>
 ) => Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
   return (sink) => bind_(sink, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Apply
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function crossWith_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1 extends In, OutErr1, L1 extends L, Z1, Z2>(
+  fa: Sink<R, InErr, In, OutErr, L, Z>,
+  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+  f: (a: Z, b: Z1) => Z2
+): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
+  return bind_(fa, (z) => map_(fb, (z1) => f(z, z1)))
+}
+
+export function apr_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1 extends In, OutErr1, L1 extends L, Z1>(
+  fa: Sink<R, InErr, In, OutErr, L, Z>,
+  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>
+): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+  return crossWith_(fa, fb, (_, b) => b)
+}
+
+export function exposeLeftover<R, InErr, In, OutErr, L, Z>(
+  sink: Sink<R, InErr, In, OutErr, L, Z>
+): Sink<R, InErr, In, OutErr, never, readonly [Z, C.Chunk<L>]> {
+  return new Sink(
+    pipe(
+      Ch.doneCollect(sink.channel),
+      Ch.map(([chunks, z]) => tuple(z, C.flatten(chunks)))
+    )
+  )
 }

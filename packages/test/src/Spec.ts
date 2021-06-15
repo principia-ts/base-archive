@@ -343,7 +343,7 @@ export function execute<R, E, T>(
   spec: Spec<R, E, T>,
   defExec: ExecutionStrategy
 ): M.Managed<R, never, Spec<unknown, E, T>> {
-  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.halt, I.succeed, defExec)))
+  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.haltNow, I.succeedNow, defExec)))
 }
 
 export function whenM_<R, E, R1, E1>(
@@ -375,7 +375,7 @@ export function whenM_<R, E, R1, E1>(
 }
 
 export function when_<R, E>(spec: Spec<R, E, TestSuccess>, b: boolean): Spec<R & Has<Annotations>, E, TestSuccess> {
-  return whenM_(spec, I.succeed(b))
+  return whenM_(spec, I.succeedNow(b))
 }
 
 export function annotate_<R, E, T, V>(spec: Spec<R, E, T>, key: TestAnnotation<V>, value: V): Spec<R, E, T> {

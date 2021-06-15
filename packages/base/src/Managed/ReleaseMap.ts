@@ -2,9 +2,7 @@ import type { Exit } from '../Exit'
 import type { Option } from '../Option'
 import type { URef } from '../Ref/core'
 
-import { flow, identity } from '@principia/base/prelude'
-
-import { absurd, increment, pipe } from '../function'
+import { absurd, flow, identity, increment, pipe } from '../function'
 import * as I from '../IO/core'
 import * as M from '../Map'
 import * as O from '../Option'
@@ -108,7 +106,7 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
           return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit, s.update)]
         case 'Running':
           return [
-            I.succeed(M.lookup_(finalizers(s), key)),
+            I.succeedNow(M.lookup_(finalizers(s), key)),
             new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer), s.update)
           ]
         default:

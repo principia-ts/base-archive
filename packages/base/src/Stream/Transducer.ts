@@ -50,7 +50,7 @@ export function transducer<R, E, I, O, R1>(
  * Creates a transducer that always fails with the specified failure.
  */
 export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.fail(e)))
+  return new Transducer(M.succeed((_) => I.failNow(e)))
 }
 
 /**
@@ -64,14 +64,14 @@ export function die(e: Error): Transducer<unknown, never, unknown, never> {
  * Creates a transducer that always fails with the specified cause.
  */
 export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.halt(c)))
+  return new Transducer(M.succeed((_) => I.haltNow(c)))
 }
 
 /**
  * The identity transducer. Passes elements through.
  */
 export function identity<I>(): Transducer<unknown, never, I, I> {
-  return fromPush(O.match(() => I.succeed(C.empty()), I.succeed))
+  return fromPush(O.match(() => I.succeedNow(C.empty()), I.succeedNow))
 }
 
 /**
@@ -197,7 +197,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                   }
                   case 'Collecting': {
                     if (C.isEmpty(data)) {
-                      return I.succeed([C.empty<O>(), s] as const)
+                      return I.succeedNow([C.empty<O>(), s] as const)
                     } else {
                       const remaining = toCollect - s.data.length
                       if (remaining <= data.length) {
@@ -206,7 +206,10 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                           I.map_(push(O.some(remainder)), (_) => [_, { _tag: 'Emitting', finalizer, push }] as const)
                         )
                       } else {
-                        return I.succeed([C.empty<O>(), { _tag: 'Collecting', data: C.concat_(s.data, data) }] as const)
+                        return I.succeedNow([
+                          C.empty<O>(),
+                          { _tag: 'Collecting', data: C.concat_(s.data, data) }
+                        ] as const)
                       }
                     }
                   }
@@ -229,7 +232,7 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
       (dropping) => (is: O.Option<Chunk<I>>) =>
         O.match_(
           is,
-          () => I.succeed(C.empty()),
+          () => I.succeedNow(C.empty()),
           (is) =>
             Ref.modify_(dropping, (b) => {
               switch (b) {
@@ -259,7 +262,7 @@ export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduce
         (droppingRef) => (is: O.Option<Chunk<I>>) =>
           O.match_(
             is,
-            () => I.succeed(C.empty<I>()),
+            () => I.succeedNow(C.empty<I>()),
             (is) =>
               pipe(
                 droppingRef.get,
@@ -271,7 +274,7 @@ export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduce
                       I.map((l) => tuple(l, C.isEmpty(l)))
                     )
                   } else {
-                    return I.succeed(tuple(is, false))
+                    return I.succeedNow(tuple(is, false))
                   }
                 }),
                 I.bind(([is, pt]) => I.as_(droppingRef.set(pt), () => is))
@@ -345,7 +348,7 @@ export function foldM<R, E, I, O>(
 ): Transducer<R, E, I, O> {
   const init = O.some(initial)
   const go   = (in_: Chunk<I>, state: O, progress: boolean): I.IO<R, E, readonly [Chunk<O>, O, boolean]> =>
-    C.foldl_(in_, I.succeed([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>, (b, i) =>
+    C.foldl_(in_, I.succeedNow([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>, (b, i) =>
       I.bind_(b, ([os0, state, _]) =>
         I.map_(f(state, i), (o) => {
           if (cont(o)) {
@@ -375,7 +378,9 @@ export function foldM<R, E, I, O>(
                 )
               ),
               I.bind(([os, s, progress]) =>
-                progress ? I.apr_(state.set(O.some(s)), I.succeed(os)) : I.apr_(state.set(O.none()), I.succeed(os))
+                progress
+                  ? I.apr_(state.set(O.some(s)), I.succeedNow(os))
+                  : I.apr_(state.set(O.none()), I.succeedNow(os))
               )
             )
         )
@@ -571,7 +576,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
   ): I.IO<R, E, readonly [Chunk<O>, FoldWeightedState, boolean]> =>
     C.foldl_(
       in_,
-      I.succeed([os, state, dirty]) as I.IO<R, E, readonly [Chunk<O>, FoldWeightedState, boolean]>,
+      I.succeedNow([os, state, dirty]) as I.IO<R, E, readonly [Chunk<O>, FoldWeightedState, boolean]>,
       (o, i) =>
         I.bind_(o, ([os, state, _]) =>
           I.bind_(costFn(state.result, i), (cost) => {
@@ -631,7 +636,7 @@ export function foldWeightedDecomposeM<R, E, I, O>(
                 )
               ),
               I.bind(([os, s, dirty]) =>
-                dirty ? I.apr_(state.set(O.some(s)), I.succeed(os)) : I.apr_(state.set(O.none()), I.succeed(os))
+                dirty ? I.apr_(state.set(O.some(s)), I.succeedNow(os)) : I.apr_(state.set(O.none()), I.succeedNow(os))
               )
             )
         )

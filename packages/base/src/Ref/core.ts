@@ -113,7 +113,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
   }
 
   get get(): FIO<EB, B> {
-    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.fail, I.succeed)))))
+    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.failNow, I.succeedNow)))))
   }
 
   set(a: A): FIO<EA, void> {
@@ -190,11 +190,11 @@ export class Derived<EA, EB, A, B> implements Ref<EA, EB, A, B> {
   }
 
   get get(): FIO<EB, B> {
-    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.fail, I.succeed)))))
+    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.failNow, I.succeedNow)))))
   }
 
   set(a: A): FIO<EA, void> {
-    return this.use((value, _, setEither) => pipe(setEither(a), E.match(I.fail, value.set)))
+    return this.use((value, _, setEither) => pipe(setEither(a), E.match(I.failNow, value.set)))
   }
 }
 

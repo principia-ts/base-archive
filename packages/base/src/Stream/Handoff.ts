@@ -104,7 +104,7 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
         h.ref,
         Ref.modify<I.UIO<Option<A>>, State<A>>(
           matchTag({
-            Empty: (s) => [I.succeed(none()), s] as const,
+            Empty: (s) => [I.succeedNow(none()), s] as const,
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(

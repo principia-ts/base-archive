@@ -114,7 +114,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         )
       }
     }
-    return I.done(acc)
+    return I.doneNow(acc)
   }
 
   private popAllFinalizers(exit: Exit<unknown, unknown>): URIO<Env, Exit<unknown, unknown>> {
@@ -156,7 +156,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   private ifNotNull<R, E>(io: URIO<R, Exit<E, unknown>> | undefined): URIO<R, Exit<E, unknown>> {
-    return io ?? I.succeed(Ex.unit())
+    return io ?? I.succeedNow(Ex.unit())
   }
 
   close(exit: Exit<unknown, unknown>): IO<Env, never, unknown> | undefined {
@@ -285,7 +285,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     exit: Exit<unknown, unknown>
   ): URIO<Env, Exit<unknown, unknown>> {
     if (L.isEmpty(finalizers)) {
-      return I.succeed(Ex.unit())
+      return I.succeedNow(Ex.unit())
     }
     return pipe(
       finalizers,
@@ -306,7 +306,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     cause: Cause<unknown>
   ): ChannelState<Env, unknown> | undefined {
     const closeEffect = maybeCloseBoth(exec.close(Ex.halt(cause)), rest.exec.close(Ex.halt(cause)))
-    return self.finishSubexecutorWithCloseEffect(Ex.halt(cause), closeEffect ? I.bind_(closeEffect, I.done) : undefined)
+    return self.finishSubexecutorWithCloseEffect(
+      Ex.halt(cause),
+      closeEffect ? I.bind_(closeEffect, I.doneNow) : undefined
+    )
   }
 
   private drainFromKAndSubexecutor(
@@ -759,7 +762,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               result = this.runBracketOut(currentChannel)
               break
             }
-            case C.ChannelTag.Provide: {
+            case C.ChannelTag.Give: {
               const previousEnv   = this.providedEnv
               this.providedEnv    = currentChannel.environment
               this.currentChannel = currentChannel.inner

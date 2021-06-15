@@ -53,9 +53,9 @@ export function unroll<R, E>(runStep: () => ChannelState<R, E>): IO<R, E, Either
   concrete(state)
   switch (state._tag) {
     case ChannelStateTag.Done:
-      return I.succeed(E.right(_Done))
+      return I.succeedNow(E.right(_Done))
     case ChannelStateTag.Emit:
-      return I.succeed(E.left(_Emit))
+      return I.succeedNow(E.left(_Emit))
     case ChannelStateTag.Effect:
       return state.io['*>'](unroll(runStep))
   }

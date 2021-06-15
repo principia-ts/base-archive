@@ -226,7 +226,7 @@ export function fromChunk<A>(c: Chunk<A>): UStream<A> {
         const pull    = pipe(
           doneRef,
           Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
-            done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
+            done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeedNow(c), true)
           ),
           I.flatten
         )
@@ -248,7 +248,7 @@ export function succeed<O>(o: O): UStream<O> {
  * The stream that always fails with the `error`
  */
 export function fail<E>(e: E): FStream<E, never> {
-  return fromEffect(I.fail(e))
+  return fromEffect(I.failNow(e))
 }
 
 /**
@@ -266,7 +266,7 @@ export function dieMessage(message: string): Stream<unknown, never, never> {
 }
 
 export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
-  return fromEffect(I.halt(cause))
+  return fromEffect(I.haltNow(cause))
 }
 
 /**
@@ -527,7 +527,7 @@ export function effectAsyncInterrupt<R, E, A>(
  * hence the name.
  */
 export function paginate<S, A>(s: S, f: (s: S) => readonly [A, Option<S>]): Stream<unknown, never, A> {
-  return paginateM(s, flow(f, I.succeed))
+  return paginateM(s, flow(f, I.succeedNow))
 }
 
 /**
@@ -551,7 +551,7 @@ export function paginateM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, readonly [A,
  * hence the name.
  */
 export function paginateChunk<S, A>(s: S, f: (s: S) => readonly [Chunk<A>, Option<S>]): Stream<unknown, never, A> {
-  return paginateChunkM(s, flow(f, I.succeed))
+  return paginateChunkM(s, flow(f, I.succeedNow))
 }
 
 /**
@@ -591,7 +591,7 @@ export function range(min: number, max: number, chunkSize = 16): Stream<unknown,
   const pull = (ref: Ref.URef<number>) =>
     I.gen(function* (_) {
       const start = yield* _(Ref.getAndUpdate_(ref, (n) => n + chunkSize))
-      yield* _(I.when(() => start >= max)(I.fail(O.none())))
+      yield* _(I.when(() => start >= max)(I.failNow(O.none())))
       return C.range(start, Math.min(start + chunkSize, max))
     })
 
@@ -602,7 +602,7 @@ export function range(min: number, max: number, chunkSize = 16): Stream<unknown,
  * Repeats the provided value infinitely.
  */
 export function repeat<A>(a: A): Stream<unknown, never, A> {
-  return repeatEffect(I.succeed(a))
+  return repeatEffect(I.succeedNow(a))
 }
 
 /**
@@ -672,7 +672,7 @@ export function repeatEffectWith_<R, E, A>(
             flow(
               driver.next,
               I.matchM(
-                (_) => I.succeed(_ as O.Option<readonly [A, A]>),
+                (_) => I.succeedNow(_ as O.Option<readonly [A, A]>),
                 () =>
                   pipe(
                     effect,
@@ -698,7 +698,7 @@ export function repeatEffectWith<R, A>(
 }
 
 export function repeatWith_<R, A>(a: A, schedule: Schedule<R, A, any>): Stream<R & Has<Clock>, never, A> {
-  return repeatEffectWith_(I.succeed(a), schedule)
+  return repeatEffectWith_(I.succeedNow(a), schedule)
 }
 
 export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Stream<R & Has<Clock>, never, A> {
@@ -883,11 +883,11 @@ export function runManaged_<R, E, A, R1, E1, B>(
                       c,
                       Ca.map(([_]) => _),
                       Ca.sequenceCauseEither,
-                      E.match(I.halt, I.pure)
+                      E.match(I.haltNow, I.pure)
                     ),
                   () => I.dieMessage('empty stream / empty sinks')
                 ),
-              I.halt
+              I.haltNow
             )
           ),
         (os) =>
@@ -898,7 +898,7 @@ export function runManaged_<R, E, A, R1, E1, B>(
                 c,
                 Ca.map(([_]) => _),
                 Ca.sequenceCauseEither,
-                E.match(I.halt, I.pure)
+                E.match(I.haltNow, I.pure)
               ),
             () => go
           )
@@ -1152,7 +1152,7 @@ export function filterM_<R, R1, E, E1, A>(
               f(o),
               I.mapError(O.some),
               I.bind((_) => {
-                if (_) return I.succeed(C.single(o))
+                if (_) return I.succeedNow(C.single(o))
                 else return pull
               })
             )
@@ -1481,7 +1481,7 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
                   (e) => Pull.fail(e as E | E1)
                 ),
                 flow(
-                  I.done,
+                  I.doneNow,
                   I.matchM(
                     O.match(() => pipe(doneRef.set(true), I.apr(Pull.end)), Pull.fail),
                     Pull.emit
@@ -1590,7 +1590,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                   push(O.none()),
                   I.map((ps) => C.make(Take.chunk(C.map_(ps, E.right)), Take.end))
                 ),
-              I.halt,
+              I.haltNow,
               (os) =>
                 I.bind_(Take.fromPull(I.asSomeError(push(O.some(os)))), (take) =>
                   I.as_(updateLastChunk(take), () => C.make(Take.map_(take, E.right)))
@@ -1610,7 +1610,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
               waitForProducer,
               (scheduleDone, producerWaiting) =>
                 pipe(
-                  I.done(scheduleDone),
+                  I.doneNow(scheduleDone),
                   I.bind(
                     O.match(
                       () =>
@@ -1749,7 +1749,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
                 ),
                 (as) => I.asSomeError(push(O.some(as)))
               ),
-              I.bind((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
+              I.bind((ps) => (C.isEmpty(ps) ? go : I.succeedNow(ps)))
             )
           }
         })
@@ -1811,12 +1811,12 @@ export function distributedWithDynamic_<R, E, A>(
               return pipe(
                 queue.offer(Ex.succeed(o)),
                 I.matchCauseM(
-                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
-                  () => I.succeed(b)
+                  (c) => (Ca.interrupted(c) ? I.succeedNow(C.append(id)(b)) : I.haltNow(c)),
+                  () => I.succeedNow(b)
                 )
               )
             } else {
-              return I.succeed(b)
+              return I.succeedNow(b)
             }
           }),
           I.bind((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
@@ -1990,7 +1990,7 @@ export function broadcastedQueues_<R, E, A>(
   n: number,
   maximumLag: number
 ): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
-  const decider = I.succeed((_: number) => true)
+  const decider = I.succeedNow((_: number) => true)
   return distributedWith_(ma, n, maximumLag, (_) => decider)
 }
 
@@ -2036,7 +2036,7 @@ export function broadcastedQueuesDynamic_<R, E, A>(
     distributedWithDynamic_(
       ma,
       maximumLag,
-      () => I.succeed((_) => true),
+      () => I.succeedNow((_) => true),
       () => I.unit()
     ),
     I.map(([_, queue]) => queue)
@@ -2071,7 +2071,7 @@ export function broadcastDynamic_<R, E, A>(
     distributedWithDynamic_(
       ma,
       maximumLag,
-      (_) => I.succeed(constTrue),
+      (_) => I.succeedNow(constTrue),
       (_) => I.unit()
     ),
     M.map(I.map(([, queue]) => queue)),
@@ -2109,8 +2109,10 @@ export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<
           } else {
             return pipe(
               queue.take,
-              I.bind(I.done),
-              I.catchSome(O.match(() => pipe(doneRef.set(true), I.apr(Pull.end), O.some), flow(O.some, I.fail, O.some)))
+              I.bind(I.doneNow),
+              I.catchSome(
+                O.match(() => pipe(doneRef.set(true), I.apr(Pull.end), O.some), flow(O.some, I.failNow, O.some))
+              )
             )
           }
         })
@@ -2320,7 +2322,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
           cause,
           Ca.sequenceCauseOption,
           O.match(
-            () => I.fail(O.none()),
+            () => I.failNow(O.none()),
             (cause) =>
               pipe(
                 closeCurrent(cause),
@@ -2480,7 +2482,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
                   managed,
                   tap(() => latch.succeed(undefined)),
                   bind(() => f(o)),
-                  foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
+                  foreachChunk(flow(I.succeedNow, outQueue.offer, I.asUnit)),
                   I.matchCauseM(
                     (cause) => pipe(cause, Pull.halt, outQueue.offer, I.apr(innerFailure.fail(cause)), I.asUnit),
                     () => I.unit()
@@ -2565,7 +2567,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
                     yield* _(
                       pipe(
                         cancelers.take,
-                        I.bind(() => I.succeed(undefined)),
+                        I.bind(() => I.succeedNow(undefined)),
                         I.asUnit
                       )
                     )
@@ -2576,7 +2578,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
                     managed,
                     tap(() => latch.succeed(undefined)),
                     bind(() => f(o)),
-                    foreachChunk(flow(I.succeed, outQueue.offer, I.asUnit)),
+                    foreachChunk(flow(I.succeedNow, outQueue.offer, I.asUnit)),
                     I.matchCauseM(
                       (cause) => pipe(cause, Pull.halt, outQueue.offer, I.apr(innerFailure.fail(cause)), I.asUnit),
                       () => I.unit()
@@ -2846,7 +2848,7 @@ export function combine_<R, E, A, R1, E1, B, Z, C>(
       const left  = yield* _(M.mapM_(ma.proc, BPull.make))
       const right = yield* _(M.mapM_(mb.proc, BPull.make))
       const pull  = yield* _(
-        unfoldM(z, (z) => I.bind_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.done, I.optional)))
+        unfoldM(z, (z) => I.bind_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.doneNow, I.optional)))
           .proc
       )
       return pull
@@ -2898,7 +2900,7 @@ export function combineChunks_<R, E, A, R1, E1, B, Z, C>(
         unfoldChunkM(z, (z) =>
           pipe(
             f(z, left, right),
-            I.bind((ex) => I.optional(I.done(ex)))
+            I.bind((ex) => I.optional(I.doneNow(ex)))
           )
         ).proc
       )
@@ -3182,7 +3184,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
         const chunk = yield* _(chunks)
         const count = yield* _(counterRef.get)
         if (count >= n) {
-          return yield* _(I.succeed(chunk))
+          return yield* _(I.succeedNow(chunk))
         } else if (chunk.length <= n - count) {
           return yield* _(pipe(counterRef.set(count + chunk.length), I.apr(pull)))
         } else {
@@ -3236,7 +3238,7 @@ export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
         const chunk        = yield* _(chunks)
         const keepDropping = yield* _(keepDroppingRef.get)
         if (!keepDropping) {
-          return yield* _(I.succeed(chunk))
+          return yield* _(I.succeedNow(chunk))
         } else {
           const remaining = C.dropWhile_(chunk, pred)
           const isEmpty   = remaining.length <= 0
@@ -3403,7 +3405,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                       )
                     )
                   ),
-                (idx) => I.succeed((_) => _ === idx)
+                (idx) => I.succeedNow((_) => _ === idx)
               )
             )
           )
@@ -3440,7 +3442,7 @@ export function groupBy<A, R1, E1, K, V>(
 export function groupByKey_<R, E, A, K>(ma: Stream<R, E, A>, f: (a: A) => K, buffer = 16): GroupBy<R, E, K, A> {
   return pipe(
     ma,
-    groupBy((a) => I.succeed(tuple(f(a), a)), buffer)
+    groupBy((a) => I.succeedNow(tuple(f(a), a)), buffer)
   )
 }
 
@@ -3608,8 +3610,8 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
         flow(
           Ca.sequenceCauseOption,
           O.match(
-            () => I.succeed(Ex.fail(O.none())),
-            (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+            () => I.succeedNow(Ex.fail(O.none())),
+            (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
           )
         ),
         (b) => {
@@ -3622,15 +3624,15 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
                   O.match(
                     () => {
                       if (rightDone) {
-                        return I.succeed(Ex.fail(O.none()))
+                        return I.succeedNow(Ex.fail(O.none()))
                       } else {
                         return loop(true, rightDone, s, left, right)
                       }
                     },
-                    (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+                    (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
                   )
                 ),
-                (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
+                (a) => I.succeedNow(Ex.succeed([a, [leftDone, rightDone, s]] as const))
               )
             )
           } else if (!b && !rightDone) {
@@ -3642,15 +3644,15 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
                   O.match(
                     () => {
                       if (rightDone) {
-                        return I.succeed(Ex.fail(O.none()))
+                        return I.succeedNow(Ex.fail(O.none()))
                       } else {
                         return loop(leftDone, true, s, left, right)
                       }
                     },
-                    (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+                    (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
                   )
                 ),
-                (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
+                (a) => I.succeedNow(Ex.succeed([a, [leftDone, rightDone, s]] as const))
               )
             )
           } else {
@@ -4123,7 +4125,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
           doneRef.get,
           I.bind((o) => {
             if (o._tag === 'Some' && o.value) {
-              return I.succeed(false)
+              return I.succeedNow(false)
             } else {
               return pipe(
                 pull,
@@ -4141,7 +4143,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                       )
 
                       if (o._tag === 'Some' && o.value) {
-                        return I.succeed([false, o])
+                        return I.succeedNow([false, o])
                       } else if (causeOrChunk._tag === 'Right') {
                         return pipe(
                           handoff,
@@ -4165,7 +4167,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                           I.as(() => [false, O.some(true)])
                         )
                       } else {
-                        return I.succeed([false, O.some(false)])
+                        return I.succeedNow([false, O.some(false)])
                       }
                     })
                   )
@@ -4331,8 +4333,8 @@ export function mergeEither<R1, E1, B>(
  */
 export function fold_<R, E, A, S>(ma: Stream<R, E, A>, s: S, f: (s: S, o: A) => S): I.IO<R, E, S> {
   return M.use_(
-    foldWhileManagedM_(ma, s, constTrue, (s, o) => I.succeed(f(s, o))),
-    I.succeed
+    foldWhileManagedM_(ma, s, constTrue, (s, o) => I.succeedNow(f(s, o))),
+    I.succeedNow
   )
 }
 
@@ -4351,7 +4353,7 @@ export function foldM_<R, E, A, R1, E1, S>(
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, S>
 ): I.IO<R & R1, E | E1, S> {
-  return M.use_(foldWhileManagedM_(ma, s, constTrue, f), I.succeed)
+  return M.use_(foldWhileManagedM_(ma, s, constTrue, f), I.succeedNow)
 }
 
 /**
@@ -4369,7 +4371,7 @@ export function foldM<A, R1, E1, S>(
  * Returns a Managed value that represents the scope of the stream.
  */
 export function foldManaged_<R, E, A, S>(ma: Stream<R, E, A>, s: S, f: (s: S, a: A) => S): M.Managed<R, E, S> {
-  return foldWhileManagedM_(ma, s, constTrue, (s, o) => I.succeed(f(s, o)))
+  return foldWhileManagedM_(ma, s, constTrue, (s, o) => I.succeedNow(f(s, o)))
 }
 
 /**
@@ -4414,8 +4416,8 @@ export function foldWhile_<R, E, A, S>(
   f: (s: S, a: A) => S
 ): I.IO<R, E, S> {
   return M.use_(
-    foldWhileManagedM_(ma, s, cont, (s, o) => I.succeed(f(s, o))),
-    I.succeed
+    foldWhileManagedM_(ma, s, cont, (s, o) => I.succeedNow(f(s, o))),
+    I.succeedNow
   )
 }
 
@@ -4441,7 +4443,7 @@ export function foldWhileM_<R, E, A, R1, E1, S>(
   cont: (s: S) => boolean,
   f: (s: S, a: A) => I.IO<R1, E1, S>
 ): I.IO<R & R1, E | E1, S> {
-  return M.use_(foldWhileManagedM_(ma, s, cont, f), I.succeed)
+  return M.use_(foldWhileManagedM_(ma, s, cont, f), I.succeedNow)
 }
 
 /**
@@ -4467,7 +4469,7 @@ export function foldWhileManaged_<R, E, A, S>(
   cont: (s: S) => boolean,
   f: (s: S, a: A) => S
 ): M.Managed<R, E, S> {
-  return foldWhileManagedM_(ma, s, cont, (s, o) => I.succeed(f(s, o)))
+  return foldWhileManagedM_(ma, s, cont, (s, o) => I.succeedNow(f(s, o)))
 }
 
 /**
@@ -4499,12 +4501,12 @@ export function foldWhileManagedM_<R, E, A, R1, E1, S>(
     M.bind((is) => {
       const loop = (s1: S): I.IO<R & R1, E | E1, S> => {
         if (!cont(s)) {
-          return I.succeed(s1)
+          return I.succeedNow(s1)
         } else {
           return pipe(
             is,
             I.matchM(
-              O.match(() => I.succeed(s1), I.fail),
+              O.match(() => I.succeedNow(s1), I.failNow),
               flow(I.foldl(s1, f), I.bind(loop))
             )
           )
@@ -4802,7 +4804,7 @@ export function throttleEnforce_<R, E, A>(
   duration: number,
   burst = 0
 ): Stream<R & Has<Clock>, E, A> {
-  return throttleEnforceM_(ma, flow(costFn, I.succeed), units, duration, burst)
+  return throttleEnforceM_(ma, flow(costFn, I.succeedNow), units, duration, burst)
 }
 
 /**
@@ -4861,7 +4863,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
                 }
               })
             ),
-            I.bind(O.match(() => pull, I.succeed))
+            I.bind(O.match(() => pull, I.succeedNow))
           )
         )
       )
@@ -5168,7 +5170,7 @@ export function via<R, E, A, R1, E1, A1>(
  * Creates a stream by peeling off the "layers" of a value of type `S`
  */
 export function unfold<S, A>(s: S, f: (s: S) => Option<readonly [A, S]>): Stream<unknown, never, A> {
-  return unfoldM(s, (s) => I.succeed(f(s)))
+  return unfoldM(s, (s) => I.succeedNow(f(s)))
 }
 
 /**
@@ -5182,7 +5184,7 @@ export function unfoldM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, Option<readonl
  * Creates a stream by peeling off the "layers" of a value of type `S`.
  */
 export function unfoldChunk<S, A>(s: S, f: (s: S) => Option<readonly [Chunk<A>, S]>): Stream<unknown, never, A> {
-  return unfoldChunkM(s, (s) => I.succeed(f(s)))
+  return unfoldChunkM(s, (s) => I.succeedNow(f(s)))
 }
 
 /**
@@ -5422,7 +5424,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
                 pullL,
                 I.optional,
                 I.crossWith(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeedNow))
               )
             }
             default: {
@@ -5430,7 +5432,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
                 pullL,
                 I.optional,
                 I.crossWithPar(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeedNow))
               )
             }
           }
@@ -5440,7 +5442,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
             pullR,
             I.optional,
             I.map((r) => handleSuccess(O.none(), r, excess)),
-            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeedNow))
           )
         }
         case 'RightDone': {
@@ -5448,11 +5450,11 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
             pullL,
             I.optional,
             I.map((l) => handleSuccess(l, O.none(), excess)),
-            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeedNow))
           )
         }
         case 'End': {
-          return pipe(O.none(), Ex.fail, I.succeed)
+          return pipe(O.none(), Ex.fail, I.succeedNow)
         }
       }
     }
@@ -5712,7 +5714,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
         if (C.isEmpty(chunk)) {
           return pullNonEmpty(pull)
         } else {
-          return I.succeed(chunk)
+          return I.succeedNow(chunk)
         }
       })
     )
@@ -5730,13 +5732,13 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
             (leftDone, rightFiber): I.IO<unknown, O.Option<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
               pipe(
                 leftDone,
-                I.done,
+                I.doneNow,
                 I.crossWith(Fi.join(rightFiber), (os, o1s) => [os, o1s, <boolean>true] as const)
               ),
             (rightDone, leftFiber) =>
               pipe(
                 rightDone,
-                I.done,
+                I.doneNow,
                 I.crossWith(Fi.join(leftFiber), (o1s, os) => [os, o1s, <boolean>false] as const)
               )
           ),
@@ -5910,7 +5912,7 @@ export class GroupBy<R, E, K, V> {
         const [[, q], i] = elem
         if (i < n) {
           return pipe(
-            I.succeed(elem),
+            I.succeedNow(elem),
             I.as(() => true)
           )
         } else {
@@ -5932,7 +5934,7 @@ export class GroupBy<R, E, K, V> {
         const [k, q] = elem
         if (f(k)) {
           return pipe(
-            I.succeed(elem),
+            I.succeedNow(elem),
             I.as(() => true)
           )
         } else {

@@ -27,11 +27,11 @@ import {
   effectTotal,
   fiberId,
   flatten,
-  halt,
+  haltNow,
   matchCauseM_,
   pure,
   SetInterrupt,
-  succeed,
+  succeedNow,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
@@ -43,7 +43,7 @@ import { forkDaemon } from './core-scope'
  */
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
   const trace = accessCallTrace()
-  return traceCall(halt, trace)(C.interrupt(fiberId))
+  return traceCall(haltNow, trace)(C.interrupt(fiberId))
 }
 
 /**
@@ -139,10 +139,10 @@ export function onInterrupt_<R, E, A, R1>(
         C.interrupted(cause)
           ? bind_(
               cleanup(C.interruptors(cause)),
-              traceAs(cleanup, () => halt(cause))
+              traceAs(cleanup, () => haltNow(cause))
             )
-          : halt(cause),
-      succeed
+          : haltNow(cause),
+      succeedNow
     )
   )
 }
@@ -176,11 +176,11 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
         C.interrupted(cause)
           ? matchCauseM_(
               cleanup(),
-              traceAs(cleanup, (_) => halt(_)),
-              traceAs(cleanup, () => halt(cause))
+              traceAs(cleanup, (_) => haltNow(_)),
+              traceAs(cleanup, () => haltNow(cause))
             )
-          : halt(cause),
-      succeed
+          : haltNow(cause),
+      succeedNow
     )
   )
 }

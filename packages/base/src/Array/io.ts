@@ -9,7 +9,7 @@ import * as A from './core'
 export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    A.foldl(I.succeed([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
+    A.foldl(I.succeedNow([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
       I.crossWith_(
         b,
         I.deferTotal(() => f(a)),
@@ -34,7 +34,7 @@ export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray
  * Effectfully maps the elements of this Array in parallel.
  */
 export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.bind_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
+  return I.bind_(I.succeedNow<never, B[]>(Array(as.length)), (mut_bs) => {
     function fn([a, n]: [A, number]) {
       return I.bind_(
         I.deferTotal(() => f(a)),
@@ -73,7 +73,7 @@ export function mapAccumM_<S, A, R, E, B>(
   f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
 ): I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
   return I.deferTotal(() => {
-    let dest: I.IO<R, E, S> = I.succeed(s)
+    let dest: I.IO<R, E, S> = I.succeedNow(s)
     const mut_out: Array<B> = Array(as.length)
     for (let i = 0; i < as.length; i++) {
       const v = as[i]
@@ -104,14 +104,14 @@ export function dropWhileM_<A, R, E>(
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
   return I.deferTotal(() => {
-    let dropping        = I.succeed(true) as I.IO<R, E, boolean>
+    let dropping        = I.succeedNow(true) as I.IO<R, E, boolean>
     const ret: Array<A> = []
 
     for (let i = 0; i < as.length; i++) {
       const a  = as[i]
       dropping = pipe(
         dropping,
-        I.bind((d) => (d ? p(a) : I.succeed(false))),
+        I.bind((d) => (d ? p(a) : I.succeedNow(false))),
         I.map((d) => {
           if (d) {
             return true
@@ -137,14 +137,14 @@ export function takeWhileM_<R, E, A>(
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
   return I.deferTotal(() => {
-    let taking          = I.succeed(true) as I.IO<R, E, boolean>
+    let taking          = I.succeedNow(true) as I.IO<R, E, boolean>
     const ret: Array<A> = []
 
     for (let i = 0; i < as.length; i++) {
       const a = as[i]
       taking  = pipe(
         taking,
-        I.bind((t) => (t ? p(a) : I.succeed(false))),
+        I.bind((t) => (t ? p(a) : I.succeedNow(false))),
         I.map((t) => {
           if (t) {
             ret.push(a)
@@ -166,7 +166,7 @@ export function takeWhileM<A, R, E>(
 }
 
 export function foldlM_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
+  return A.foldl_(as, I.succeedNow(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
 }
 
 export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {

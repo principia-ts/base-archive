@@ -83,7 +83,7 @@ export type FManaged<E, A> = Managed<unknown, E, A>
  */
 export function succeed<A>(a: A): Managed<unknown, never, A> {
   const trace = accessCallTrace()
-  return traceCall(fromEffect, trace)(I.succeed(a))
+  return traceCall(fromEffect, trace)(I.succeedNow(a))
 }
 
 /**
@@ -165,7 +165,7 @@ export function defer<R, E, A>(managed: () => Managed<R, E, A>): Managed<R, E, A
  */
 export function fail<E>(e: E): Managed<unknown, E, never> {
   const trace = accessCallTrace()
-  return fromEffect(traceCall(I.fail, trace)(e))
+  return fromEffect(traceCall(I.failNow, trace)(e))
 }
 
 /**
@@ -175,7 +175,7 @@ export function fail<E>(e: E): Managed<unknown, E, never> {
  */
 export function halt<E>(cause: Cause<E>): Managed<unknown, E, never> {
   const trace = accessCallTrace()
-  return fromEffect(traceCall(I.halt, trace)(cause))
+  return fromEffect(traceCall(I.haltNow, trace)(cause))
 }
 
 /**
@@ -920,7 +920,7 @@ export function bind_<R, E, A, R1, E1, A1>(
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
             I.bind_(I.result(releaseThat(e)), (e1) =>
-              I.bind_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.apr_(e1, e2)))
+              I.bind_(I.result(releaseSelf(e1)), (e2) => I.doneNow(Ex.apr_(e1, e2)))
             ),
           b
         ])
@@ -1796,7 +1796,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
 export function interrupt(): Managed<unknown, never, never> {
   const trace = accessCallTrace()
   return bind_(
-    fromEffect(I.descriptorWith((d) => I.succeed(d.id))),
+    fromEffect(I.descriptorWith((d) => I.succeedNow(d.id))),
     traceFrom(trace, (id) => halt(C.interrupt(id)))
   )
 }

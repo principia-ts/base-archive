@@ -50,7 +50,7 @@ export abstract class CommonScope<A> {
    * will not be run by this scope, and `false` otherwise.
    */
   deny(key: Key): UIO<boolean> {
-    return I.succeed(this.unsafeDeny(key))
+    return I.succeedNow(this.unsafeDeny(key))
   }
 
   /**
@@ -78,7 +78,7 @@ export abstract class CommonScope<A> {
    * scopes must *always* be closed.
    */
   extend(that: Scope<any>): UIO<boolean> {
-    return I.succeed(this.unsafeExtend(that))
+    return I.succeedNow(this.unsafeExtend(that))
   }
 
   /**

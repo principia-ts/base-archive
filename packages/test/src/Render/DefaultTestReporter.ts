@@ -88,8 +88,8 @@ export function render<E>(
           const renderedLabel  = A.isEmpty(specs)
             ? L.empty()
             : hasFailures
-            ? L.of(renderFailureLabel(label, depth))
-            : L.of(renderSuccessLabel(label, depth))
+            ? L.single(renderFailureLabel(label, depth))
+            : L.single(renderSuccessLabel(label, depth))
 
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
@@ -132,12 +132,12 @@ export function render<E>(
             }),
             matchTag({
               Succeeded: () =>
-                Sy.succeed(rendered(Test, label, Passed, depth, L.of(withOffset(depth)(`${green('+')} ${label}`)))),
+                Sy.succeed(rendered(Test, label, Passed, depth, L.single(withOffset(depth)(`${green('+')} ${label}`)))),
               Ignored: () => Sy.succeed(rendered(Test, label, Ignored, depth, L.empty()))
             })
           )
 
-          return Sy.map_(renderedResult, (r) => L.of(r.withAnnotations(renderedAnnotations)))
+          return Sy.map_(renderedResult, (r) => L.single(r.withAnnotations(renderedAnnotations)))
         }
       })
     )

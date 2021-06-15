@@ -64,7 +64,7 @@ export class Line {
     return new Line(this.fragments, this.offset + shift)
   }
   toMessage(): Message {
-    return new Message(L.of(this))
+    return new Message(L.single(this))
   }
 
   static fromString(text: string, offset = 0): Line {
@@ -87,7 +87,7 @@ export class Fragment {
     return new Line(L.list(this, f))
   }
   toLine(): Line {
-    return new Line(L.of(this))
+    return new Line(L.single(this))
   }
 }
 
