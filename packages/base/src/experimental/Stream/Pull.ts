@@ -9,11 +9,11 @@ import * as Take from './Take'
 export type Pull<R, E, A> = I.IO<R, O.Option<E>, C.Chunk<A>>
 
 export function emit<A>(a: A): I.UIO<C.Chunk<A>> {
-  return I.succeedNow(C.single(a))
+  return I.succeed(C.single(a))
 }
 
 export function emitChunk<A>(as: C.Chunk<A>): I.UIO<C.Chunk<A>> {
-  return I.succeedNow(as)
+  return I.succeed(as)
 }
 
 export function fromQueue<E, A>(d: Q.Dequeue<Take.Take<E, A>>): I.FIO<O.Option<E>, C.Chunk<A>> {
@@ -21,15 +21,15 @@ export function fromQueue<E, A>(d: Q.Dequeue<Take.Take<E, A>>): I.FIO<O.Option<E
 }
 
 export function fail<E>(e: E): I.FIO<O.Option<E>, never> {
-  return I.failNow(O.some(e))
+  return I.fail(O.some(e))
 }
 
 export function halt<E>(c: Ca.Cause<E>): I.FIO<O.Option<E>, never> {
-  return I.mapError_(I.haltNow(c), O.some)
+  return I.mapError_(I.halt(c), O.some)
 }
 
 export function empty<A>(): I.FIO<never, C.Chunk<A>> {
-  return I.succeedNow(C.empty<A>())
+  return I.succeed(C.empty<A>())
 }
 
-export const end: I.FIO<O.Option<never>, never> = I.failNow(O.none())
+export const end: I.FIO<O.Option<never>, never> = I.fail(O.none())

@@ -30,7 +30,7 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
                 RefM.modifyM_(ref, (m) => {
                   const memo = m.get(a)
                   if (memo) {
-                    return I.succeedNow(tuple(memo, m))
+                    return I.succeed(tuple(memo, m))
                   } else {
                     return I.gen(function* (_) {
                       const p = yield* _(P.promise<E, B>())
@@ -71,7 +71,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
                     RefM.modifyM_(ref, (m) => {
                       for (const [k, v] of m.entries()) {
                         if (eq.equals_(k, a)) {
-                          return I.succeedNow(tuple(v, m))
+                          return I.succeed(tuple(v, m))
                         }
                       }
                       return I.gen(function* (_) {

@@ -54,7 +54,7 @@ export function useNow<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, A> {
   const trace = accessCallTrace()
   return use_(
     ma,
-    traceFrom(trace, (a) => I.succeedNow(a))
+    traceFrom(trace, (a) => I.succeed(a))
   )
 }
 

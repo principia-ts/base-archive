@@ -362,8 +362,8 @@ export function repeatEffectChunkOption<R, E, A>(fa: I.IO<R, O.Option<E>, C.Chun
     return I.catchAll_(
       I.map_(fa, (chunk) => O.some(tuple(chunk, undefined))),
       O.match(
-        () => I.succeedNow(O.none()),
-        (e) => I.failNow(e)
+        () => I.succeed(O.none()),
+        (e) => I.fail(e)
       )
     )
   })
@@ -390,7 +390,7 @@ export function repeatEffectWith<R, E, A>(
             flow(
               driver.next,
               I.matchM(
-                (_) => I.succeedNow(O.none()),
+                (_) => I.succeed(O.none()),
                 () =>
                   pipe(
                     effect,
@@ -409,7 +409,7 @@ export function repeatEffectWith<R, E, A>(
  * Repeats the value using the provided schedule.
  */
 export function repeatWith<R, A>(a: A, schedule: SC.Schedule<R, A, unknown>): Stream<R & Has<Clock>, never, A> {
-  return repeatEffectWith(I.succeedNow(a), schedule)
+  return repeatEffectWith(I.succeed(a), schedule)
 }
 
 export function effectAsyncInterrupt<R, E, A>(
@@ -512,7 +512,7 @@ export function effectAsyncM<R, E, A, R1 = R, E1 = E>(
                   )
                 )
               ),
-            (a) => I.succeedNow(Ch.write(a)['*>'](loop))
+            (a) => I.succeed(Ch.write(a)['*>'](loop))
           ),
           Ch.unwrap
         )
@@ -541,7 +541,7 @@ export function fromIteratorTotal<A>(iterator: () => Iterator<A>): Stream<unknow
  * The stream that always halts with `cause`.
  */
 export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
-  return fromEffect(I.haltNow(cause))
+  return fromEffect(I.halt(cause))
 }
 
 /**
@@ -810,7 +810,7 @@ export function filterM<A, R1, E1>(
 export function filter_<R, E, A, B extends A>(fa: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
-  return filterM_(fa, flow(predicate, I.succeedNow))
+  return filterM_(fa, flow(predicate, I.succeed))
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B>
@@ -833,7 +833,7 @@ export function filterMapM<A, R1, E1, B>(
 }
 
 export function filterMap_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => O.Option<B>): Stream<R, E, B> {
-  return filterMapM_(fa, flow(f, I.succeedNow))
+  return filterMapM_(fa, flow(f, I.succeed))
 }
 
 export function filterMap<A, B>(f: (a: A) => O.Option<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
@@ -852,12 +852,12 @@ export function partitionMapM_<R, E, A, R1, E1, B, C>(
       2,
       buffer,
       E.match(
-        () => I.succeedNow((_) => _ === 0),
-        () => I.succeedNow((_) => _ === 1)
+        () => I.succeed((_) => _ === 0),
+        () => I.succeed((_) => _ === 1)
       )
     ),
     M.bind(([q1, q2]) =>
-      M.succeedNow(
+      M.succeed(
         tuple(
           pipe(fromQueueWithShutdown_(q1), flattenExitOption, collectLeft),
           pipe(fromQueueWithShutdown_(q2), flattenExitOption, collectRight)
@@ -881,7 +881,7 @@ export function partitionMap_<R, E, A, B, C>(
   f: (a: A) => E.Either<B, C>,
   buffer = 16
 ): M.Managed<R, never, readonly [Stream<unknown, E, B>, Stream<unknown, E, C>]> {
-  return partitionMapM_(fa, flow(f, I.succeedNow), buffer)
+  return partitionMapM_(fa, flow(f, I.succeed), buffer)
 }
 
 export function partitionMap<A, B, C>(
@@ -931,7 +931,7 @@ export function partition_<R, E, A>(
   predicate: P.Predicate<A>,
   buffer = 16
 ): M.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]> {
-  return partitionM_(fa, flow(predicate, I.succeedNow), buffer)
+  return partitionM_(fa, flow(predicate, I.succeed), buffer)
 }
 
 export function partition<A, B extends A>(
@@ -1089,7 +1089,7 @@ export function combineChunks_<R, E, A, R1, E1, A1, S, R2, A2>(
       ([left, right, latchL, latchR]) => {
         const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](Take.done)
         const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](Take.done)
-        return unfoldChunkM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.doneNow, I.optional))).channel
+        return unfoldChunkM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
       }
     )
   )
@@ -1358,7 +1358,7 @@ export function unwrapManaged<R0, E0, R, E, A>(stream: M.Managed<R0, E0, Stream<
  * Submerges the error case of an `Either` into the `ZStream`.
  */
 export function absolve<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
-  return mapM_(xs, (_) => I.fromEither(() => _))
+  return mapM_(xs, (_) => I.fromEitherWith(() => _))
 }
 
 /**
@@ -1460,7 +1460,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
       I.bind_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
         if (C.isEmpty(leftovers)) {
-          return I.succeedNow(Ch.zipr_(Ch.write(leftovers), handoffConsumer))
+          return I.succeed(Ch.zipr_(Ch.write(leftovers), handoffConsumer))
         } else {
           return I.map_(HO.take(handoff), (_) => {
             switch (_._typeId) {
@@ -2228,19 +2228,19 @@ export function collectWhileM_<R, R1, E, E1, A, A1>(
     const pfSome = (a: A) =>
       O.match_(
         pf(a),
-        () => I.succeedNow(false),
+        () => I.succeed(false),
         (_) => I.as_(I.bind_(_, emit), () => true)
       )
 
     const loop = (chunk: C.Chunk<A>): I.IO<R1, E1, boolean> => {
       if (C.isEmpty(chunk)) {
-        return I.succeedNow(true)
+        return I.succeed(true)
       } else {
         return I.bind_(pfSome(C.unsafeHead(chunk)), (cont) => {
           if (cont) {
             return loop(C.unsafeTail(chunk))
           } else {
-            return I.succeedNow(false)
+            return I.succeed(false)
           }
         })
       }
@@ -2349,9 +2349,9 @@ export function combine<R, E, A, R1, E1, A1, S, R2, A2>(
         return tuple(left, right, latchL, latchR)
       }),
       ([left, right, latchL, latchR]) => {
-        const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](I.doneNow)
-        const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](I.doneNow)
-        return unfoldM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.doneNow, I.optional))).channel
+        const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](I.done)
+        const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](I.done)
+        return unfoldM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
       }
     )
   )
@@ -2430,7 +2430,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
                   Ex.match_(
                     ex,
                     (cause) => F.interrupt(current)['$>'](() => Ch.halt(cause)),
-                    (chunk) => I.succeedNow(Ch.write(chunk)['*>'](consumer(new DS.Current(current))))
+                    (chunk) => I.succeed(Ch.write(chunk)['*>'](consumer(new DS.Current(current))))
                   ),
                 (ex, previous) =>
                   Ex.match_(
@@ -2479,12 +2479,12 @@ export function distributedWithDynamic_<R, E, A>(
               return pipe(
                 queue.offer(Ex.succeed(a)),
                 I.matchCauseM(
-                  (c) => (Ca.interrupted(c) ? I.succeedNow(C.append(id)(b)) : I.haltNow(c)),
-                  () => I.succeedNow(b)
+                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
+                  () => I.succeed(b)
                 )
               )
             } else {
-              return I.succeedNow(b)
+              return I.succeed(b)
             }
           }),
           I.bind((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, HM.removeMany(ids)) : I.unit()))
@@ -2971,7 +2971,7 @@ export function mapMPar<A, R1, E1, B>(
 export function mergeWithHandler<R, E>(
   terminate: boolean
 ): (exit: Ex.Exit<E, unknown>) => MD.MergeDecision<R, E, unknown, E, unknown> {
-  return (exit) => (terminate || !Ex.isSuccess(exit) ? MD.done(I.doneNow(exit)) : MD.await(I.doneNow))
+  return (exit) => (terminate || !Ex.isSuccess(exit) ? MD.done(I.done(exit)) : MD.await(I.done))
 }
 
 export type TerminationStrategy = 'Left' | 'Right' | 'Both' | 'Either'
@@ -3644,24 +3644,24 @@ export function zipWith_<R, E, A, R1, E1, A1, B>(
   return combineChunks_(stream, that, <State<A, A1>>new Running(E.left(C.empty())), (st, p1, p2) => {
     switch (st._tag) {
       case 'End': {
-        return I.succeedNow(Ex.fail(O.none()))
+        return I.succeed(Ex.fail(O.none()))
       }
       case 'Running': {
         return I.catchAllCause_(
           I.crossWithPar_(I.optional(p1), I.optional(p2), (l, r) => handleSuccess(f, l, r, st.excess)),
-          (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
       case 'LeftDone': {
         return I.catchAllCause_(
           I.map_(I.optional(p2), (l) => handleSuccess(f, O.none(), l, E.left(st.excessL))),
-          (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
       case 'RightDone': {
         return I.catchAllCause_(
           I.map_(I.optional(p1), (r) => handleSuccess(f, r, O.none(), E.right(st.excessR))),
-          (e) => I.succeedNow(Ex.halt(Ca.map_(e, O.some)))
+          (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
         )
       }
     }

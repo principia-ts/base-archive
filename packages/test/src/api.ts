@@ -97,7 +97,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   label: string,
   ...specs: Specs
 ): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return Spec.suite(label, M.succeedNow(specs), O.none())
+  return Spec.suite(label, M.succeed(specs), O.none())
 }
 
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
@@ -105,12 +105,12 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
     label,
     I.matchCauseM_(
       I.deferTotal(assertion),
-      flow(TF.halt, I.failNow),
+      flow(TF.halt, I.fail),
       flow(
         BA.failures,
         O.match(
-          () => I.succeedNow(new TS.Succeeded(BA.success(undefined))),
-          (failures) => I.failNow(TF.assertion(failures))
+          () => I.succeed(new TS.Succeeded(BA.success(undefined))),
+          (failures) => I.fail(TF.assertion(failures))
         )
       )
     ),
@@ -123,7 +123,7 @@ export function test(label: string, assertion: () => TestResult): Spec.XSpec<unk
 }
 
 export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {
-  return checkM(rv, flow(test, I.succeedNow))
+  return checkM(rv, flow(test, I.succeed))
 }
 
 export function checkM<R, A, R1, E>(
@@ -185,12 +185,12 @@ function shrinkStream<R, R1, E, A>(
           C.last,
           O.match(
             () =>
-              I.succeedNow(
+              I.succeed(
                 BA.success(
                   FailureDetails([new AssertionValue(undefined, Ev.now(anything), Ev.now(anything.run(undefined)))])
                 )
               ),
-            (_) => I.fromEither(() => _)
+            I.fromEither
           )
         )
       )

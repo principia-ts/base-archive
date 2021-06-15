@@ -34,9 +34,7 @@ export function cachedInvalidate_<R, E, A>(
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
     const cache = yield* _(RefM.refM<Option<readonly [number, Promise<E, A>]>>(O.none()))
-    return yield* _(
-      traceCall(I.succeedNow, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache)))
-    )
+    return yield* _(traceCall(I.succeed, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))))
   })
 }
 
@@ -116,7 +114,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
               )
             )
           ),
-          I.bind((a) => (a._tag === 'None' ? I.dieNow(new RuntimeException('bug')) : restore(a.value[1].await)))
+          I.bind((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(a.value[1].await)))
         )
       )
     )

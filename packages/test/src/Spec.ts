@@ -190,13 +190,13 @@ export function foldM_<R, E, T, R1, E1, Z>(
     Suite: ({ label, specs, exec }) =>
       M.matchCauseM_(
         specs,
-        (c) => f(new SuiteCase(label, M.haltNow(c), exec)),
+        (c) => f(new SuiteCase(label, M.halt(c), exec)),
         flow(
           M.foreachExec(
             O.getOrElse_(exec, () => defExec),
             (spec) => M.release(foldM_(spec, f, defExec))
           ),
-          M.bind((z) => f(new SuiteCase(label, M.succeedNow(C.toArray(z)), exec)))
+          M.bind((z) => f(new SuiteCase(label, M.succeed(C.toArray(z)), exec)))
         )
       ),
     Test: f
@@ -216,7 +216,7 @@ export function foreachExec_<R, E, T, R1, E1, A>(
         M.matchCause_(
           specs,
           (e) => test(label, onFailure(e), TestAnnotationMap.empty),
-          (t) => suite(label, M.succeedNow(t), exec)
+          (t) => suite(label, M.succeed(t), exec)
         ),
       Test: (t) =>
         I.toManaged_(
@@ -343,7 +343,7 @@ export function execute<R, E, T>(
   spec: Spec<R, E, T>,
   defExec: ExecutionStrategy
 ): M.Managed<R, never, Spec<unknown, E, T>> {
-  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.haltNow, I.succeedNow, defExec)))
+  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.halt, I.succeed, defExec)))
 }
 
 export function whenM_<R, E, R1, E1>(
@@ -357,7 +357,7 @@ export function whenM_<R, E, R1, E1>(
         M.ifM_(
           I.toManaged_(b),
           () => specs,
-          () => M.succeedNow(A.empty<Spec<R & R1, E | E1, TestSuccess>>())
+          () => M.succeed(A.empty<Spec<R & R1, E | E1, TestSuccess>>())
         ),
         exec
       ),
@@ -375,7 +375,7 @@ export function whenM_<R, E, R1, E1>(
 }
 
 export function when_<R, E>(spec: Spec<R, E, TestSuccess>, b: boolean): Spec<R & Has<Annotations>, E, TestSuccess> {
-  return whenM_(spec, I.succeedNow(b))
+  return whenM_(spec, I.succeed(b))
 }
 
 export function annotate_<R, E, T, V>(spec: Spec<R, E, T>, key: TestAnnotation<V>, value: V): Spec<R, E, T> {

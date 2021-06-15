@@ -37,9 +37,9 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
         const preallocated = yield* _(
           Ex.matchM_(
             tp,
-            (c) => pipe(releaseAll_(rm, Ex.halt(c), sequential), I.apr(I.haltNow(c))),
+            (c) => pipe(releaseAll_(rm, Ex.halt(c), sequential), I.apr(I.halt(c))),
             ([release, a]) =>
-              I.succeedNow(
+              I.succeed(
                 new Managed(
                   I.asksM(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
                     pipe(

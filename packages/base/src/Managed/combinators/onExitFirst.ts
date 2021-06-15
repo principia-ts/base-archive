@@ -49,14 +49,14 @@ export function onExitFirst_<R, E, A, R1>(
                 I.result,
                 I.crossWith(
                   I.result(releaseAll_(innerReleaseMap, e, sequential)),
-                  traceAs(cleanup, flow(Ex.apr_, I.doneNow))
+                  traceAs(cleanup, flow(Ex.apr_, I.done))
                 ),
                 I.flatten
               )
             )
           )
 
-          const a = yield* _(I.doneNow(exitEA))
+          const a = yield* _(I.done(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )

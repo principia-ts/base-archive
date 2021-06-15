@@ -30,7 +30,7 @@ export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: fal
 }
 
 export function prettyPrintM(dump: FiberDump): UIO<string> {
-  return T.succeedNow(prettyPrint(dump, new Date().getTime()))
+  return T.succeed(prettyPrint(dump, new Date().getTime()))
 }
 
 /**

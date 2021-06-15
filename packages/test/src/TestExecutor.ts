@@ -35,12 +35,12 @@ export function defaultTestExecutor<R>(
           flow(
             C.failureOrCause,
             E.match(
-              ([failure, annotations]) => I.succeedNow([E.left(failure), annotations] as const),
-              (cause) => I.succeedNow([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
+              ([failure, annotations]) => I.succeed([E.left(failure), annotations] as const),
+              (cause) => I.succeed([E.left(new TF.RuntimeFailure(cause)), TestAnnotationMap.empty] as const)
             )
           ),
           ([success, annotations]) =>
-            I.succeedNow([E.right(success), annotations] as Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>),
+            I.succeed([E.right(success), annotations] as Annotated<E.Either<TF.TestFailure<E>, TestSuccess>>),
           defExec
         ),
         M.use((s) =>

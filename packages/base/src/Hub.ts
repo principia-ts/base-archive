@@ -276,7 +276,7 @@ function _unsafeHub<A>(
         return I.interrupt
       }
 
-      return I.succeedNow(hub.size())
+      return I.succeed(hub.size())
     })
 
     subscribe = pipe(
@@ -299,7 +299,7 @@ function _unsafeHub<A>(
 
         if (hub.publish(a)) {
           strategy.unsafeCompleteSubscribers(hub, subscribers)
-          return I.succeedNow(true)
+          return I.succeed(true)
         }
 
         return strategy.handleSurplus(hub, subscribers, C.single(a), shutdownFlag)
@@ -316,7 +316,7 @@ function _unsafeHub<A>(
         strategy.unsafeCompleteSubscribers(hub, subscribers)
 
         if (C.isEmpty(surplus)) {
-          return I.succeedNow(true)
+          return I.succeed(true)
         }
 
         return strategy.handleSurplus(hub, subscribers, surplus, shutdownFlag)
@@ -342,10 +342,10 @@ export function toQueue<RA, RB, EA, EB, A, B>(source: Hub<RA, RB, EA, EB, A, B>)
     shutdown      = source.shutdown
     size          = source.size
     take          = I.never
-    takeAll       = I.succeedNow(C.empty<never>())
+    takeAll       = I.succeed(C.empty<never>())
     offer         = (a: A): I.IO<RA, EA, boolean> => source.publish(a)
     offerAll      = (as: Iterable<A>): I.IO<RA, EA, boolean> => source.publishAll(as)
-    takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeedNow(C.empty())
+    takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeed(C.empty())
   })()
 }
 
@@ -409,12 +409,12 @@ function unsafeSubscription<A>(
         return I.interrupt
       }
 
-      return I.succeedNow(subscription.size())
+      return I.succeed(subscription.size())
     })
 
-    offer = (_: never): I.IO<never, unknown, boolean> => I.succeedNow(false)
+    offer = (_: never): I.IO<never, unknown, boolean> => I.succeed(false)
 
-    offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeedNow(false)
+    offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeed(false)
 
     take: I.IO<unknown, never, A> = pipe(
       I.fiberId(),
@@ -448,7 +448,7 @@ function unsafeSubscription<A>(
             )
           } else {
             strategy.unsafeOnHubEmptySpace(hub, subscribers)
-            return I.succeedNow(message)
+            return I.succeed(message)
           }
         })
       )
@@ -463,7 +463,7 @@ function unsafeSubscription<A>(
 
       strategy.unsafeOnHubEmptySpace(hub, subscribers)
 
-      return I.succeedNow(as)
+      return I.succeed(as)
     })
 
     takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
@@ -475,7 +475,7 @@ function unsafeSubscription<A>(
         const as = pollers.isEmpty ? _unsafePollN(subscription, n) : C.empty<A>()
 
         strategy.unsafeOnHubEmptySpace(hub, subscribers)
-        return I.succeedNow(as)
+        return I.succeed(as)
       })
     }
   })()
@@ -499,7 +499,7 @@ export function mapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): Hub<RA, RC & RB, EA, EB | EC, A, C> {
-  return dimapM_(self, I.succeedNow, f)
+  return dimapM_(self, I.succeed, f)
 }
 
 /**
@@ -519,7 +519,7 @@ export function map_<RA, RB, EA, EB, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): Hub<RA, RB, EA, EB, A, C> {
-  return mapM_(self, (b) => I.succeedNow(f(b)))
+  return mapM_(self, (b) => I.succeed(f(b)))
 }
 
 /**
@@ -545,7 +545,7 @@ export function contramapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): Hub<RC & RA, RB, EA | EC, EB, C, B> {
-  return dimapM_(self, f, I.succeedNow)
+  return dimapM_(self, f, I.succeed)
 }
 
 /**
@@ -606,8 +606,8 @@ export function dimap_<RA, RB, EA, EB, A, B, C, D>(
 ): Hub<RA, RB, EA, EB, C, D> {
   return dimapM_(
     self,
-    (c) => I.succeedNow(f(c)),
-    (b) => I.succeedNow(g(b))
+    (c) => I.succeed(f(c)),
+    (b) => I.succeed(g(b))
   )
 }
 
@@ -642,9 +642,9 @@ export function filterInputM_<RA, RA1, RB, EA, EA1, EB, A, B>(
     shutdown      = source.shutdown
     size          = source.size
     subscribe     = source.subscribe
-    publish       = (a: A) => I.bind_(f(a), (b) => (b ? source.publish(a) : I.succeedNow(false)))
+    publish       = (a: A) => I.bind_(f(a), (b) => (b ? source.publish(a) : I.succeed(false)))
     publishAll    = (as: Iterable<A>) =>
-      I.bind_(I.filter_(as, f), (as) => (C.isNonEmpty(as) ? source.publishAll(as) : I.succeedNow(false)))
+      I.bind_(I.filter_(as, f), (as) => (C.isNonEmpty(as) ? source.publishAll(as) : I.succeed(false)))
   })()
 }
 
@@ -662,7 +662,7 @@ export function filterInputM<RA1, EA1, A>(f: (a: A) => I.IO<RA1, EA1, boolean>) 
  * Filters messages published to the hub using the specified function.
  */
 export function filterInput_<RA, RB, EA, EB, A, B>(self: Hub<RA, RB, EA, EB, A, B>, f: (a: A) => boolean) {
-  return filterInputM_(self, (a) => I.succeedNow(f(a)))
+  return filterInputM_(self, (a) => I.succeed(f(a)))
 }
 
 /**
@@ -711,7 +711,7 @@ export function filterOutput_<RA, RB, EA, EB, A, B>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => boolean
 ): Hub<RA, RB, EA, EB, A, B> {
-  return filterOutputM_(self, (b) => I.succeedNow(f(b)))
+  return filterOutputM_(self, (b) => I.succeed(f(b)))
 }
 
 /**
@@ -1023,7 +1023,7 @@ export class Dropping<A> extends Strategy<A> {
     _as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.succeedNow(false)
+    return I.succeed(false)
   }
 
   shutdown: I.UIO<void> = I.unit()
@@ -1843,7 +1843,7 @@ export function _makeUnbounded<A>(): HubInternal<A> {
  * Unsafely completes a promise with the specified value.
  */
 export function _unsafeCompletePromise<A>(promise: P.Promise<never, A>, a: A): void {
-  P.unsafeDone(I.succeedNow(a))(promise)
+  P.unsafeDone(I.succeed(a))(promise)
 }
 
 /**

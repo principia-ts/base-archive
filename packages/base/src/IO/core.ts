@@ -75,7 +75,7 @@ export * from './primitives'
  * @since 1.0.0
  * @trace call
  */
-export function succeedNow<E = never, A = never>(a: A): IO<unknown, E, A> {
+export function succeed<E = never, A = never>(a: A): IO<unknown, E, A> {
   return new Succeed(a, accessCallTrace())
 }
 
@@ -90,7 +90,7 @@ export function succeedNow<E = never, A = never>(a: A): IO<unknown, E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function succeed<A = never>(a: () => A): UIO<A> {
+export function succeedWith<A = never>(a: () => A): UIO<A> {
   return new EffectTotal(a)
 }
 
@@ -323,7 +323,7 @@ export function deferTotalWith<R, E, A>(io: (platform: Platform<unknown>, id: Fi
  * @since 1.0.0
  */
 export function fiberId(): IO<unknown, never, FiberId> {
-  return descriptorWith((d) => succeedNow(d.id))
+  return descriptorWith((d) => succeed(d.id))
 }
 
 /**
@@ -340,7 +340,7 @@ export function platform<R, E, A>(f: (p: Platform<unknown>) => IO<R, E, A>): IO<
  * @since 1.0.0
  * @trace call
  */
-export function haltNow<E>(cause: C.Cause<E>): FIO<E, never> {
+export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
   const trace = accessCallTrace()
   return new Fail(traceFrom(trace, () => cause))
 }
@@ -352,7 +352,7 @@ export function haltNow<E>(cause: C.Cause<E>): FIO<E, never> {
  *
  * @trace 0
  */
-export function haltWith<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> {
+export function haltWithTrace<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> {
   return new Fail(cause)
 }
 
@@ -363,8 +363,8 @@ export function haltWith<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> 
  * @since 1.0.0
  * @trace 0
  */
-export function halt<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E, A> {
-  return haltWith(cause)
+export function haltWith<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E, A> {
+  return haltWithTrace(cause)
 }
 
 /**
@@ -375,9 +375,9 @@ export function halt<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E
  *
  * @trace call
  */
-export function failNow<E = never, A = never>(e: E): IO<unknown, E, A> {
+export function fail<E = never, A = never>(e: E): IO<unknown, E, A> {
   const trace = accessCallTrace()
-  return haltWith(traceFrom(trace, (trace) => C.traced(C.fail(e), trace())))
+  return haltWithTrace(traceFrom(trace, (trace) => C.traced(C.fail(e), trace())))
 }
 
 /**
@@ -388,8 +388,8 @@ export function failNow<E = never, A = never>(e: E): IO<unknown, E, A> {
  *
  * @trace 0
  */
-export function fail<E = never, A = never>(e: () => E): IO<unknown, E, A> {
-  return haltWith(traceAs(e, (trace) => C.traced(C.fail(e()), trace())))
+export function failWith<E = never, A = never>(e: () => E): IO<unknown, E, A> {
+  return haltWithTrace(traceAs(e, (trace) => C.traced(C.fail(e()), trace())))
 }
 
 /**
@@ -402,9 +402,9 @@ export function fail<E = never, A = never>(e: () => E): IO<unknown, E, A> {
  *
  * @trace call
  */
-export function dieNow(e: unknown): UIO<never> {
+export function die(e: unknown): UIO<never> {
   const trace = accessCallTrace()
-  return haltWith(traceFrom(trace, (trace) => C.traced(C.die(e), trace())))
+  return haltWithTrace(traceFrom(trace, (trace) => C.traced(C.die(e), trace())))
 }
 
 /**
@@ -417,8 +417,8 @@ export function dieNow(e: unknown): UIO<never> {
  *
  * @trace 0
  */
-export function die<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
-  return haltWith(traceAs(e, (trace) => C.traced(C.die(e()), trace())))
+export function dieWith<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
+  return haltWithTrace(traceAs(e, (trace) => C.traced(C.die(e()), trace())))
 }
 
 /**
@@ -427,7 +427,7 @@ export function die<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
  * because a defect has been detected in the code.
  */
 export function dieMessage(message: string): FIO<never, never> {
-  return dieNow(new RuntimeException(message))
+  return die(new RuntimeException(message))
 }
 
 /**
@@ -437,9 +437,9 @@ export function dieMessage(message: string): FIO<never, never> {
  * @since 1.0.0
  * @trace call
  */
-export function doneNow<E, A>(exit: Exit<E, A>): FIO<E, A> {
+export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
   const trace = accessCallTrace()
-  return Ex.match_(exit, (cause) => traceCall(haltNow, trace)(cause), succeedNow)
+  return Ex.match_(exit, (cause) => traceCall(halt, trace)(cause), succeed)
 }
 
 /**
@@ -449,8 +449,8 @@ export function doneNow<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function done<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
-  return deferTotal(traceAs(exit, () => Ex.match_(exit(), haltNow, succeedNow)))
+export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
+  return deferTotal(traceAs(exit, () => Ex.match_(exit(), halt, succeed)))
 }
 
 /**
@@ -458,8 +458,8 @@ export function done<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
  *
  * @trace 0
  */
-export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return bind_(effectTotal(f), E.match(failNow, succeedNow))
+export function fromEitherWith<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
+  return bind_(effectTotal(f), E.match(fail, succeed))
 }
 
 /**
@@ -467,9 +467,9 @@ export function fromEither<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
  *
  * @trace call
  */
-export function fromEitherNow<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
+export function fromEither<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
   const trace = accessCallTrace()
-  return E.match_(either, (e) => traceCall(failNow, trace)(e), succeedNow)
+  return E.match_(either, (e) => traceCall(fail, trace)(e), succeed)
 }
 
 /**
@@ -478,19 +478,19 @@ export function fromEitherNow<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
  *
  * @trace 0
  */
-export function fromOption<A>(m: () => Option<A>): FIO<Option<never>, A> {
+export function fromOptionWith<A>(m: () => Option<A>): FIO<Option<never>, A> {
   return bind_(
     effectTotal(m),
-    O.match(() => failNow(O.none()), succeedNow)
+    O.match(() => fail(O.none()), succeed)
   )
 }
 
 /**
  * @trace call
  */
-export function fromOptionNow<A = never>(option: Option<A>): IO<unknown, Option<never>, A> {
+export function fromOption<A = never>(option: Option<A>): IO<unknown, Option<never>, A> {
   const trace = accessCallTrace()
-  return O.match_(option, () => traceCall(failNow, trace)(O.none()), succeedNow)
+  return O.match_(option, () => traceCall(fail, trace)(O.none()), succeed)
 }
 
 /**
@@ -502,7 +502,7 @@ export function fromOptionNow<A = never>(option: Option<A>): IO<unknown, Option<
  */
 export function fromPromiseCatch_<E, A>(promise: () => Promise<A>, onReject: (reason: unknown) => E): FIO<E, A> {
   return effectAsync((resolve) => {
-    promise().then(flow(succeedNow, resolve)).catch(flow(onReject, failNow, resolve))
+    promise().then(flow(succeed, resolve)).catch(flow(onReject, fail, resolve))
   })
 }
 
@@ -530,7 +530,7 @@ export function fromPromiseCatch<E>(onReject: (reason: unknown) => E) {
  */
 export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
   return effectAsync((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(failNow, resolve))
+    promise().then(flow(pure, resolve)).catch(flow(fail, resolve))
   })
 }
 
@@ -541,7 +541,7 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
  */
 export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
   return effectAsync((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(dieNow, resolve))
+    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
   })
 }
 
@@ -552,7 +552,7 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
  */
 export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return asksM(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(failNow, succeedNow))))
+  return asksM(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(fail, succeed))))
 }
 
 /**
@@ -568,15 +568,15 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
         runAsyncEnv(effect, _, (ex) => {
           switch (ex._tag) {
             case 'Success': {
-              k(succeedNow(ex.value))
+              k(succeed(ex.value))
               break
             }
             case 'Failure': {
-              k(failNow(ex.error))
+              k(fail(ex.error))
               break
             }
             case 'Interrupt': {
-              k(descriptorWith((d) => haltNow(C.interrupt(d.id))))
+              k(descriptorWith((d) => halt(C.interrupt(d.id))))
               break
             }
           }
@@ -625,7 +625,7 @@ export function supervised(supervisor: Supervisor<any>): <R, E, A>(fa: IO<R, E, 
  *
  * @trace call
  */
-export const pure: <R = unknown, E = never, A = never>(a: A) => IO<R, E, A> = succeedNow
+export const pure: <R = unknown, E = never, A = never>(a: A) => IO<R, E, A> = succeed
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -769,7 +769,7 @@ export function crossWith<A, R1, E1, B, C>(
  * @trace 2
  */
 export function bimap_<R, E, A, E1, B>(pab: IO<R, E, A>, f: (e: E) => E1, g: (a: A) => B): IO<R, E1, B> {
-  return matchM_(pab, traceAs(f, flow(f, failNow)), traceAs(g, flow(g, succeedNow)))
+  return matchM_(pab, traceAs(f, flow(f, fail)), traceAs(g, flow(g, succeed)))
 }
 
 /**
@@ -800,7 +800,7 @@ export function bimap<E, E1, A, B>(f: (e: E) => E1, g: (a: A) => B): <R>(pab: IO
  * @trace 1
  */
 export function mapError_<R, E, A, E1>(fea: IO<R, E, A>, f: (e: E) => E1): IO<R, E1, A> {
-  return matchCauseM_(fea, traceAs(f, flow(C.map(f), haltNow)), succeedNow)
+  return matchCauseM_(fea, traceAs(f, flow(C.map(f), halt)), succeed)
 }
 
 /**
@@ -836,7 +836,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  */
 export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(ma, traceFrom(trace, E.match(failNow, succeedNow)))
+  return bind_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
 
 /**
@@ -894,7 +894,7 @@ export function matchM_<R, R1, R2, E, E1, E2, A, A1, A2>(
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return matchCauseM_(
     ma,
-    traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, haltNow)),
+    traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt)),
     onSuccess
   )
 }
@@ -924,7 +924,7 @@ export function match_<R, E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): IO<R, never, B | C> {
-  return matchM_(fa, traceAs(onFailure, flow(onFailure, succeedNow)), traceAs(onSuccess, flow(onSuccess, succeedNow)))
+  return matchM_(fa, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, succeed)))
 }
 
 /**
@@ -960,7 +960,7 @@ export function match<E, A, B, C>(
  * @trace 1
  */
 export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-  return bind_(fa, (a) => succeedNow(f(a)))
+  return bind_(fa, (a) => succeed(f(a)))
 }
 
 /**
@@ -1083,10 +1083,10 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => bind_(onFailure(e), () => haltNow(c)),
-        (_) => haltNow(c)
+        (e) => bind_(onFailure(e), () => halt(c)),
+        (_) => halt(c)
       ),
-    (a) => pipe(onSuccess(a), apr(succeedNow(a)))
+    (a) => pipe(onSuccess(a), apr(succeed(a)))
   )
 }
 
@@ -1116,8 +1116,8 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => bind_(f(e), () => haltNow(c)),
-        (_) => haltNow(c)
+        (e) => bind_(f(e), () => halt(c)),
+        (_) => halt(c)
       ),
     pure
   )
@@ -1279,7 +1279,7 @@ export function ask<R>(): IO<R, never, R> {
  */
 export function unit(): UIO<void> {
   const trace = accessCallTrace()
-  return traceCall(succeedNow, trace)(undefined)
+  return traceCall(succeed, trace)(undefined)
 }
 
 /*
@@ -1288,7 +1288,7 @@ export function unit(): UIO<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-const of: UIO<{}> = succeedNow({})
+const of: UIO<{}> = succeed({})
 export { of as do }
 
 /**
@@ -1328,7 +1328,7 @@ export function bindTo<N extends string>(name: N): <R, E, A>(fa: IO<R, E, A>) =>
  * @trace 1
  */
 export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K) => A) {
-  return bindS(name, traceAs(f, flow(f, succeedNow)))
+  return bindS(name, traceAs(f, flow(f, succeed)))
 }
 
 /*
@@ -1347,7 +1347,7 @@ export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K
  * @trace 1
  */
 export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
-  return pipe(ma, sandbox, matchM(traceAs(f, flow(C.squash(f), failNow)), pure))
+  return pipe(ma, sandbox, matchM(traceAs(f, flow(C.squash(f), fail)), pure))
 }
 
 /**
@@ -1438,7 +1438,7 @@ function catch_<N extends keyof E, K extends E[N] & string, R, E, A, R1, E1, A1>
     if (tag in e && e[tag] === k) {
       return f(e as any)
     }
-    return failNow(e as any)
+    return fail(e as any)
   })
 }
 
@@ -1475,7 +1475,7 @@ export function catchTag<K extends E['_tag'] & string, E extends { _tag: string 
  * @trace 1
  */
 export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<R1, E1, A1>): IO<R & R1, E1, A | A1> {
-  return matchM_(ma, f, (x) => succeedNow(x))
+  return matchM_(ma, f, (x) => succeed(x))
 }
 
 /**
@@ -1542,13 +1542,13 @@ export function catchSome_<R, E, A, R1, E1, A1>(
           E.match(
             flow(
               f,
-              O.getOrElse(() => haltNow(cause))
+              O.getOrElse(() => halt(cause))
             ),
-            haltNow
+            halt
           )
         )
     ),
-    succeedNow
+    succeed
   )
 }
 
@@ -1580,11 +1580,11 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
       (c): IO<R1, E1 | E, A1> =>
         O.match_(
           f(c),
-          () => haltNow(c),
+          () => halt(c),
           (a) => a
         )
     ),
-    succeedNow
+    succeed
   )
 }
 
@@ -1617,7 +1617,7 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   f: (_: unknown) => Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return catchAll_(unrefineWith_(ma, f, failNow), (s): IO<R1, E | E1, A1> => s)
+  return catchAll_(unrefineWith_(ma, f, fail), (s): IO<R1, E | E1, A1> => s)
 }
 
 /**
@@ -1647,8 +1647,8 @@ export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
   const trace = accessCallTrace()
   return matchCauseM_(
     ma,
-    traceFrom(trace, flow(succeedNow)),
-    traceFrom(trace, () => succeedNow(C.empty))
+    traceFrom(trace, flow(succeed)),
+    traceFrom(trace, () => succeed(C.empty))
   )
 }
 
@@ -1657,7 +1657,7 @@ export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
  */
 export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(ma, traceFrom(trace, flow(failNow)), traceFrom(trace, flow(succeedNow)))
+  return matchCauseM_(ma, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -1678,7 +1678,7 @@ export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, 
  * @trace 2
  */
 export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: A) => Option<A1>): IO<R, E | E1, A1> {
-  return collectM_(ma, f, traceAs(pf, flow(pf, O.map(succeedNow))))
+  return collectM_(ma, f, traceAs(pf, flow(pf, O.map(succeed))))
 }
 
 /**
@@ -1725,7 +1725,7 @@ export function collectM_<R, E, A, R1, E1, A1, E2>(
       (a): IO<R1, E1 | E2, A1> =>
         pipe(
           pf(a),
-          O.getOrElse(() => failNow(f()))
+          O.getOrElse(() => fail(f()))
         )
     )
   )
@@ -1764,7 +1764,7 @@ export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>)
 }
 
 export function condM_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
-  return b ? onTrue : bind_(onFalse, failNow)
+  return b ? onTrue : bind_(onFalse, fail)
 }
 
 export function condM<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (b: boolean) => IO<R & R1, E, A> {
@@ -1794,7 +1794,7 @@ export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>):
  */
 export function descriptor(): IO<unknown, never, FiberDescriptor> {
   const trace = accessCallTrace()
-  return descriptorWith(traceFrom(trace, flow(succeedNow)))
+  return descriptorWith(traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -1810,7 +1810,7 @@ export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
  */
 export function errorAsCause<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return matchM_(ma, traceFrom(trace, flow(haltNow)), traceFrom(trace, flow(succeedNow)))
+  return matchM_(ma, traceFrom(trace, flow(halt)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -1830,8 +1830,8 @@ export function eventually<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
 export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B): IO<R, E, B> {
   return matchM_(
     wa,
-    (e) => failNow(e),
-    traceAs(f, (_) => succeedNow(f(wa)))
+    (e) => fail(e),
+    traceAs(f, (_) => succeed(f(wa)))
   )
 }
 
@@ -1861,7 +1861,7 @@ export function evaluate<A>(a: Eval<A>): UIO<A> {
 export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
   return pipe(
     as,
-    I.foldl(succeedNow(Ch.builder<A>()) as IO<R, E, Ch.ChunkBuilder<A>>, (ma, a) =>
+    I.foldl(succeed(Ch.builder<A>()) as IO<R, E, Ch.ChunkBuilder<A>>, (ma, a) =>
       crossWith_(
         ma,
         f(a),
@@ -1942,7 +1942,7 @@ export function filterOrElse_<R, E, A, R1, E1, A1>(
     fa,
     (a): IO<R1, E1, A | A1> =>
       predicate(a)
-        ? traceCall(succeedNow, trace)(a)
+        ? traceCall(succeed, trace)(a)
         : deferTotal(traceFrom(trace, () => (or as (a: A) => IO<R1, E1, A1>)(a)))
   )
 }
@@ -1982,7 +1982,7 @@ export function filterOrDie_<R, E, A, B extends A>(
 export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
 export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: unknown): IO<R, E, A> {
   const trace = accessCallTrace()
-  return filterOrElse_(fa, predicate, traceFrom(trace, flow(dieWith as (a: A) => unknown, dieNow)))
+  return filterOrElse_(fa, predicate, traceFrom(trace, flow(dieWith as (a: A) => unknown, die)))
 }
 
 /**
@@ -2069,7 +2069,7 @@ export function filterOrFail_<R, E, A, E1>(
   failWith: unknown
 ): IO<R, E | E1, A> {
   const trace = accessCallTrace()
-  return traceCall(filterOrElse_, trace)(fa, predicate, flow(failWith as (a: A) => E1, failNow))
+  return traceCall(filterOrElse_, trace)(fa, predicate, flow(failWith as (a: A) => E1, fail))
 }
 
 /**
@@ -2136,7 +2136,7 @@ export function matchCause_<R, E, A, A1, A2>(
   onFailure: (cause: Cause<E>) => A1,
   onSuccess: (a: A) => A2
 ): IO<R, never, A1 | A2> {
-  return matchCauseM_(ma, traceAs(onFailure, flow(onFailure, succeedNow)), traceAs(onSuccess, flow(onSuccess, pure)))
+  return matchCauseM_(ma, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, pure)))
 }
 
 /**
@@ -2210,7 +2210,7 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
   return pipe(
     as,
-    I.foldl(succeedNow(Ch.builder()) as IO<R, E, Ch.ChunkBuilder<B>>, (b, a) =>
+    I.foldl(succeed(Ch.builder()) as IO<R, E, Ch.ChunkBuilder<B>>, (b, a) =>
       crossWith_(b, deferTotal(traceAs(f, () => f(a))), (builder, r) => {
         builder.append(r)
         return builder
@@ -2246,7 +2246,7 @@ export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>)
  * @trace 2
  */
 export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B> {
-  return I.foldl_(as, succeedNow(b) as IO<R, E, B>, (acc, el) =>
+  return I.foldl_(as, succeed(b) as IO<R, E, B>, (acc, el) =>
     bind_(
       acc,
       traceAs(f, (a) => f(a, el))
@@ -2321,7 +2321,7 @@ export function foldMap<M>(M: Monoid<M>) {
  * @trace 2
  */
 export function foldr_<A, B, R, E>(as: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
-  return I.foldr_(as, succeedNow(b) as IO<R, E, B>, (el, acc) =>
+  return I.foldr_(as, succeed(b) as IO<R, E, B>, (el, acc) =>
     bind_(
       acc,
       traceAs(f, (a) => f(el, a))
@@ -2422,10 +2422,10 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
   const trace = accessCallTrace()
   return matchCauseM_(
     ma,
-    traceFrom(trace, flow(C.map(O.some), haltNow)),
+    traceFrom(trace, flow(C.map(O.some), halt)),
     traceFrom(
       trace,
-      O.match(() => failNow(O.none()), pure)
+      O.match(() => fail(O.none()), pure)
     )
   )
 }
@@ -2468,7 +2468,7 @@ export function getOrElseM_<R, E, A, R1, E1, B>(
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
   const trace = accessCallTrace()
-  return bind_(ma as IO<R, E, Option<A | B>>, traceFrom(trace, flow(O.map(succeedNow), O.getOrElse(constant(orElse)))))
+  return bind_(ma as IO<R, E, Option<A | B>>, traceFrom(trace, flow(O.map(succeed), O.getOrElse(constant(orElse)))))
 }
 
 /**
@@ -2505,7 +2505,7 @@ export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementError, A> {
  * @trace 0
  */
 export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> {
-  return deferTotal(traceAs(v, () => O.match_(v(), () => failNow(e()), succeedNow)))
+  return deferTotal(traceAs(v, () => O.match_(v(), () => fail(e()), succeed)))
 }
 
 /**
@@ -2661,7 +2661,7 @@ export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a:
         body(initial),
         traceAs(body, (a) => iterate_(a, cont, body))
       )
-    : succeedNow(initial)
+    : succeed(initial)
 }
 
 /**
@@ -2867,7 +2867,7 @@ export function mapEffectCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) =
  * @trace 1
  */
 export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): IO<R, E1, A> {
-  return matchCauseM_(ma, traceAs(f, flow(f, haltNow)), pure)
+  return matchCauseM_(ma, traceAs(f, flow(f, halt)), pure)
 }
 
 /**
@@ -2890,7 +2890,7 @@ export function mapErrorCause<E, E1>(f: (cause: Cause<E>) => Cause<E1>) {
  */
 export function merge<R, E, A>(io: IO<R, E, A>): IO<R, never, A | E> {
   const trace = accessCallTrace()
-  return matchM_(io, traceFrom(trace, flow(succeedNow)), traceFrom(trace, flow(succeedNow)))
+  return matchM_(io, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -2951,7 +2951,7 @@ export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> 
     ma,
     traceFrom(
       trace,
-      O.match(() => pure(O.none()), failNow)
+      O.match(() => pure(O.none()), fail)
     ),
     flow(O.some, pure)
   )
@@ -2970,14 +2970,14 @@ export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
  */
 export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(ma, traceFrom(trace, flow(C.bind(C.die), haltNow)), succeedNow)
+  return matchCauseM_(ma, traceFrom(trace, flow(C.bind(C.die), halt)), succeed)
 }
 
 /**
  * @trace 1
  */
 export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
-  return matchM_(ma, traceAs(f, flow(f, dieNow)), succeedNow)
+  return matchM_(ma, traceAs(f, flow(f, die)), succeed)
 }
 
 /**
@@ -3013,7 +3013,7 @@ export function orElseEither_<R, E, A, R1, E1, A1>(
   return tryOrElse_(
     self,
     traceAs(that, () => map_(that(), E.right)),
-    (a) => succeedNow(E.left(a))
+    (a) => succeed(E.left(a))
   )
 }
 
@@ -3033,7 +3033,7 @@ export function orElseEither<R1, E1, A1>(
 export function orElseFail_<R, E, A, E1>(ma: IO<R, E, A>, e: () => E1): IO<R, E1, A> {
   return orElse_(
     ma,
-    traceAs(e, () => failNow(e()))
+    traceAs(e, () => fail(e()))
   )
 }
 
@@ -3056,7 +3056,7 @@ export function orElseOption_<R, E, A, R1, E1, A1>(
     ma,
     traceAs(
       that,
-      O.match(that, (e) => failNow(O.some<E | E1>(e)))
+      O.match(that, (e) => fail(O.some<E | E1>(e)))
     )
   )
 }
@@ -3100,12 +3100,12 @@ export function parallelErrors<R, E, A>(io: IO<R, E, A>): IO<R, ReadonlyArray<E>
     (cause) => {
       const f = C.failures(cause)
       if (f.length === 0) {
-        return traceCall(haltNow, trace)(cause as Cause<never>)
+        return traceCall(halt, trace)(cause as Cause<never>)
       } else {
-        return traceCall(failNow, trace)(f)
+        return traceCall(fail, trace)(f)
       }
     },
-    succeedNow
+    succeed
   )
 }
 
@@ -3148,8 +3148,8 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
   const trace = accessCallTrace()
   return new Match(
     ma,
-    traceFrom(trace, (cause) => succeedNow(Ex.halt(cause))),
-    traceFrom(trace, (a) => succeedNow(Ex.succeed(a)))
+    traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
+    traceFrom(trace, (a) => succeed(Ex.succeed(a)))
   )
 }
 
@@ -3161,7 +3161,7 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
  * included.
  */
 export function refailWithTrace<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return matchCauseM_(ma, (cause) => haltWith((trace) => C.traced(cause, trace())), succeedNow)
+  return matchCauseM_(ma, (cause) => haltWithTrace((trace) => C.traced(cause, trace())), succeed)
 }
 
 /**
@@ -3197,7 +3197,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   const trace = accessCallTrace()
   return catchAll_(
     fa,
-    traceFrom(trace, (e) => O.match_(pf(e), () => dieNow(f(e)), failNow))
+    traceFrom(trace, (e) => O.match_(pf(e), () => die(f(e)), fail))
   )
 }
 
@@ -3228,7 +3228,7 @@ export function refineOrDieWith<E, E1>(
 export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>): IO<R, E | E1, A> {
   return rejectM_(
     fa,
-    traceAs(pf, (a) => O.map_(pf(a), failNow))
+    traceAs(pf, (a) => O.map_(pf(a), fail))
   )
 }
 
@@ -3262,7 +3262,7 @@ export function rejectM_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return bind_(
     fa,
-    traceAs(pf, (a) => O.match_(pf(a), () => pure(a), bind(failNow)))
+    traceAs(pf, (a) => O.match_(pf(a), () => pure(a), bind(fail)))
   )
 }
 
@@ -3289,7 +3289,7 @@ export function rejectM<R1, E1, A>(
 function _repeatN<R, E, A>(ma: IO<R, E, A>, n: number, __trace: string | undefined): IO<R, E, A> {
   return bind_(
     ma,
-    traceAs(__trace, (a) => (n <= 0 ? succeedNow(a) : _repeatN(ma, n - 1, __trace)))
+    traceAs(__trace, (a) => (n <= 0 ? succeed(a) : _repeatN(ma, n - 1, __trace)))
   )
 }
 /**
@@ -3325,7 +3325,7 @@ export function repeatN(n: number): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
  * @trace 1
  */
 export function repeatUntil_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatUntilM_(ma, traceAs(f, flow(f, succeedNow)))
+  return repeatUntilM_(ma, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3371,7 +3371,7 @@ export function repeatUntilM<A, R1, E1>(
  * @trace 1
  */
 export function repeatWhile_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatWhileM_(ma, traceAs(f, flow(f, succeedNow)))
+  return repeatWhileM_(ma, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3395,7 +3395,7 @@ export function repeatWhileM_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return bind_(
     ma,
-    traceAs(f, (a) => bind_(f(a), (b) => (b ? repeatWhileM_(ma, f) : succeedNow(a))))
+    traceAs(f, (a) => bind_(f(a), (b) => (b ? repeatWhileM_(ma, f) : succeed(a))))
   )
 }
 
@@ -3427,7 +3427,7 @@ export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO
     ma,
     traceAs(
       error,
-      O.match(() => bind_(effectTotal(error), failNow), succeedNow)
+      O.match(() => bind_(effectTotal(error), fail), succeed)
     )
   )
 }
@@ -3458,7 +3458,7 @@ export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
  * @trace 1
  */
 export function retryUntil_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean): IO<R, E, A> {
-  return retryUntilM_(fa, traceAs(f, flow(f, succeedNow)))
+  return retryUntilM_(fa, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3482,7 +3482,7 @@ export function retryUntilM_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? failNow(e) : retryUntilM_(fa, f))))
+    traceAs(f, (e) => bind_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))))
   )
 }
 
@@ -3504,7 +3504,7 @@ export function retryUntilM<E, R1, E1>(
  * @trace 1
  */
 export function retryWhile_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean) {
-  return retryWhileM_(fa, traceAs(f, flow(f, succeedNow)))
+  return retryWhileM_(fa, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3528,7 +3528,7 @@ export function retryWhileM_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? retryWhileM_(fa, f) : failNow(e))))
+    traceAs(f, (e) => bind_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))))
   )
 }
 
@@ -3559,8 +3559,8 @@ export function tapCause_<R2, A2, R, E, E2>(
 ): IO<R2 & R, E | E2, A2> {
   return matchCauseM_(
     ma,
-    traceAs(f, (c) => bind_(f(c), () => haltNow(c))),
-    succeedNow
+    traceAs(f, (c) => bind_(f(c), () => halt(c))),
+    succeed
   )
 }
 
@@ -3590,7 +3590,7 @@ export function tapCause<R, E, E1>(
  */
 export function sandbox<R, E, A>(fa: IO<R, E, A>): IO<R, Cause<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(fa, traceFrom(trace, flow(failNow)), traceFrom(trace, flow(succeedNow)))
+  return matchCauseM_(fa, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -3656,7 +3656,7 @@ export function summarized<R1, E1, B, C>(
  */
 export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
   const trace = accessCallTrace()
-  return matchM_(pab, traceFrom(trace, flow(succeedNow)), traceFrom(trace, flow(failNow)))
+  return matchM_(pab, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(fail)))
 }
 
 /**
@@ -3722,7 +3722,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return new Match(
     ma,
-    traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, haltNow)),
+    traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, halt)),
     onSuccess
   )
 }
@@ -3752,7 +3752,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
   const trace = accessCallTrace()
   return bind_(
     ma,
-    traceFrom(trace, (a) => (C.isEmpty(a) ? unit() : haltNow(a)))
+    traceFrom(trace, (a) => (C.isEmpty(a) ? unit() : halt(a)))
   )
 }
 
@@ -3804,7 +3804,7 @@ export function unrefineWith_<R, E, A, E1, E2>(
         pipe(
           cause,
           C.find((c) => (C.died(c) ? pf(c.value) : O.none())),
-          O.match(() => pipe(cause, C.map(f), haltNow), failNow)
+          O.match(() => pipe(cause, C.map(f), halt), fail)
         )
     )
   )
@@ -4082,12 +4082,12 @@ export class GenIO<R, E, A> {
 const adapter = (_: any, __?: any) => {
   if (E.isEither(_)) {
     return new GenIO(
-      fromEither(() => _),
+      fromEitherWith(() => _),
       adapter['$trace']
     )
   }
   if (O.isOption(_)) {
-    return new GenIO(__ ? (_._tag === 'None' ? failNow(__()) : pure(_.value)) : getOrFail(() => _), adapter['$trace'])
+    return new GenIO(__ ? (_._tag === 'None' ? fail(__()) : pure(_.value)) : getOrFail(() => _), adapter['$trace'])
   }
   if (isTag(_)) {
     return new GenIO(askService(_), adapter['$trace'])

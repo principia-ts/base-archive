@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as S from '../../Schedule'
-import { bind, catchAll, failNow, map, map_, matchM, orDie } from '../core'
+import { bind, catchAll, fail, map, map_, matchM, orDie } from '../core'
 
 /**
  * Retries with the specified retry policy.
@@ -27,7 +27,7 @@ export function retry_<R, E extends I, A, R1, I, O>(
   return retryOrElse_(
     fa,
     policy,
-    traceFrom(trace, (e, _) => failNow(e))
+    traceFrom(trace, (e, _) => fail(e))
   )
 }
 

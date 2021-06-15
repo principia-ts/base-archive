@@ -5,7 +5,7 @@ import { flow, pipe } from '../src/function'
 import * as I from '../src/IO'
 
 const s1 = S.fromChunk(C.range(0, 10))
-const s2 = (n: number) => S.fromEffect(I.delay(100)(I.succeedNow(n * 2)))
+const s2 = (n: number) => S.fromEffect(I.delay(100)(I.succeed(n * 2)))
 
 pipe(
   s1,

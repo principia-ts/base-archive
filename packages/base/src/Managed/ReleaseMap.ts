@@ -106,7 +106,7 @@ export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO
           return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit, s.update)]
         case 'Running':
           return [
-            I.succeedNow(M.lookup_(finalizers(s), key)),
+            I.succeed(M.lookup_(finalizers(s), key)),
             new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer), s.update)
           ]
         default:

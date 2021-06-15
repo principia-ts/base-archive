@@ -30,7 +30,7 @@ export type AssertResult<A> = BA.FreeBooleanAlgebra<AssertionValue<A>>
 
 export class Assertion<A> extends AssertionM<A> {
   constructor(readonly render: Render, readonly run: (actual: A) => AssertResult<A>) {
-    super(render, (actual) => I.succeedNow(run(actual)))
+    super(render, (actual) => I.succeed(run(actual)))
   }
 
   test(a: A): boolean {

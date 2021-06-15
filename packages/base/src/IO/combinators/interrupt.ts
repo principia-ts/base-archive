@@ -21,17 +21,17 @@ import {
   bind_,
   checkInterruptible,
   deferTotal,
-  dieNow,
+  die,
   effectAsync,
   effectAsyncOption,
   effectTotal,
   fiberId,
   flatten,
-  haltNow,
+  halt,
   matchCauseM_,
   pure,
   SetInterrupt,
-  succeedNow,
+  succeed,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
@@ -43,7 +43,7 @@ import { forkDaemon } from './core-scope'
  */
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
   const trace = accessCallTrace()
-  return traceCall(haltNow, trace)(C.interrupt(fiberId))
+  return traceCall(halt, trace)(C.interrupt(fiberId))
 }
 
 /**
@@ -139,10 +139,10 @@ export function onInterrupt_<R, E, A, R1>(
         C.interrupted(cause)
           ? bind_(
               cleanup(C.interruptors(cause)),
-              traceAs(cleanup, () => haltNow(cause))
+              traceAs(cleanup, () => halt(cause))
             )
-          : haltNow(cause),
-      succeedNow
+          : halt(cause),
+      succeed
     )
   )
 }
@@ -176,11 +176,11 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
         C.interrupted(cause)
           ? matchCauseM_(
               cleanup(),
-              traceAs(cleanup, (_) => haltNow(_)),
-              traceAs(cleanup, () => haltNow(cause))
+              traceAs(cleanup, (_) => halt(_)),
+              traceAs(cleanup, () => halt(cause))
             )
-          : haltNow(cause),
-      succeedNow
+          : halt(cause),
+      succeed
     )
   )
 }
@@ -331,7 +331,7 @@ export function effectAsyncInterruptPromise<R, E, A>(
 function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
   return effectAsync(
     traceAs(promise, (resolve) => {
-      promise().then(flow(pure, resolve)).catch(flow(dieNow, resolve))
+      promise().then(flow(pure, resolve)).catch(flow(die, resolve))
     })
   )
 }

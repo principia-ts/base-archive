@@ -160,8 +160,8 @@ function coordinateCrossWithPar<E, E2>() {
         I.bind_(
           loser.interruptAs(fiberId),
           Ex.matchM(
-            (cl) => (leftWinner ? I.haltNow(C.both(cw, cl)) : I.haltNow(C.both(cl, cw))),
-            () => I.haltNow(cw)
+            (cl) => (leftWinner ? I.halt(C.both(cw, cl)) : I.halt(C.both(cl, cw))),
+            () => I.halt(cw)
           )
         ),
       (x) =>

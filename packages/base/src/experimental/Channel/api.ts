@@ -1044,7 +1044,7 @@ export function doneCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
     I.effectTotal(() => {
       const builder = A.builder<OutElem>()
 
-      return mapM_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeedNow(tuple(builder.result(), z)))
+      return mapM_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeed(tuple(builder.result(), z)))
     })
   )
 }
@@ -1063,8 +1063,8 @@ export function interruptWhen_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1
   return mergeWith_(
     self,
     fromEffect(io),
-    (selfDone) => MD.done(I.doneNow(selfDone)),
-    (ioDone) => MD.done(I.doneNow(ioDone))
+    (selfDone) => MD.done(I.done(selfDone)),
+    (ioDone) => MD.done(I.done(ioDone))
   )
 }
 
@@ -1322,7 +1322,7 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
         break
       }
       case State.ChannelStateTag.Done: {
-        return I.doneNow(exec.getDone())
+        return I.done(exec.getDone())
       }
     }
   }
@@ -1339,11 +1339,11 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
       return I.bind_(I.mapError_(channelState.effect, E.left), () => toPullInterpret(exec.run(), exec))
     }
     case State.ChannelStateTag.Emit: {
-      return I.succeedNow(exec.getEmit())
+      return I.succeed(exec.getEmit())
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      return Ex.matchM_(done, flow(Ca.map(E.left), I.haltNow), flow(E.right, I.failNow))
+      return Ex.matchM_(done, flow(Ca.map(E.left), I.halt), flow(E.right, I.fail))
     }
   }
 }
@@ -1419,14 +1419,14 @@ export function mergeAllWith_<
         const evaluatePull = (pull: I.IO<Env & Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem>) =>
           pipe(
             pull,
-            I.bind((elem) => pipe(I.succeedNow(elem), queue.offer)),
+            I.bind((elem) => pipe(I.succeed(elem), queue.offer)),
             I.forever,
             I.catchAllCause(
               flow(
                 Ca.flipCauseEither,
                 E.match(
                   (cause) =>
-                    queue.offer(I.haltNow(Ca.map_(cause, E.left)))['*>'](I.asUnit(errorSignal.succeed(undefined))),
+                    queue.offer(I.halt(Ca.map_(cause, E.left)))['*>'](I.asUnit(errorSignal.succeed(undefined))),
                   (outDone) =>
                     Ref.update_(
                       lastDone,
@@ -1449,7 +1449,7 @@ export function mergeAllWith_<
                 E.match(
                   (cause) =>
                     getChildren['>>='](F.interruptAll)['*>'](
-                      queue.offer(I.haltNow(Ca.map_(cause, E.left)))['$>'](() => false)
+                      queue.offer(I.halt(Ca.map_(cause, E.left)))['$>'](() => false)
                     ),
                   (outDone) =>
                     I.raceWith_(
@@ -1461,8 +1461,8 @@ export function mergeAllWith_<
                         F.interrupt(failureAwait)['*>'](
                           lastDone.get['>>='](
                             O.match(
-                              () => queue.offer(I.failNow(E.right(outDone))),
-                              (lastDone) => queue.offer(I.failNow(E.right(f(lastDone, outDone))))
+                              () => queue.offer(I.fail(E.right(outDone))),
+                              (lastDone) => queue.offer(I.fail(E.right(f(lastDone, outDone))))
                             )
                           )['$>'](() => false)
                         )
@@ -1748,7 +1748,7 @@ export function mergeWith_<
 
               switch (result._tag) {
                 case MD.MergeDecisionTag.Done: {
-                  return pipe(F.interrupt(fiber)['*>'](result.io), fromEffect, I.succeedNow)
+                  return pipe(F.interrupt(fiber)['*>'](result.io), fromEffect, I.succeed)
                 }
                 case MD.MergeDecisionTag.Await: {
                   return pipe(
@@ -1948,11 +1948,11 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
             I.matchCauseM(
               flow(
                 Ca.flipCauseEither,
-                E.match(flow(Ca.map(E.left), I.haltNow, queue.offer), (outDone) =>
+                E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
                   pipe(
                     Sem.withPermits(n, permits)(I.unit()),
                     I.makeInterruptible,
-                    I.apr(pipe(E.right(outDone), I.failNow, queue.offer))
+                    I.apr(pipe(E.right(outDone), I.fail, queue.offer))
                   )
                 )
               ),
@@ -2136,8 +2136,8 @@ export function zipPar_<
   return mergeWith_(
     self,
     that,
-    (exit1) => MD.await((exit2) => I.doneNow(Ex.cross_(exit1, exit2))),
-    (exit2) => MD.await((exit1) => I.doneNow(Ex.cross_(exit1, exit2)))
+    (exit1) => MD.await((exit2) => I.done(Ex.cross_(exit1, exit2))),
+    (exit2) => MD.await((exit1) => I.done(Ex.cross_(exit1, exit2)))
   )
 }
 

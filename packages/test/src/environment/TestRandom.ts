@@ -83,7 +83,7 @@ export class TestRandom implements Random {
   }
 
   private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
-    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeedNow))
+    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeed))
   }
 
   private leastSignificantBits = (x: number): number => {
@@ -115,32 +115,32 @@ export class TestRandom implements Random {
       if (i === length) {
         return acc['<$>'](Li.reverse)
       } else if (n > 0) {
-        return rnd['>>=']((rnd) => loop(i + 1, I.succeedNow(rnd >> 8), n - 1, acc['<$>'](Li.prepend(Byte.wrap(rnd)))))
+        return rnd['>>=']((rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, acc['<$>'](Li.prepend(Byte.wrap(rnd)))))
       } else {
         return loop(i, this.nextInt, Math.min(length - i, 4), acc)
       }
     }
 
-    return loop(0, this.randomInt, Math.min(length, 4), I.succeedNow(Li.empty()))['<$>'](Li.toArray)
+    return loop(0, this.randomInt, Math.min(length, 4), I.succeed(Li.empty()))['<$>'](Li.toArray)
   }
 
   private randomIntBounded = (n: number) => {
     if (n <= 0) {
-      return I.dieNow(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
+      return I.die(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
     } else if ((n & -n) === n) {
       return this.randomBits(31)['<$>']((_) => _ >> Math.clz32(n))
     } else {
       const loop: UIO<number> = this.randomBits(31)['>>=']((i) => {
         const value = i % n
         if (i - value + (n - 1) < 0) return loop
-        else return I.succeedNow(value)
+        else return I.succeed(value)
       })
       return loop
     }
   }
 
   private randomLong: UIO<bigint> = this.randomBits(32)['>>=']((i1) =>
-    this.randomBits(32)['>>=']((i2) => I.succeedNow(BigInt(i1 << 32) + BigInt(i2)))
+    this.randomBits(32)['>>=']((i2) => I.succeed(BigInt(i1 << 32) + BigInt(i2)))
   )
 
   private randomInt = this.randomBits(32)
@@ -300,7 +300,7 @@ function nextIntBetweenWith(
   nextIntBounded: (_: number) => UIO<number>
 ): UIO<number> {
   if (min >= max) {
-    return I.dieNow(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
+    return I.die(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
   } else {
     const difference = max - min
     if (difference > 0) return nextIntBounded(difference)['<$>']((n) => n + min)

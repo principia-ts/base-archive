@@ -11,7 +11,7 @@ import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as S from '../../Schedule'
-import { bind, failNow, map, map_, matchM, orDie } from '../core'
+import { bind, fail, map, map_, matchM, orDie } from '../core'
 
 /**
  * Returns a new effect that repeats this effect according to the specified
@@ -30,7 +30,7 @@ export function repeat_<R, SR, E, A, B>(ef: IO<R, E, A>, sc: S.Schedule<SR, A, B
   return repeatOrElse_(
     ef,
     sc,
-    traceFrom(trace, (e) => failNow(e))
+    traceFrom(trace, (e) => fail(e))
   )
 }
 

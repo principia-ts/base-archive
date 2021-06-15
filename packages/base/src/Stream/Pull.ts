@@ -9,14 +9,14 @@ import { none, some } from '../Option'
 
 export type Pull<R, E, O> = I.IO<R, Option<E>, Chunk<O>>
 
-export const end = I.failNow(none())
+export const end = I.fail(none())
 
 export function fail<E>(e: E): I.FIO<Option<E>, never> {
-  return I.failNow(some(e))
+  return I.fail(some(e))
 }
 
 export function halt<E>(e: Cause<E>): I.IO<unknown, Option<E>, never> {
-  return pipe(I.haltNow(e), I.mapError(some))
+  return pipe(I.halt(e), I.mapError(some))
 }
 
 export function empty<A>(): I.UIO<Chunk<A>> {

@@ -211,10 +211,10 @@ export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): _.STM<unknown, EB,
       })
     }
     case 'Derived': {
-      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.failNow, STM.succeed))
+      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
     }
     case 'DerivedAll': {
-      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.failNow, STM.succeed))
+      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
     }
   }
 }
@@ -239,7 +239,7 @@ export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): _.STM<unkno
       })
     }
     case 'Derived': {
-      return E.match_(self.setEither(a), STM.failNow, (s) => set_(self.value, s))
+      return E.match_(self.setEither(a), STM.fail, (s) => set_(self.value, s))
     }
     case 'DerivedAll': {
       return STM.refail(

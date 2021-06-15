@@ -89,7 +89,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
         I.bind(([o, _]) =>
           O.match_(
             o,
-            () => I.failNow(new NoSuchElementError('Driver.last')),
+            () => I.fail(new NoSuchElementError('Driver.last')),
             (b) => I.pure(b)
           )
         )
@@ -102,7 +102,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
-              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.apr(I.failNow(O.none()))))
+              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.apr(I.fail(O.none()))))
             }
             case 'Continue': {
               return yield* _(

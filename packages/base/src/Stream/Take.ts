@@ -23,7 +23,7 @@ export function halt<E>(cause: Ca.Cause<E>): Take<E, never> {
 export const end: Take<never, never> = Ex.fail(O.none())
 
 export function done<E, A>(take: Take<E, A>): I.FIO<Option<E>, Chunk<A>> {
-  return I.doneNow(take)
+  return I.done(take)
 }
 
 export function fromPull<R, E, O>(pull: Pull<R, E, O>): I.IO<R, never, Take<E, O>> {

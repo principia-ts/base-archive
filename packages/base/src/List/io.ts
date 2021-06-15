@@ -5,7 +5,7 @@ import * as I from '../IO'
 import * as L from './core'
 
 export function mapM_<A, R, E, B>(l: List<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, List<B>> {
-  return L.foldl_(l, I.succeedNow(L.emptyPushable<B>()) as I.IO<R, E, L.MutableList<B>>, (b, a) =>
+  return L.foldl_(l, I.succeed(L.emptyPushable<B>()) as I.IO<R, E, L.MutableList<B>>, (b, a) =>
     I.crossWith_(
       b,
       I.deferTotal(() => f(a)),
@@ -23,12 +23,12 @@ export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (l: List<A>) => I.
 
 export function dropWhileM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, List<A>> {
   return I.deferTotal(() => {
-    let dropping  = I.succeedNow(true) as I.IO<R, E, boolean>
+    let dropping  = I.succeed(true) as I.IO<R, E, boolean>
     const newList = L.emptyPushable<A>()
     L.forEach_(l, (a) => {
       dropping = pipe(
         dropping,
-        I.bind((d) => (d ? p(a) : I.succeedNow(false))),
+        I.bind((d) => (d ? p(a) : I.succeed(false))),
         I.map((d) => {
           if (d) {
             return true
@@ -49,7 +49,7 @@ export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (l: List<
 
 export function filterM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, List<A>> {
   return I.deferTotal(() => {
-    let r = I.succeedNow(L.emptyPushable<A>()) as I.IO<R, E, L.MutableList<A>>
+    let r = I.succeed(L.emptyPushable<A>()) as I.IO<R, E, L.MutableList<A>>
     L.forEach_(l, (a) => {
       r = I.crossWith_(r, p(a), (l, b) => {
         if (b) {

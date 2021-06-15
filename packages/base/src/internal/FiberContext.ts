@@ -345,7 +345,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   get await(): I.UIO<Exit<E, A>> {
     return I.effectAsyncInterruptEither((k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
-      const cb: Callback<never, Exit<E, A>> = (x) => k(I.doneNow(x))
+      const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
       return O.match_(this.observe(cb), () => E.left(I.effectTotal(() => this.interruptObserver(cb))), E.right)
     })
   }
@@ -441,7 +441,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
           this.setInterrupting(true)
 
-          return I.concrete(I.bind_(this.openScope.close(v), () => I.doneNow(v)))
+          return I.concrete(I.bind_(this.openScope.close(v), () => I.done(v)))
         }
       }
     }
@@ -492,7 +492,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         if (this.shouldInterrupt) {
           // Fiber interrupted, so go back into running state:
           this.exitAsync(epoch)
-          return I.concrete(I.haltNow(this.state.get.interrupted))
+          return I.concrete(I.halt(this.state.get.interrupted))
         } else {
           return undefined
         }
@@ -535,7 +535,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get status(): I.UIO<Status.FiberStatus> {
-    return I.succeedNow(this.state.get.status)
+    return I.succeed(this.state.get.status)
   }
 
   private fork(
@@ -826,7 +826,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                           if (this.platform.traceExecution && this.inTracingRegion) {
                             this.addTrace(nested.onThrow)
                           }
-                          current = I.concrete(I.failNow(nested.onThrow(e)))
+                          current = I.concrete(I.fail(nested.onThrow(e)))
                         }
                         break
                       }
@@ -928,7 +928,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       }
                       current = this.next(c.effect())
                     } catch (e) {
-                      current = I.concrete(I.failNow(c.onThrow(e)))
+                      current = I.concrete(I.fail(c.onThrow(e)))
                     }
                     break
                   }
@@ -1019,7 +1019,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       if (this.platform.traceExecution && this.inTracingRegion) {
                         this.addTrace(c.onThrow)
                       }
-                      current = I.concrete(I.failNow(c.onThrow(e)))
+                      current = I.concrete(I.fail(c.onThrow(e)))
                     }
                     break
                   }
@@ -1032,7 +1032,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       c.io(this.platform, this.fiberId),
                       Ex.match(
                         (cause) => {
-                          current = I.concrete(I.haltNow(cause))
+                          current = I.concrete(I.halt(cause))
                         },
                         (value) => {
                           current = this.next(value)
@@ -1125,14 +1125,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 }
               }
             } else {
-              current = I.concrete(I.haltNow(this.state.get.interrupted))
+              current = I.concrete(I.halt(this.state.get.interrupted))
               this.setInterrupting(true)
             }
             opCount++
           }
         } catch (e) {
           this.setInterrupting(true)
-          current = I.concrete(I.dieNow(e))
+          current = I.concrete(I.die(e))
         }
       }
     } finally {

@@ -63,7 +63,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
         if (idx >= chunk.length) {
           return tuple(I.apr_(update(self), pullElement(self)), tuple(C.empty<A>(), 0))
         } else {
-          return tuple(I.succeedNow(C.unsafeGet_(chunk, idx)), tuple(C.empty<A>(), idx + 1))
+          return tuple(I.succeed(C.unsafeGet_(chunk, idx)), tuple(C.empty<A>(), idx + 1))
         }
       }),
       I.flatten
@@ -80,7 +80,7 @@ export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
         if (idx >= chunk.length) {
           return tuple(I.apr_(update(self), pullChunk(self)), tuple(C.empty<A>(), 0))
         } else {
-          return tuple(I.succeedNow(C.drop_(chunk, idx)), tuple(C.empty<A>(), 0))
+          return tuple(I.succeed(C.drop_(chunk, idx)), tuple(C.empty<A>(), 0))
         }
       }),
       I.flatten

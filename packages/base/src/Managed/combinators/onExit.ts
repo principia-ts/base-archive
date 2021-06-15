@@ -47,7 +47,7 @@ export function onExit_<R, E, A, R1>(self: Managed<R, E, A>, cleanup: (exit: Exi
               )
             )
           )
-          const a                    = yield* _(I.doneNow(exitEA))
+          const a                    = yield* _(I.done(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )

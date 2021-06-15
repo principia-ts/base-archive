@@ -6,5 +6,5 @@ import * as I from '../internal/io'
 import { interrupt } from './interrupt'
 
 export function toManaged<E, A>(fiber: Fiber<E, A>): M.UManaged<Fiber<E, A>> {
-  return pipe(I.succeedNow(fiber), M.make(interrupt))
+  return pipe(I.succeed(fiber), M.make(interrupt))
 }

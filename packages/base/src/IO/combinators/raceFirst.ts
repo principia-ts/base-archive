@@ -16,7 +16,7 @@ export function raceFirst_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, that: IO<R1, E1
   const trace = accessCallTrace()
   return pipe(
     traceCall(race_, trace)(I.result(ma), I.result(that)),
-    I.bind((a) => I.doneNow(a as Exit<E | E1, A | A1>))
+    I.bind((a) => I.done(a as Exit<E | E1, A | A1>))
   )
 }
 

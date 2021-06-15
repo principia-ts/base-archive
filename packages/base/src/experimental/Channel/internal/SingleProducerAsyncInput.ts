@@ -163,10 +163,10 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
               )
             }
             case StateTag.Error: {
-              return tuple(T.succeedNow(onError(state.cause)), state)
+              return tuple(T.succeed(onError(state.cause)), state)
             }
             case StateTag.Done: {
-              return tuple(T.succeedNow(onDone(state.a)), state)
+              return tuple(T.succeed(onDone(state.a)), state)
             }
             case StateTag.Empty: {
               return tuple(

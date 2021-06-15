@@ -10,8 +10,8 @@ import * as I from '../internal/io'
 export const never: Fiber<never, never> = syntheticFiber({
   _tag: 'SyntheticFiber',
   await: I.never,
-  getRef: (fiberRef) => I.succeedNow(fiberRef.initial),
+  getRef: (fiberRef) => I.succeed(fiberRef.initial),
   interruptAs: () => I.never,
   inheritRefs: I.unit(),
-  poll: I.succeedNow(O.none())
+  poll: I.succeed(O.none())
 })

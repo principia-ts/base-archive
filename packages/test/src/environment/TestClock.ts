@@ -129,7 +129,7 @@ export class TestClock implements Clock {
         .get(fibers)
         ['>>='](
           E.match(
-            (_) => I.succeedNow(HS.make(HashEqFiber)),
+            (_) => I.succeed(HS.make(HashEqFiber)),
             flow(
               I.foreach(Ref.get),
               I.map(C.foldl(HS.make(HashEqFiber), HS.union_)),
@@ -146,13 +146,13 @@ export class TestClock implements Clock {
         fiber.status['>>=']((status) => {
           switch (status._tag) {
             case 'Done': {
-              return I.succeedNow(HM.set_(map, fiber.id, status))
+              return I.succeed(HM.set_(map, fiber.id, status))
             }
             case 'Suspended': {
-              return I.succeedNow(HM.set_(map, fiber.id, status))
+              return I.succeed(HM.set_(map, fiber.id, status))
             }
             default: {
-              return I.failNow(undefined)
+              return I.fail(undefined)
             }
           }
         })
@@ -218,9 +218,9 @@ export class TestClock implements Clock {
          */
         first === last
       ) {
-        return I.succeedNow(first)
+        return I.succeed(first)
       } else {
-        return I.failNow(undefined)
+        return I.fail(undefined)
       }
     })
   }
@@ -228,7 +228,7 @@ export class TestClock implements Clock {
   private warningDone: UIO<void> = RefM.updateSomeM_(
     this.warningState,
     matchTag({
-      Start: () => O.some(I.succeedNow(Done)),
+      Start: () => O.some(I.succeed(Done)),
       Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](() => Done)),
       Done: () => O.none()
     })
@@ -259,7 +259,7 @@ export class TestClock implements Clock {
             const ref  = yield* _(Ref.ref(data))
             const refM = yield* _(RefM.refM(Start))
             const test = yield* _(
-              M.make_(I.succeedNow(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
+              M.make_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )
             return intersect(ClockTag.of(new ProxyClock(test.currentTime, test.sleep)), TestClockTag.of(test))
           })

@@ -87,7 +87,7 @@ export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
             new Empty(p)
           )
         } else {
-          return tuple(I.succeedNow(O.none()), s)
+          return tuple(I.succeed(O.none()), s)
         }
       }),
       I.flatten
