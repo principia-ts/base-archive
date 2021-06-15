@@ -255,7 +255,7 @@ export function fail<E>(e: E): FStream<E, never> {
  * The `Stream` that dies with the error.
  */
 export function die(e: unknown): UStream<never> {
-  return fromEffect(I.die(e))
+  return fromEffect(I.dieNow(e))
 }
 
 /**
@@ -272,7 +272,7 @@ export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
 /**
  * The empty stream
  */
-export const empty: UStream<never> = new Stream(M.succeed(Pull.end))
+export const empty: UStream<never> = new Stream(M.succeedNow(Pull.end))
 
 /**
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
@@ -5883,7 +5883,7 @@ export function gen(...args: any[]): any {
 
           state = iterator.next(a)
         })
-        if (prematureExit) return fromEffect(I.die(new PrematureGeneratorExitError('Stream.gen')))
+        if (prematureExit) return fromEffect(I.dieNow(new PrematureGeneratorExitError('Stream.gen')))
 
         if (state.done) return succeed(state.value)
 

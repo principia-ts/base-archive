@@ -15,17 +15,7 @@ import { tryCommit, tryCommitAsync } from '../Journal'
 import { DoneTypeId, SuspendTypeId } from '../TryCommit'
 import { txnId } from '../TxnId'
 import * as _ from './primitives'
-import {
-  DieException,
-  Effect,
-  FailException,
-  Gives,
-  OnFailure,
-  OnSuccess,
-  RetryException,
-  Succeed,
-  SucceedNow
-} from './primitives'
+import { DieException, Effect, Gives, RetryException } from './primitives'
 
 export const MaxFrames = 200
 
@@ -38,31 +28,27 @@ export const MaxFrames = 200
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export const succeed: <A>(a: A) => STM<unknown, never, A> = _.succeed
+export const succeed: <A>(a: A) => STM<unknown, never, A> = _.succeedNow
 
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export const succeedWith: <A>(a: () => A) => STM<unknown, never, A> = _.succeedWith
+export const succeedWith: <A>(a: () => A) => STM<unknown, never, A> = _.succeed
 
 /**
  * Returns a value that models failure in the transaction.
  */
-export const fail: <E>(e: E) => STM<unknown, E, never> = _.fail
+export const failNow: <E>(e: E) => STM<unknown, E, never> = _.failNow
 
 /**
  * Returns a value that models failure in the transaction.
  */
-export function failWith<E>(e: () => E): STM<unknown, E, never> {
-  return new Effect(() => {
-    throw new FailException(e())
-  })
-}
+export const fail: <E>(e: () => E) => STM<unknown, E, never> = _.fail
 
 /**
  * Kills the fiber running the effect.
  */
-export function die(u: unknown): STM<unknown, never, never> {
+export function dieNow(u: unknown): STM<unknown, never, never> {
   return new Effect(() => {
     throw new DieException(u)
   })
@@ -71,7 +57,7 @@ export function die(u: unknown): STM<unknown, never, never> {
 /**
  * Kills the fiber running the effect.
  */
-export function dieWith(u: () => unknown): STM<unknown, never, never> {
+export function die(u: () => unknown): STM<unknown, never, never> {
   return new Effect(() => {
     throw new DieException(u())
   })
@@ -311,7 +297,7 @@ function _catch<N extends keyof E, K extends E[N] & string, E, R1, E1, A1>(
       if (tag in e && e[tag] === k) {
         return f(e as any)
       }
-      return fail(e as any)
+      return failNow(e as any)
     })
 }
 
@@ -330,7 +316,7 @@ export function catch_<N extends keyof E, K extends E[N] & string, E, R, A, R1, 
     if (tag in e && e[tag] === k) {
       return f(e as any)
     }
-    return fail(e as any)
+    return failNow(e as any)
   })
 }
 
@@ -358,7 +344,7 @@ export function catchTag_<K extends E['_tag'] & string, E extends { _tag: string
     if ('_tag' in e && e['_tag'] === k) {
       return f(e as any)
     }
-    return fail(e as any)
+    return failNow(e as any)
   })
 }
 
@@ -369,7 +355,7 @@ export function catchSome_<R, E, A, R1, E1, B>(
   stm: STM<R, E, A>,
   f: (e: E) => O.Option<STM<R1, E1, B>>
 ): STM<R1 & R, E | E1, A | B> {
-  return catchAll_(stm, (e): STM<R1, E | E1, A | B> => O.match_(f(e), () => fail(e), identity))
+  return catchAll_(stm, (e): STM<R1, E | E1, A | B> => O.match_(f(e), () => failNow(e), identity))
 }
 
 /**
@@ -437,7 +423,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(self: STM<R, E, A>) => STM<R, 
  * Maps from one error type to another.
  */
 export function mapError_<R, E, A, E1>(stm: STM<R, E, A>, f: (a: E) => E1): STM<R, E1, A> {
-  return matchM_(stm, (e) => fail(f(e)), succeed)
+  return matchM_(stm, (e) => failNow(f(e)), succeed)
 }
 
 /**
@@ -456,7 +442,7 @@ export function mapError<E, E1>(f: (a: E) => E1): <R, A>(stm: STM<R, E, A>) => S
 export function bimap_<R, E, A, E1, B>(stm: STM<R, E, A>, g: (e: E) => E1, f: (a: A) => B): STM<R, E1, B> {
   return matchM_(
     stm,
-    (e) => fail(g(e)),
+    (e) => failNow(g(e)),
     (a) => succeed(f(a))
   )
 }
@@ -557,7 +543,7 @@ export function continueOrFailM_<R, E, E1, A, R2, E2, A2>(
   e: E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ) {
-  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => fail(e)))
+  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failNow(e)))
 }
 
 /**
@@ -597,7 +583,7 @@ export function continueOrFailWithM_<R, E, E1, A, R2, E2, A2>(
   e: () => E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ) {
-  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failWith(e)))
+  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => fail(e)))
 }
 
 /**
@@ -713,7 +699,7 @@ export function commitEither<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
  * the specified message.
  */
 export function dieMessage(message: string): STM<unknown, never, never> {
-  return dieWith(() => new RuntimeException(message))
+  return die(() => new RuntimeException(message))
 }
 
 /**
@@ -787,7 +773,7 @@ export function filterOrDie_<R, E, A, B extends A>(
 ): STM<R, E, B>
 export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: (a: A) => unknown): STM<R, E, A>
 export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: unknown) {
-  return filterOrElse_(fa, p, (x) => dieWith(() => (f as (a: A) => unknown)(x)))
+  return filterOrElse_(fa, p, (x) => die(() => (f as (a: A) => unknown)(x)))
 }
 
 /**
@@ -817,7 +803,7 @@ export function filterOrFail_<R, E, E1, A, B extends A>(
 ): STM<R, E | E1, B>
 export function filterOrFail_<R, E, E1, A>(fa: STM<R, E, A>, p: Predicate<A>, failWith: (a: A) => E1): STM<R, E | E1, A>
 export function filterOrFail_<R, E, E1, A>(fa: STM<R, E, A>, p: Predicate<A>, failWith: unknown) {
-  return filterOrElse_(fa, p, (x) => fail((failWith as (a: A) => E1)(x)))
+  return filterOrElse_(fa, p, (x) => failNow((failWith as (a: A) => E1)(x)))
 }
 
 /**
@@ -895,7 +881,7 @@ export function filterOrDieMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, 
  * use all methods on the error channel, possibly before flipping back.
  */
 export function swap<R, E, A>(stm: STM<R, E, A>) {
-  return matchM_(stm, succeed, fail)
+  return matchM_(stm, succeed, failNow)
 }
 
 /**
@@ -983,7 +969,7 @@ export function foreach<A, R, E, B>(f: (a: A) => STM<R, E, B>): (it: Iterable<A>
  */
 export function fromEitherWith<E, A>(e: () => E.Either<E, A>): STM<unknown, E, A> {
   return defer(() => {
-    return E.match_(e(), fail, succeed)
+    return E.match_(e(), failNow, succeed)
   })
 }
 
@@ -991,7 +977,7 @@ export function fromEitherWith<E, A>(e: () => E.Either<E, A>): STM<unknown, E, A
  * Lifts an `Either` into a `STM`.
  */
 export function fromEither<E, A>(e: E.Either<E, A>): STM<unknown, E, A> {
-  return E.match_(e, fail, succeed)
+  return E.match_(e, failNow, succeed)
 }
 
 /**
@@ -1000,8 +986,8 @@ export function fromEither<E, A>(e: E.Either<E, A>): STM<unknown, E, A> {
 export function get<R, E, A>(stm: STM<R, E, O.Option<A>>): STM<R, O.Option<E>, A> {
   return matchM_(
     stm,
-    (x) => fail(O.some(x)),
-    O.match(() => fail(O.none()), succeed)
+    (x) => failNow(O.some(x)),
+    O.match(() => failNow(O.none()), succeed)
   )
 }
 
@@ -1012,11 +998,11 @@ export function get<R, E, A>(stm: STM<R, E, O.Option<A>>): STM<R, O.Option<E>, A
 export function head<R, E, A>(stm: STM<R, E, Iterable<A>>): STM<R, O.Option<E>, A> {
   return matchM_(
     stm,
-    (x) => fail(O.some(x)),
+    (x) => failNow(O.some(x)),
     (x) => {
       const it   = x[Symbol.iterator]()
       const next = it.next()
-      return next.done ? fail(O.none()) : succeed(next.value)
+      return next.done ? failNow(O.none()) : succeed(next.value)
     }
   )
 }
@@ -1056,8 +1042,8 @@ export function isSuccess<R, E, A>(stm: STM<R, E, A>) {
 export function left<R, E, B, C>(stm: STM<R, E, E.Either<B, C>>): STM<R, O.Option<E>, B> {
   return matchM_(
     stm,
-    (e) => fail(O.some(e)),
-    E.match(succeed, () => fail(O.none()))
+    (e) => failNow(O.some(e)),
+    E.match(succeed, () => failNow(O.none()))
   )
 }
 
@@ -1067,7 +1053,7 @@ export function left<R, E, B, C>(stm: STM<R, E, E.Either<B, C>>): STM<R, O.Optio
 export function leftOrFail_<R, E, B, C, E1>(stm: STM<R, E, E.Either<B, C>>, orFail: (c: C) => E1) {
   return bind_(
     stm,
-    E.match(succeed, (x) => failWith(() => orFail(x)))
+    E.match(succeed, (x) => fail(() => orFail(x)))
   )
 }
 

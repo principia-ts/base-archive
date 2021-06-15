@@ -34,7 +34,7 @@ export { Sink }
  * Creates a sink from a Push
  */
 export function fromPush<R, E, I, L, Z>(push: Push.Push<R, E, I, L, Z>): Sink<R, E, I, L, Z> {
-  return new Sink(M.succeed(push))
+  return new Sink(M.succeedNow(push))
 }
 
 /**
@@ -174,7 +174,7 @@ export const drain: Sink<unknown, never, unknown, never, void> = dropLeftover(fo
  */
 export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
   return new Sink(
-    M.succeed(
+    M.succeedNow(
       O.match(
         () => Push.emit(O.none(), C.empty()),
         (is) => (C.isEmpty(is) ? Push.more : Push.emit(C.head(is), C.drop_(is, 1)))

@@ -264,32 +264,34 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
 
   switch (layer._tag) {
     case LayerTag.Fresh: {
-      return M.succeed(() => build(layer.layer))
+      return M.succeedNow(() => build(layer.layer))
     }
     case LayerTag.FromManaged: {
-      return M.succeed(() => layer.managed)
+      return M.succeedNow(() => layer.managed)
     }
     case LayerTag.Defer: {
-      return M.succeed((memo) => memo.getOrElseMemoize(layer.factory()))
+      return M.succeedNow((memo) => memo.getOrElseMemoize(layer.factory()))
     }
     case LayerTag.FMap: {
-      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(layer.layer), layer.f))
+      return M.succeedNow((memo) => M.map_(memo.getOrElseMemoize(layer.layer), layer.f))
     }
     case LayerTag.Bind: {
-      return M.succeed((memo) => M.bind_(memo.getOrElseMemoize(layer.layer), (a) => memo.getOrElseMemoize(layer.f(a))))
+      return M.succeedNow((memo) =>
+        M.bind_(memo.getOrElseMemoize(layer.layer), (a) => memo.getOrElseMemoize(layer.f(a)))
+      )
     }
     case LayerTag.CrossWithPar: {
-      return M.succeed((memo) =>
+      return M.succeedNow((memo) =>
         M.crossWithPar_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
       )
     }
     case LayerTag.CrossWithSeq: {
-      return M.succeed((memo) =>
+      return M.succeedNow((memo) =>
         M.crossWith_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
       )
     }
     case LayerTag.AllPar: {
-      return M.succeed((memo) => {
+      return M.succeedNow((memo) => {
         return pipe(
           M.foreachPar_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
@@ -297,7 +299,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
       })
     }
     case LayerTag.AllSeq: {
-      return M.succeed((memo) => {
+      return M.succeedNow((memo) => {
         return pipe(
           M.foreach_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
@@ -305,7 +307,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
       })
     }
     case LayerTag.Fold: {
-      return M.succeed((memo) =>
+      return M.succeedNow((memo) =>
         M.matchCauseM_(
           memo.getOrElseMemoize(layer.layer),
           (e) =>
@@ -342,11 +344,11 @@ export function build<R, E, A>(layer: Layer<R, E, A>): M.Managed<R, E, A> {
  * Constructs a layer from the specified value.
  */
 export function succeed<A>(tag: H.Tag<A>): (a: A) => Layer<unknown, never, H.Has<A>> {
-  return (resource) => fromManaged(tag)(M.succeed(resource))
+  return (resource) => fromManaged(tag)(M.succeedNow(resource))
 }
 
 export function fail<E>(e: E): Layer<unknown, E, never> {
-  return fromRawManaged(M.fail(e))
+  return fromRawManaged(M.failNow(e))
 }
 
 export function identity<R>(): Layer<R, never, R> {
@@ -873,7 +875,7 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * unchecked and not a part of the type of the layer.
  */
 export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
-  return catchAll_(la, second<E>()['>=>'](fromRawFunctionM((e: E) => I.die(e))))
+  return catchAll_(la, second<E>()['>=>'](fromRawFunctionM((e: E) => I.dieNow(e))))
 }
 
 /**

@@ -3,7 +3,7 @@
 import type { Managed } from '../core'
 
 import * as Iter from '../../Iterable'
-import { succeed } from '../core'
+import { succeedNow } from '../core'
 import { crossWithPar_ } from './apply-par'
 
 /**
@@ -20,7 +20,7 @@ export function mergeAllPar_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): Managed<R, E, B> {
-  return Iter.foldl_(mas, succeed(b) as Managed<R, E, B>, (b, a) => crossWithPar_(b, a, f))
+  return Iter.foldl_(mas, succeedNow(b) as Managed<R, E, B>, (b, a) => crossWithPar_(b, a, f))
 }
 
 /**

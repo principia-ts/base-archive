@@ -190,13 +190,13 @@ export function foldM_<R, E, T, R1, E1, Z>(
     Suite: ({ label, specs, exec }) =>
       M.matchCauseM_(
         specs,
-        (c) => f(new SuiteCase(label, M.halt(c), exec)),
+        (c) => f(new SuiteCase(label, M.haltNow(c), exec)),
         flow(
           M.foreachExec(
             O.getOrElse_(exec, () => defExec),
             (spec) => M.release(foldM_(spec, f, defExec))
           ),
-          M.bind((z) => f(new SuiteCase(label, M.succeed(C.toArray(z)), exec)))
+          M.bind((z) => f(new SuiteCase(label, M.succeedNow(C.toArray(z)), exec)))
         )
       ),
     Test: f
@@ -216,7 +216,7 @@ export function foreachExec_<R, E, T, R1, E1, A>(
         M.matchCause_(
           specs,
           (e) => test(label, onFailure(e), TestAnnotationMap.empty),
-          (t) => suite(label, M.succeed(t), exec)
+          (t) => suite(label, M.succeedNow(t), exec)
         ),
       Test: (t) =>
         I.toManaged_(
@@ -357,7 +357,7 @@ export function whenM_<R, E, R1, E1>(
         M.ifM_(
           I.toManaged_(b),
           () => specs,
-          () => M.succeed(A.empty<Spec<R & R1, E | E1, TestSuccess>>())
+          () => M.succeedNow(A.empty<Spec<R & R1, E | E1, TestSuccess>>())
         ),
         exec
       ),

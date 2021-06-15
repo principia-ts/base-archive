@@ -21,7 +21,7 @@ import {
   bind_,
   checkInterruptible,
   deferTotal,
-  die,
+  dieNow,
   effectAsync,
   effectAsyncOption,
   effectTotal,
@@ -331,7 +331,7 @@ export function effectAsyncInterruptPromise<R, E, A>(
 function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
   return effectAsync(
     traceAs(promise, (resolve) => {
-      promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+      promise().then(flow(pure, resolve)).catch(flow(dieNow, resolve))
     })
   )
 }

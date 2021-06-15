@@ -857,7 +857,7 @@ export function partitionMapM_<R, E, A, R1, E1, B, C>(
       )
     ),
     M.bind(([q1, q2]) =>
-      M.succeed(
+      M.succeedNow(
         tuple(
           pipe(fromQueueWithShutdown_(q1), flattenExitOption, collectLeft),
           pipe(fromQueueWithShutdown_(q2), flattenExitOption, collectRight)

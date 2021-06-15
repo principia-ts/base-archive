@@ -50,21 +50,21 @@ export function transducer<R, E, I, O, R1>(
  * Creates a transducer that always fails with the specified failure.
  */
 export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.failNow(e)))
+  return new Transducer(M.succeedNow((_) => I.failNow(e)))
 }
 
 /**
  * Creates a transducer that always dies with the specified exception.
  */
 export function die(e: Error): Transducer<unknown, never, unknown, never> {
-  return new Transducer(M.succeed((_) => I.die(e)))
+  return new Transducer(M.succeedNow((_) => I.dieNow(e)))
 }
 
 /**
  * Creates a transducer that always fails with the specified cause.
  */
 export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.haltNow(c)))
+  return new Transducer(M.succeedNow((_) => I.haltNow(c)))
 }
 
 /**
@@ -80,14 +80,14 @@ export function identity<I>(): Transducer<unknown, never, I, I> {
 export function fromPush<R, E, I, O>(
   push: (input: O.Option<Chunk<I>>) => I.IO<R, E, Chunk<O>>
 ): Transducer<R, E, I, O> {
-  return new Transducer(M.succeed(push))
+  return new Transducer(M.succeedNow(push))
 }
 
 /**
  * Creates a transducer that always evaluates the specified effect.
  */
 export function fromEffect<R, E, A>(io: I.IO<R, E, A>): Transducer<R, E, unknown, A> {
-  return new Transducer(M.succeed((_: any) => I.map_(io, C.single)))
+  return new Transducer(M.succeedNow((_: any) => I.map_(io, C.single)))
 }
 
 /**

@@ -130,31 +130,35 @@ export function isRetryException(u: unknown): u is RetryException {
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export function succeed<A>(a: A): STM<unknown, never, A> {
+export function succeedNow<A>(a: A): STM<unknown, never, A> {
   return new SucceedNow(a)
 }
 
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export function succeedWith<A>(a: () => A): STM<unknown, never, A> {
+export function succeed<A>(a: () => A): STM<unknown, never, A> {
   return new Succeed(a)
+}
+
+export function fail<E>(e: () => E): STM<unknown, E, never> {
+  return new Effect(() => {
+    throw new FailException(e())
+  })
 }
 
 /**
  * Returns a value that models failure in the transaction.
  */
-export function fail<E>(e: E): STM<unknown, E, never> {
-  return new Effect(() => {
-    throw new FailException(e)
-  })
+export function failNow<E>(e: E): STM<unknown, E, never> {
+  return fail(() => e)
 }
 
 /**
  * Maps the value produced by the effect.
  */
 export function map_<R, E, A, B>(self: STM<R, E, A>, f: (a: A) => B): STM<R, E, B> {
-  return bind_(self, (a) => succeed(f(a)))
+  return bind_(self, (a) => succeedNow(f(a)))
 }
 
 /**
@@ -183,7 +187,7 @@ export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
 ): STM<R1 & R2 & R, E1 | E2, B | C> {
   return bind_<R2 & R, E2, E.Either<C, A>, R1, E1, B | C>(
     catchAll_(map_(self, E.right), (e) => map_(g(e), E.left)),
-    E.match(succeed, f)
+    E.match(succeedNow, f)
   )
 }
 
@@ -195,7 +199,7 @@ export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
 export function ensuring_<R, E, A, R1, B>(self: STM<R, E, A>, finalizer: STM<R1, never, B>): STM<R & R1, E, A> {
   return matchM_(
     self,
-    (e) => bind_(finalizer, () => fail(e)),
-    (a) => bind_(finalizer, () => succeed(a))
+    (e) => bind_(finalizer, () => failNow(e)),
+    (a) => bind_(finalizer, () => succeedNow(a))
   )
 }

@@ -195,7 +195,7 @@ export function unsafeMake(permits: number): Semaphore {
 }
 
 function assertNonNegative(n: number, fn: string) {
-  return n < 0 ? I.die(new NegativeArgument(`Unexpected negative value ${n} passed to ${fn}.`, fn)) : I.unit()
+  return n < 0 ? I.dieNow(new NegativeArgument(`Unexpected negative value ${n} passed to ${fn}.`, fn)) : I.unit()
 }
 
 class NegativeArgument extends IllegalArgumentError {

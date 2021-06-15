@@ -402,7 +402,7 @@ export function fail<E = never, A = never>(e: () => E): IO<unknown, E, A> {
  *
  * @trace call
  */
-export function die(e: unknown): UIO<never> {
+export function dieNow(e: unknown): UIO<never> {
   const trace = accessCallTrace()
   return haltWith(traceFrom(trace, (trace) => C.traced(C.die(e), trace())))
 }
@@ -417,7 +417,7 @@ export function die(e: unknown): UIO<never> {
  *
  * @trace 0
  */
-export function dieWith<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
+export function die<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
   return haltWith(traceAs(e, (trace) => C.traced(C.die(e()), trace())))
 }
 
@@ -427,7 +427,7 @@ export function dieWith<E = never, A = never>(e: () => unknown): IO<unknown, E, 
  * because a defect has been detected in the code.
  */
 export function dieMessage(message: string): FIO<never, never> {
-  return die(new RuntimeException(message))
+  return dieNow(new RuntimeException(message))
 }
 
 /**
@@ -541,7 +541,7 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
  */
 export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
   return effectAsync((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+    promise().then(flow(pure, resolve)).catch(flow(dieNow, resolve))
   })
 }
 
@@ -1982,7 +1982,7 @@ export function filterOrDie_<R, E, A, B extends A>(
 export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
 export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: unknown): IO<R, E, A> {
   const trace = accessCallTrace()
-  return filterOrElse_(fa, predicate, traceFrom(trace, flow(dieWith as (a: A) => unknown, die)))
+  return filterOrElse_(fa, predicate, traceFrom(trace, flow(dieWith as (a: A) => unknown, dieNow)))
 }
 
 /**
@@ -2977,7 +2977,7 @@ export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
  * @trace 1
  */
 export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
-  return matchM_(ma, traceAs(f, flow(f, die)), succeedNow)
+  return matchM_(ma, traceAs(f, flow(f, dieNow)), succeedNow)
 }
 
 /**
@@ -3197,7 +3197,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   const trace = accessCallTrace()
   return catchAll_(
     fa,
-    traceFrom(trace, (e) => O.match_(pf(e), () => die(f(e)), failNow))
+    traceFrom(trace, (e) => O.match_(pf(e), () => dieNow(f(e)), failNow))
   )
 }
 

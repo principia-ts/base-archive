@@ -67,7 +67,7 @@ export class Promise<E, A> {
    * Kills the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  die = (e: Error): I.UIO<boolean> => this.completeWith(I.die(e))
+  die = (e: Error): I.UIO<boolean> => this.completeWith(I.dieNow(e))
 
   /**
    * Fails the promise with the specified error, which will be propagated to all

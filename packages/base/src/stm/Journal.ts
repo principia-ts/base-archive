@@ -165,7 +165,7 @@ export function tryCommit<R, E, A>(fiberId: FiberId, stm: STM<R, E, A>, r: R): T
       return completeTodos(I.failNow(value.value), journal)
     }
     case DieTypeId: {
-      return completeTodos(I.die(value.value), journal)
+      return completeTodos(I.dieNow(value.value), journal)
     }
   }
 }

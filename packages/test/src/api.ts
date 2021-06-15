@@ -97,7 +97,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   label: string,
   ...specs: Specs
 ): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return Spec.suite(label, M.succeed(specs), O.none())
+  return Spec.suite(label, M.succeedNow(specs), O.none())
 }
 
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {

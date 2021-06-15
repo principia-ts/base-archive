@@ -1132,7 +1132,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           }
         } catch (e) {
           this.setInterrupting(true)
-          current = I.concrete(I.die(e))
+          current = I.concrete(I.dieNow(e))
         }
       }
     } finally {
