@@ -42,6 +42,10 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
       () => that
     );
 
+  readonly ['<$>'] = <OutDone2>(
+    f: (_: OutDone) => OutDone2
+  ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> => map_(this, f);
+
   readonly ['$>'] = <OutDone2>(z2: OutDone2): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> =>
     map_(this, () => z2);
 
