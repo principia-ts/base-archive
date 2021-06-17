@@ -1,18 +1,23 @@
-import * as C from '../src/Chunk'
-import { Console } from '../src/Console'
-import * as S from '../src/experimental/Stream'
-import { flow, pipe } from '../src/function'
+import { pipe } from '@principia/base/function'
+
+import { tag } from '../src/Has'
 import * as I from '../src/IO'
+import { debug } from '../src/IOAspect'
 
-const s1 = S.fromChunk(C.range(0, 10))
-const s2 = (n: number) => S.fromEffect(I.delay(100)(I.succeed(n * 2)))
+interface ServiceX {
+  readonly x: number
+}
+const xTag = tag<ServiceX>()
 
-pipe(
-  s1,
-  S.bindPar(s2, 10),
-  S.runCollect,
-  I.tap(flow(C.toArray, Console.put)),
-  I.timed,
-  I.tap(([time]) => Console.put(time)),
-  I.run((ex) => console.log(ex))
+interface ServiceY {
+  readonly y: number
+}
+const yTag = tag<ServiceY>()
+
+I.run_(
+  pipe(
+    I.askServicesT(xTag, yTag),
+    I.map(([x, y]) => x.x + y.y),
+    I.giveServicesT(xTag, yTag)({ x: 1 }, { y: 2 })
+  )['@@'](debug)
 )
