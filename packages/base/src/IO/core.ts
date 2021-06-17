@@ -943,6 +943,72 @@ export function match<E, A, B, C>(
   return (ma) => match_(ma, onFailure, onSuccess)
 }
 
+/**
+ * A more powerful version of `match_` that allows recovering from any kind of failure except interruptions.
+ *
+ * @trace 1
+ * @trace 2
+ */
+export function matchCause_<R, E, A, A1, A2>(
+  ma: IO<R, E, A>,
+  onFailure: (cause: Cause<E>) => A1,
+  onSuccess: (a: A) => A2
+): IO<R, never, A1 | A2> {
+  return matchCauseM_(ma, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, pure)))
+}
+
+/**
+ * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
+ *
+ * @dataFirst matchCause_
+ * @trace 0
+ * @trace 1
+ */
+export function matchCause<E, A, A1, A2>(
+  onFailure: (cause: Cause<E>) => A1,
+  onSuccess: (a: A) => A2
+): <R>(ma: IO<R, E, A>) => IO<R, never, A1 | A2> {
+  return (ma) => matchCause_(ma, onFailure, onSuccess)
+}
+
+/**
+ * A version of `foldM` that gives you the (optional) trace of the error.
+ *
+ * @trace 1
+ * @trace 2
+ */
+export function matchTraceM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+  ma: IO<R, E, A>,
+  onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
+  onSuccess: (a: A) => IO<R2, E2, A2>
+): IO<R & R1 & R2, E1 | E2, A1 | A2> {
+  return matchCauseM_(
+    ma,
+    traceAs(
+      onFailure,
+      flow(
+        C.failureTraceOrCause,
+        E.match(([e, trace]) => onFailure(e, trace), halt)
+      )
+    ),
+    onSuccess
+  )
+}
+
+/**
+ * A version of `foldM` that gives you the (optional) trace of the error.
+ *
+ * @dataFirst matchTraceM_
+ * @trace 0
+ * @trace 1
+ */
+export function matchTraceM<E, A, R1, E1, A1, R2, E2, A2>(
+  onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
+  onSuccess: (a: A) => IO<R2, E2, A2>
+): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
+  return (ma) => matchTraceM_(ma, onFailure, onSuccess)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Functor IO
@@ -1746,7 +1812,7 @@ export function collectM<A, R1, E1, A1, E2>(
 /**
  * @trace call
  */
-export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
+export function composel_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
   return bind_(
     that,
@@ -1755,18 +1821,38 @@ export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>):
 }
 
 /**
- * @dataFirst compose_
+ * @dataFirst composel_
  * @trace call
  */
-export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
+export function composel<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
-  return (me) => traceCall(compose_, trace)(me, that)
+  return (me) => traceCall(composel_, trace)(me, that)
+}
+
+/**
+ * @trace call
+ */
+export function composer_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return pipe(ra, bind(traceFrom(trace, (a) => giveAll_(ab, a))))
+}
+
+/**
+ * @dataFirst composer_
+ * @trace call
+ */
+export function composer<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return (ra) => traceCall(composer_, trace)(ra, ab)
 }
 
 export function condM_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
   return b ? onTrue : bind_(onFalse, fail)
 }
 
+/**
+ * @dataFirst condM_
+ */
 export function condM<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (b: boolean) => IO<R & R1, E, A> {
   return (b) => condM_(b, onTrue, onFalse)
 }
@@ -2126,34 +2212,6 @@ export function bindError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma:
 }
 
 /**
- * A more powerful version of `match_` that allows recovering from any kind of failure except interruptions.
- *
- * @trace 1
- * @trace 2
- */
-export function matchCause_<R, E, A, A1, A2>(
-  ma: IO<R, E, A>,
-  onFailure: (cause: Cause<E>) => A1,
-  onSuccess: (a: A) => A2
-): IO<R, never, A1 | A2> {
-  return matchCauseM_(ma, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, pure)))
-}
-
-/**
- * A more powerful version of `match` that allows recovering from any kind of failure except interruptions.
- *
- * @dataFirst matchCause_
- * @trace 0
- * @trace 1
- */
-export function matchCause<E, A, A1, A2>(
-  onFailure: (cause: Cause<E>) => A1,
-  onSuccess: (a: A) => A2
-): <R>(ma: IO<R, E, A>) => IO<R, never, A1 | A2> {
-  return (ma) => matchCause_(ma, onFailure, onSuccess)
-}
-
-/**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
  * produced IOs sequentially.
  *
@@ -2349,10 +2407,7 @@ export function foldr<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i: Ite
  */
 export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
   const trace = accessCallTrace()
-  return bind_(
-    ma,
-    traceFrom(trace, () => forever(ma))
-  )
+  return pipe(ma, apr(yieldNow), traceCall(apr, trace)(forever(ma)))
 }
 
 /**

@@ -355,6 +355,10 @@ export const failed: <E>(cause: Cause<E>) => boolean = flow(
   O.getOrElse(() => false)
 )
 
+export function isFail<E>(cause: Cause<E>): cause is Fail<E> {
+  return cause._tag === CauseTag.Fail
+}
+
 /**
  */
 export function isThen<E>(cause: Cause<E>): cause is Then<E> {
@@ -365,6 +369,10 @@ export function isThen<E>(cause: Cause<E>): cause is Then<E> {
  */
 export function isBoth<E>(cause: Cause<E>): cause is Both<E> {
   return cause._tag === CauseTag.Both
+}
+
+export function isTraced<E>(cause: Cause<E>): cause is Traced<E> {
+  return cause._tag === CauseTag.Traced
 }
 
 /**
@@ -1226,6 +1234,29 @@ export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
     O.map(E.left),
     O.getOrElse(() => E.right(cause as Cause<never>)) // no E inside this cause, can safely cast
   )
+}
+
+/**
+ * Returns the `E` associated with the first `Fail` in this `Cause` if one
+ * exists, along with its (optional) trace.
+ */
+export function failureTraceOption<E>(cause: Cause<E>): O.Option<readonly [E, O.Option<Trace>]> {
+  return find_(cause, (c) =>
+    isTraced(c) && isFail(c.cause)
+      ? O.some([c.cause.value, O.some(c.trace)])
+      : isFail(c)
+      ? O.some([c.value, O.none()])
+      : O.none()
+  )
+}
+
+/**
+ * Retrieve the first checked error and its trace on the `Left` if available,
+ * if there are no checked errors return the rest of the `Cause`
+ * that is known to contain only `Die` or `Interrupt` causes.
+ */
+export function failureTraceOrCause<E>(cause: Cause<E>): E.Either<readonly [E, O.Option<Trace>], Cause<never>> {
+  return O.match_(failureTraceOption(cause), () => E.right(cause as Cause<never>), E.left)
 }
 
 /**
