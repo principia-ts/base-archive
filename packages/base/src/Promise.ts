@@ -16,7 +16,15 @@ import * as P from './prelude'
 import { AtomicReference } from './util/support/AtomicReference'
 
 export class Promise<E, A> {
-  constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: ReadonlyArray<FiberId>) {}
+  constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: ReadonlyArray<FiberId>) {
+    this.fulfillWith = this.fulfillWith.bind(this)
+    this.fulfill     = this.fulfill.bind(this)
+    this.done        = this.done.bind(this)
+    this.die         = this.die.bind(this)
+    this.fail        = this.fail.bind(this)
+    this.halt        = this.halt.bind(this)
+    this.succeed     = this.succeed.bind(this)
+  }
 
   /**
    * Completes the promise with the specified effect. If the promise has
@@ -29,10 +37,10 @@ export class Promise<E, A> {
    * case te meaning of the "exactly once" guarantee of `Promise` is that the
    * promise can be completed with exactly one effect. For a version that
    * completes the promise with the result of an IO see
-   * `Promise.complete`.
+   * `Promise.fulfill`.
    */
-  completeWith = (io: FIO<E, A>): I.UIO<boolean> =>
-    I.effectTotal(() => {
+  fulfillWith(io: FIO<E, A>): I.UIO<boolean> {
+    return I.effectTotal(() => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -47,6 +55,7 @@ export class Promise<E, A> {
         }
       }
     })
+  }
 
   /**
    * Completes the promise with the result of the specified effect. If the
@@ -55,31 +64,41 @@ export class Promise<E, A> {
    * Note that `Promise.completeWith` will be much faster, so consider using
    * that if you do not need to memoize the result of the specified effect.
    */
-  complete = (effect: FIO<E, A>): I.UIO<boolean> => to(this)(effect)
+  fulfill<R>(effect: I.IO<R, E, A>): I.URIO<R, boolean> {
+    return uninterruptibleMask(({ restore }) => I.bind_(I.result(restore(effect)), this.done))
+  }
 
   /**
    * Exits the promise with the specified exit, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  done = (ex: Exit<E, A>): I.UIO<boolean> => this.completeWith(I.done(ex))
+  done(ex: Exit<E, A>): I.UIO<boolean> {
+    return this.fulfillWith(I.done(ex))
+  }
 
   /**
    * Kills the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  die = (e: Error): I.UIO<boolean> => this.completeWith(I.die(e))
+  die(defect: unknown): I.UIO<boolean> {
+    return this.fulfillWith(I.die(defect))
+  }
 
   /**
    * Fails the promise with the specified error, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  fail = (e: E): I.UIO<boolean> => this.completeWith(I.fail(e))
+  fail(e: E): I.UIO<boolean> {
+    return this.fulfillWith(I.fail(e))
+  }
 
   /**
    * Halts the promise with the specified cause, which will be propagated to all
    * fibers waiting on the value of the promise.
    */
-  halt = (e: Cause<E>): I.UIO<boolean> => this.complete(I.halt(e))
+  halt(e: Cause<E>): I.UIO<boolean> {
+    return this.fulfill(I.halt(e))
+  }
 
   /**
    * Completes the promise with interruption. This will interrupt all fibers
@@ -88,7 +107,7 @@ export class Promise<E, A> {
   get interrupt(): I.UIO<boolean> {
     return P.pipe(
       I.fiberId(),
-      I.bind((id) => this.completeWith(interruptAsIO(id)))
+      I.bind((id) => this.fulfillWith(interruptAsIO(id)))
     )
   }
 
@@ -96,15 +115,18 @@ export class Promise<E, A> {
    * Completes the promise with interruption. This will interrupt all fibers
    * waiting on the value of the promise as by the specified fiber.
    */
-  interruptAs = (id: FiberId): I.UIO<boolean> => this.completeWith(interruptAsIO(id))
+  interruptAs(id: FiberId): I.UIO<boolean> {
+    return this.fulfillWith(interruptAsIO(id))
+  }
 
-  private interruptJoiner = (joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> =>
-    I.effectTotal(() => {
+  private interruptJoiner(joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> {
+    return I.effectTotal(() => {
       const state = this.state.get
       if (state._tag === 'Pending') {
         this.state.set(new Pending(state.joiners.filter((j) => j !== joiner)))
       }
     })
+  }
 
   /**
    * Retrieves the value of the promise, suspending the fiber running the action
@@ -156,7 +178,7 @@ export class Promise<E, A> {
    * Completes the promise with the specified value.
    */
   succeed(a: A): I.UIO<boolean> {
-    return this.completeWith(I.succeed(a))
+    return this.fulfillWith(I.succeed(a))
   }
 
   /**
@@ -198,8 +220,21 @@ export class Pending<E, A> {
  * Note that `Promise.completeWith` will be much faster, so consider using
  * that if you do not need to memoize the result of the specified effect.
  */
-export function complete<E, A>(e: FIO<E, A>) {
-  return (promise: Promise<E, A>) => promise.complete(e)
+export function fulfill_<R, E, A>(promise: Promise<E, A>, io: I.IO<R, E, A>): I.IO<R, never, boolean> {
+  return promise.fulfill(io)
+}
+
+/**
+ * Completes the promise with the result of the specified effect. If the
+ * promise has already been completed, the method will produce false.
+ *
+ * Note that `Promise.completeWith` will be much faster, so consider using
+ * that if you do not need to memoize the result of the specified effect.
+ *
+ * @dataFirst fulfill_
+ */
+export function fulfill<R, E, A>(io: I.IO<R, E, A>): (promise: Promise<E, A>) => I.IO<R, never, boolean> {
+  return (promise) => promise.fulfill(io)
 }
 
 /**
@@ -215,8 +250,8 @@ export function complete<E, A>(e: FIO<E, A>) {
  * completes the promise with the result of an IO see
  * `Promise.complete`.
  */
-export function completeWith<E, A>(io: FIO<E, A>) {
-  return (promise: Promise<E, A>): I.UIO<boolean> => promise.completeWith(io)
+export function fulfillWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): I.UIO<boolean> {
+  return promise.fulfillWith(io)
 }
 
 /**
@@ -231,14 +266,26 @@ export function completeWith<E, A>(io: FIO<E, A>) {
  * promise can be completed with exactly one effect. For a version that
  * completes the promise with the result of an IO see
  * `Promise.complete`.
+ *
+ * @dataFirst fulfillWith_
  */
-export function completeWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): I.UIO<boolean> {
-  return promise.completeWith(io)
+export function fulfillWith<E, A>(io: FIO<E, A>) {
+  return (promise: Promise<E, A>): I.UIO<boolean> => promise.fulfillWith(io)
 }
 
 /**
  * Kills the promise with the specified error, which will be propagated to all
  * fibers waiting on the value of the promise.
+ */
+export function die_<E, A>(promise: Promise<E, A>, defect: unknown): I.UIO<boolean> {
+  return promise.die(defect)
+}
+
+/**
+ * Kills the promise with the specified error, which will be propagated to all
+ * fibers waiting on the value of the promise.
+ *
+ * @dataFirst die_
  */
 export function die(e: Error) {
   return <E, A>(promise: Promise<E, A>) => promise.die(e)
@@ -248,28 +295,54 @@ export function die(e: Error) {
  * Exits the promise with the specified exit, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function done<E, A>(e: Exit<E, A>) {
-  return (promise: Promise<E, A>): I.UIO<boolean> => promise.done(e)
+export function done_<E, A>(promise: Promise<E, A>, exit: Exit<E, A>): I.UIO<boolean> {
+  return promise.done(exit)
+}
+
+/**
+ * Exits the promise with the specified exit, which will be propagated to all
+ * fibers waiting on the value of the promise.
+ *
+ * @dataFirst done_
+ */
+export function done<E, A>(exit: Exit<E, A>): (promise: Promise<E, A>) => I.UIO<boolean> {
+  return (promise) => promise.done(exit)
 }
 
 /**
  * Fails the promise with the specified error, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function fail<E>(e: E) {
-  return <A>(promise: Promise<E, A>): I.UIO<boolean> => promise.fail(e)
-}
-
 export function fail_<E, A>(promise: Promise<E, A>, e: E): I.UIO<boolean> {
   return promise.fail(e)
+}
+
+/**
+ * Fails the promise with the specified error, which will be propagated to all
+ * fibers waiting on the value of the promise.
+ *
+ * @dataFirst fail_
+ */
+export function fail<E>(e: E): <A>(promise: Promise<E, A>) => I.UIO<boolean> {
+  return (promise) => promise.fail(e)
 }
 
 /**
  * Halts the promise with the specified cause, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function halt<E>(e: Cause<E>) {
-  return <A>(promise: Promise<E, A>): I.UIO<boolean> => promise.halt(e)
+export function halt_<E, A>(promise: Promise<E, A>, cause: Cause<E>): I.UIO<boolean> {
+  return promise.halt(cause)
+}
+
+/**
+ * Halts the promise with the specified cause, which will be propagated to all
+ * fibers waiting on the value of the promise.
+ *
+ * @dataFirst halt_
+ */
+export function halt<E>(cause: Cause<E>): <A>(promise: Promise<E, A>) => I.UIO<boolean> {
+  return (promise) => promise.halt(cause)
 }
 
 /**
@@ -284,8 +357,18 @@ export function interrupt<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
  * Completes the promise with interruption. This will interrupt all fibers
  * waiting on the value of the promise as by the specified fiber.
  */
-export function interruptAs(id: FiberId) {
-  return <E, A>(promise: Promise<E, A>): I.UIO<boolean> => promise.interruptAs(id)
+export function interruptAs_<E, A>(promise: Promise<E, A>, id: FiberId): I.UIO<boolean> {
+  return promise.interruptAs(id)
+}
+
+/**
+ * Completes the promise with interruption. This will interrupt all fibers
+ * waiting on the value of the promise as by the specified fiber.
+ *
+ * @dataFirst interruptAs_
+ */
+export function interruptAs(id: FiberId): <E, A>(promise: Promise<E, A>) => I.UIO<boolean> {
+  return (promise) => promise.interruptAs(id)
 }
 
 /**
@@ -321,15 +404,17 @@ export function poll<E, A>(promise: Promise<E, A>): I.UIO<Option<FIO<E, A>>> {
 /**
  * Completes the promise with the specified value.
  */
-export function succeed<A>(a: A) {
-  return <E>(promise: Promise<E, A>) => promise.succeed(a)
+export function succeed_<A, E>(promise: Promise<E, A>, a: A) {
+  return promise.succeed(a)
 }
 
 /**
  * Completes the promise with the specified value.
+ *
+ * @dataFirst succeed_
  */
-export function succeed_<A, E>(promise: Promise<E, A>, a: A) {
-  return promise.succeed(a)
+export function succeed<A>(a: A) {
+  return <E>(promise: Promise<E, A>) => promise.succeed(a)
 }
 
 /**
@@ -341,16 +426,6 @@ export function unsafeDone<E, A>(io: FIO<E, A>) {
 
 export function unsafePromise<E, A>(fiberId: FiberId) {
   return new Promise<E, A>(new AtomicReference(new Pending([])), [fiberId])
-}
-
-/**
- * Returns an IO that keeps or breaks a promise based on the result of
- * this effect. Synchronizes interruption, so if this effect is interrupted,
- * the specified promise will be interrupted, too.
- */
-export function to<E, A>(p: Promise<E, A>) {
-  return <R>(effect: I.IO<R, E, A>): I.IO<R, never, boolean> =>
-    uninterruptibleMask(({ restore }) => I.bind_(I.result(restore(effect)), (x) => p.done(x)))
 }
 
 /**

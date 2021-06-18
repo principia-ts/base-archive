@@ -10,7 +10,6 @@ import * as O from './Option'
 import * as P from './prelude'
 import * as Q from './Queue'
 import * as R from './Ref'
-import { withPermit } from './Semaphore'
 import * as S from './Semaphore'
 
 /**
@@ -135,7 +134,7 @@ export class DerivedAllM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A
 
   set(a: A): I.IO<RA, EA, void> {
     return this.use((value, _, setEither) =>
-      withPermit(value.semaphore)(P.pipe(value.get, I.bind(setEither(a)), I.bind(value.set)))
+      value.semaphore.withPermit(P.pipe(value.get, I.bind(setEither(a)), I.bind(value.set)))
     )
   }
 }
@@ -196,7 +195,7 @@ export class DerivedM<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, B
   }
 
   set(a: A): I.IO<RA, EA, void> {
-    return this.use((value, _, setEither) => withPermit(value.semaphore)(I.bind_(setEither(a), value.set)))
+    return this.use((value, _, setEither) => value.semaphore.withPermit(I.bind_(setEither(a), value.set)))
   }
 }
 
@@ -233,7 +232,7 @@ export class AtomicM<A> implements RefM<unknown, unknown, never, never, A, A> {
   }
 
   set(a: A): I.IO<unknown, never, void> {
-    return withPermit(this.semaphore)(this.set(a))
+    return this.semaphore.withPermit(this.set(a))
   }
 }
 
@@ -258,7 +257,7 @@ export function concrete<RA, RB, EA, EB, A>(_: RefM<RA, RB, EA, EB, A, A>) {
 export function refM<A>(a: A): UIO<URefM<A>> {
   return I.gen(function* (_) {
     const ref       = yield* _(R.ref(a))
-    const semaphore = yield* _(S.make(1))
+    const semaphore = yield* _(S.semaphore(1))
     return new AtomicM(ref, semaphore)
   })
 }
@@ -268,7 +267,7 @@ export function refM<A>(a: A): UIO<URefM<A>> {
  */
 export function unsafeRefM<A>(a: A): URefM<A> {
   const ref       = R.unsafeRef(a)
-  const semaphore = S.unsafeMake(1)
+  const semaphore = S.unsafeSemaphore(1)
   return new AtomicM(ref, semaphore)
 }
 
@@ -766,7 +765,7 @@ export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
               I.as(() => b)
             )
           ),
-          S.withPermit(atomic.semaphore)
+          atomic.semaphore.withPermit
         ),
       Derived: (derived) =>
         derived.use((value, getEither, setEither) =>
@@ -785,7 +784,7 @@ export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
                 )
               )
             ),
-            S.withPermit(value.semaphore)
+            value.semaphore.withPermit
           )
         ),
       DerivedAll: (derivedAll) =>
@@ -805,7 +804,7 @@ export function modifyM_<RA, RB, EA, EB, R1, E1, B, A>(
                 )
               )
             ),
-            S.withPermit(value.semaphore)
+            value.semaphore.withPermit
           )
         )
     })

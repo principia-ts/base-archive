@@ -17,11 +17,11 @@ import { foreachUnitPar_ } from './foreachUnitPar'
  */
 export function foreachUnitParN_<A, R, E>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
   return pipe(
-    Semaphore.make(n),
+    Semaphore.semaphore(n),
     I.bind((s) =>
       foreachUnitPar_(
         as,
-        traceAs(f, (a) => Semaphore.withPermit_(f(a), s))
+        traceAs(f, (a) => s.withPermit(f(a)))
       )
     )
   )

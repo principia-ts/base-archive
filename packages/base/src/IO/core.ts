@@ -15,13 +15,13 @@ import type { Monoid } from '../Monoid'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Option } from '../Option'
 import type { Predicate } from '../Predicate'
+import type { HasStruct, HasTuple, ServicesStruct, ServicesTuple } from '../prelude'
 import type { Refinement } from '../Refinement'
 import type { Supervisor } from '../Supervisor'
 import type { Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { ENGINE_METHOD_PKEY_ASN1_METHS, RSA_X931_PADDING } from 'constants'
 
 import * as A from '../Array/core'
 import { runAsyncEnv } from '../Async'
@@ -1085,6 +1085,45 @@ export function bind<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(ma: IO<R,
 }
 
 /**
+ * Returns an IO that effectfully "peeks" at the failure or success of
+ * this effect.
+ *
+ * @trace 1
+ * @trace 2
+ */
+export function bitap_<R, E, A, R1, E1, R2, E2>(
+  fa: IO<R, E, A>,
+  onFailure: (e: E) => IO<R1, E1, any>,
+  onSuccess: (a: A) => IO<R2, E2, any>
+): IO<R & R1 & R2, E | E1 | E2, A> {
+  return matchCauseM_(
+    fa,
+    (c) =>
+      E.match_(
+        C.failureOrCause(c),
+        (e) => bind_(onFailure(e), () => halt(c)),
+        (_) => halt(c)
+      ),
+    (a) => pipe(onSuccess(a), apr(succeed(a)))
+  )
+}
+
+/**
+ * Returns an IO that effectfully "peeks" at the failure or success of
+ * this effect.
+ *
+ * @dataFirst bitap_
+ * @trace 0
+ * @trace 1
+ */
+export function bitap<E, A, R1, E1, R2, E2>(
+  onFailure: (e: E) => IO<R1, E1, any>,
+  onSuccess: (a: A) => IO<R2, E2, any>
+): <R>(fa: IO<R, E, A>) => IO<R & R1 & R2, E | E1 | E2, A> {
+  return (fa) => bitap_(fa, onFailure, onSuccess)
+}
+
+/**
  * Removes one level of nesting from a nested `IO`
  *
  * @category Monad
@@ -1131,45 +1170,6 @@ export function tap_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, f: (a: A) => IO<R1, E1
  */
 export function tap<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
   return (fa) => tap_(fa, f)
-}
-
-/**
- * Returns an IO that effectfully "peeks" at the failure or success of
- * this effect.
- *
- * @trace 1
- * @trace 2
- */
-export function tapBoth_<R, E, A, R1, E1, R2, E2>(
-  fa: IO<R, E, A>,
-  onFailure: (e: E) => IO<R1, E1, any>,
-  onSuccess: (a: A) => IO<R2, E2, any>
-): IO<R & R1 & R2, E | E1 | E2, A> {
-  return matchCauseM_(
-    fa,
-    (c) =>
-      E.match_(
-        C.failureOrCause(c),
-        (e) => bind_(onFailure(e), () => halt(c)),
-        (_) => halt(c)
-      ),
-    (a) => pipe(onSuccess(a), apr(succeed(a)))
-  )
-}
-
-/**
- * Returns an IO that effectfully "peeks" at the failure or success of
- * this effect.
- *
- * @dataFirst tapBoth_
- * @trace 0
- * @trace 1
- */
-export function tapBoth<E, A, R1, E1, R2, E2>(
-  onFailure: (e: E) => IO<R1, E1, any>,
-  onSuccess: (a: A) => IO<R2, E2, any>
-): <R>(fa: IO<R, E, A>) => IO<R & R1 & R2, E | E1 | E2, A> {
-  return (fa) => tapBoth_(fa, onFailure, onSuccess)
 }
 
 /**
@@ -1495,20 +1495,34 @@ export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
   return bind_(ma, () => unit())
 }
 
+/**
+ * Recovers from the specified error
+ *
+ * @trace 3
+ */
 function catch_<N extends keyof E, K extends E[N] & string, R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   tag: N,
   k: K,
   f: (e: Extract<E, { [n in N]: K }>) => IO<R1, E1, A1>
 ): IO<R & R1, Exclude<E, { [n in N]: K }> | E1, A | A1> {
-  return catchAll_(ma, (e) => {
-    if (tag in e && e[tag] === k) {
-      return f(e as any)
-    }
-    return fail(e as any)
-  })
+  return catchAll_(
+    ma,
+    traceAs(f, (e) => {
+      if (tag in e && e[tag] === k) {
+        return f(e as any)
+      }
+      return fail(e as any)
+    })
+  )
 }
 
+/**
+ * Recovers from the specified error
+ *
+ * @dataFirst catch_
+ * @trace 2
+ */
 function _catch<N extends keyof E, K extends E[N] & string, E, R1, E1, A1>(
   tag: N,
   k: K,
@@ -1518,6 +1532,11 @@ function _catch<N extends keyof E, K extends E[N] & string, E, R1, E1, A1>(
 }
 export { _catch as catch }
 
+/**
+ * Recovers from the specified error
+ *
+ * @trace 2
+ */
 export function catchTag_<K extends E['_tag'] & string, R, E extends { _tag: string }, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   k: K,
@@ -1526,6 +1545,12 @@ export function catchTag_<K extends E['_tag'] & string, R, E extends { _tag: str
   return catch_(ma, '_tag', k, f)
 }
 
+/**
+ * Recovers from the specified error
+ *
+ * @dataFirst catchTag_
+ * @trace 1
+ */
 export function catchTag<K extends E['_tag'] & string, E extends { _tag: string }, R1, E1, A1>(
   k: K,
   f: (e: Extract<E, { _tag: K }>) => IO<R1, E1, A1>
@@ -2297,7 +2322,7 @@ export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>)
 }
 
 /**
- * Folds an `Iterable<A>` using an effectual function f, working sequentially from left to right.
+ * Folds an `Iterable<A>` using an effectful function f, working sequentially from left to right.
  *
  * @category Combinators
  * @since 1.0.0
@@ -2314,7 +2339,7 @@ export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<
 }
 
 /**
- * Folds an `Iterable<A>` using an effectual function f, working sequentially from left to right.
+ * Folds an `Iterable<A>` using an effectful function f, working sequentially from left to right.
  *
  * @category Combinators
  * @since 1.0.0
@@ -3960,19 +3985,6 @@ export function zipEnvSecond<R, E, A>(io: IO<R, E, A>): IO<R, E, readonly [A, R]
  * Service
  * -------------------------------------------------------------------------------------------------
  */
-
-type ServicesStruct<SS extends Record<string, Tag<any>>> = {
-  [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? T : never
-}
-type HasStruct<SS extends Record<string, Tag<any>>> = P.UnionToIntersection<
-  { [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]
->
-
-type ServicesTuple<SS extends ReadonlyArray<Tag<any>>> = { [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? T : never }
-
-type HasTuple<SS extends ReadonlyArray<Tag<any>>> = P.UnionToIntersection<
-  { [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS & number]
->
 
 /**
  * Maps the success value of this effect to a service.

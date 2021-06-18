@@ -15,7 +15,7 @@ import { uninterruptibleMask } from './interrupt'
  *
  * @trace call
  */
-export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
+export function fulfill_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
   const trace = accessCallTrace()
   return uninterruptibleMask(traceFrom(trace, ({ restore }) => bind_(result(restore(effect)), p.done)))
 }
@@ -27,7 +27,7 @@ export function to_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never
  *
  * @trace call
  */
-export function to<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
+export function fulfill<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
   const trace = accessCallTrace()
-  return (effect) => traceCall(to_, trace)(effect, p)
+  return (effect) => traceCall(fulfill_, trace)(effect, p)
 }

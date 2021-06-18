@@ -150,7 +150,7 @@ class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
   readonly _tag = ZTag.Fail
-  constructor(readonly error: Cause<E>) {
+  constructor(readonly cause: Cause<E>) {
     super()
   }
 }
@@ -236,26 +236,6 @@ type Concrete =
  * -------------------------------------------------------------------------------------------------
  */
 
-export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Z<W, S1, S2, unknown, never, A> {
-  return new Succeed(a)
-}
-
-export function effectTotal<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
-  return new EffectTotal(effect)
-}
-
-export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
-  return new Fail(cause)
-}
-
-export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
-  return halt(FS.single(e))
-}
-
-export function deferTotal<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
-  return new DeferTotal(ma)
-}
-
 export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
   return new DeferPartial(ma, P.identity)
 }
@@ -273,8 +253,16 @@ export function deferCatch<E1>(
   return (ma) => deferCatch_(ma, onThrow)
 }
 
+export function deferTotal<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
+  return new DeferTotal(ma)
+}
+
 export function effect<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
   return new EffectPartial(effect, P.identity)
+}
+
+export function effectTotal<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
+  return new EffectTotal(effect)
 }
 
 export function effectCatch_<A, E>(
@@ -288,6 +276,48 @@ export function effectCatch<E>(
   onThrow: (reason: unknown) => E
 ): <A>(effect: () => A) => Z<never, unknown, never, unknown, E, A> {
   return (effect) => effectCatch_(effect, onThrow)
+}
+
+export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
+  return halt(FS.single(e))
+}
+
+export function failWith<E>(e: () => E): Z<never, unknown, never, unknown, E, never> {
+  return haltWith(() => FS.single(e()))
+}
+
+export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
+  return E.match_(either, fail, succeed)
+}
+
+export function fromEitherWith<E, A>(either: () => E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
+  return deferTotal(() => fromEither(either()))
+}
+
+export function fromOption<A>(option: O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
+  return O.match_(option, () => fail(O.none()), succeed)
+}
+
+export function fromOptionWith<A>(option: () => O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
+  return deferTotal(() => fromOption(option()))
+}
+
+export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
+  return new Fail(cause)
+}
+
+export function haltWith<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
+  return deferTotal(() => halt(cause()))
+}
+
+export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Z<W, S1, S2, unknown, never, A> {
+  return new Succeed(a)
+}
+
+export function succeedWith<A, W = never, S1 = unknown, S2 = never, E = never>(
+  a: () => A
+): Z<W, S1, S2, unknown, E, A> {
+  return new EffectTotal(a)
 }
 
 /*
@@ -1484,10 +1514,10 @@ export function runAll_<W, S1, S2, E, A>(
         findNextErrorHandler()
         const nextInst = popContinuation()
         if (nextInst) {
-          current = nextInst.apply(Z.error)
+          current = nextInst.apply(Z.cause)
         } else {
           failed  = true
-          result  = Z.error
+          result  = Z.cause
           current = undefined
         }
         break

@@ -470,7 +470,9 @@ export function fromManagedConstructor<S>(
     (...tags) =>
       fromManaged(tag)(
         M.bind_(
-          M.fromEffect(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any)))),
+          M.fromEffect(
+            I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as I.IO<any, any, any>
+          ),
           (_) => _
         )
       )

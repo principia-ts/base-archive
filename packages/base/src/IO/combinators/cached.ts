@@ -15,8 +15,8 @@ import * as P from '../../Promise'
 import * as RefM from '../../RefM'
 import { tuple } from '../../tuple'
 import * as I from '../core'
+import { fulfill } from './fulfill'
 import { uninterruptibleMask } from './interrupt'
-import { to } from './to'
 
 /**
  * Returns an effect that, if evaluated, will return the cached result of
@@ -87,7 +87,7 @@ export function cached(timeToLive: number): <R, E, A>(ma: I.IO<R, E, A>) => URIO
 function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   return I.gen(function* (_) {
     const p = yield* _(P.promise<E, A>())
-    yield* _(to(p)(fa))
+    yield* _(fulfill(p)(fa))
     return O.some(tuple(start + ttl, p))
   })
 }

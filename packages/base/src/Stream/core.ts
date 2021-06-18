@@ -1833,7 +1833,7 @@ export function distributedWithDynamic_<R, E, A>(
     )
     const add       = yield* _(
       M.gen(function* (_) {
-        const queuesLock = yield* _(Semaphore.make(1))
+        const queuesLock = yield* _(Semaphore.semaphore(1))
         const newQueue   = yield* _(
           Ref.ref<I.UIO<readonly [symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
@@ -1845,7 +1845,7 @@ export function distributedWithDynamic_<R, E, A>(
           )
         )
         const finalize = (endTake: Ex.Exit<O.Option<E>, never>): I.UIO<void> =>
-          Semaphore.withPermit(queuesLock)(
+          queuesLock.withPermit(
             pipe(
               I.gen(function* (_) {
                 const queue = yield* _(Queue.boundedQueue<Ex.Exit<O.Option<E>, A>>(1))
@@ -1888,7 +1888,7 @@ export function distributedWithDynamic_<R, E, A>(
             M.fork
           )
         )
-        return Semaphore.withPermit(queuesLock)(I.flatten(newQueue.get))
+        return (queuesLock.withPermit)(I.flatten(newQueue.get))
       })
     )
     return add
@@ -2454,7 +2454,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
         const outQueue     = yield* _(
           I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
         )
-        const permits      = yield* _(Semaphore.make(n))
+        const permits      = yield* _(Semaphore.semaphore(n))
         const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
         // - The driver stream forks an inner fiber for each stream created
         //   by f, with an upper bound of n concurrent fibers, enforced by the semaphore.
@@ -2503,7 +2503,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
                   innerFailure.await,
                   I.makeInterruptible,
                   I.raceWith(
-                    Semaphore.withPermits(n, permits)(I.makeInterruptible(I.unit())),
+                    permits.withPermits(n, I.makeInterruptible(I.unit())),
                     (_, permitsAcquisition) =>
                       pipe(getChildren, I.bind(Fi.interruptAll), I.apr(I.asUnit(Fi.interrupt(permitsAcquisition)))),
                     (_, failureAwait) => pipe(outQueue.offer(Pull.end), I.apr(I.asUnit(Fi.interrupt(failureAwait))))
@@ -2548,7 +2548,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
           const outQueue     = yield* _(
             I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
           )
-          const permits      = yield* _(Semaphore.make(n))
+          const permits      = yield* _(Semaphore.semaphore(n))
           const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
           const cancelers    = yield* _(I.toManaged_(Queue.boundedQueue<P.Promise<never, void>>(n), (q) => q.shutdown))
           yield* _(
@@ -2593,7 +2593,7 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
                   pipe(
                     innerFailure.await,
                     I.raceWith(
-                      Semaphore.withPermits(n, permits)(I.unit()),
+                      permits.withPermits(n, I.unit()),
                       (_, permitsAcquisition) =>
                         pipe(getChildren, I.bind(Fi.interruptAll), I.apr(I.asUnit(Fi.interrupt(permitsAcquisition)))),
                       (_, failureAwait) => pipe(outQueue.offer(Pull.end), I.apr(I.asUnit(Fi.interrupt(failureAwait))))
@@ -4048,7 +4048,7 @@ export function mapMPar_(n: number) {
       M.gen(function* (_) {
         const out         = yield* _(Queue.boundedQueue<I.IO<R1, Option<E | E1>, B>>(n))
         const errorSignal = yield* _(P.promise<E1, never>())
-        const permits     = yield* _(Semaphore.make(n))
+        const permits     = yield* _(Semaphore.semaphore(n))
         yield* _(
           pipe(
             stream,
@@ -4061,8 +4061,8 @@ export function mapMPar_(n: number) {
                   pipe(
                     latch,
                     P.succeed<void>(undefined),
-                    I.apr(pipe(errorSignal.await, I.raceFirst(f(o)), I.tapCause(errorSignal.halt), I.to(p))),
-                    Semaphore.withPermit(permits),
+                    I.apr(pipe(errorSignal.await, I.raceFirst(f(o)), I.tapCause(errorSignal.halt), I.fulfill(p))),
+                    permits.withPermit,
                     I.fork
                   )
                 )
@@ -4071,7 +4071,7 @@ export function mapMPar_(n: number) {
             ),
             M.matchCauseM(flow(Pull.halt, out.offer, I.toManaged()), () =>
               pipe(
-                Semaphore.withPermits_(I.unit(), n, permits),
+                permits.withPermits(n, I.unit()),
                 I.bind(() => out.offer(Pull.end)),
                 I.toManaged()
               )

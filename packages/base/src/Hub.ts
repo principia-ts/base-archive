@@ -254,7 +254,7 @@ function _unsafeHub<A>(
   strategy: Strategy<A>
 ): UHub<A> {
   return new (class extends Hub<unknown, unknown, never, never, A, A> {
-    awaitShutdown = P.await(shutdownHook)
+    awaitShutdown = shutdownHook.await
     capacity      = hub.capacity
     isShutdown    = I.effectTotal(() => shutdownFlag.get)
     shutdown      = pipe(

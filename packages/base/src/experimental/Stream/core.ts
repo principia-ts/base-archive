@@ -2526,7 +2526,7 @@ export function distributedWithDynamic_<R, E, A>(
 
     const add = yield* _(
       M.gen(function* (_) {
-        const queuesLock = yield* _(Sem.make(1))
+        const queuesLock = yield* _(Sem.semaphore(1))
         const newQueue   = yield* _(
           Ref.ref<I.UIO<readonly [symbol, Q.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
@@ -2538,7 +2538,7 @@ export function distributedWithDynamic_<R, E, A>(
           )
         )
         const finalize = (endTake: Ex.Exit<O.Option<E>, never>): I.UIO<void> =>
-          Sem.withPermit(queuesLock)(
+          queuesLock.withPermit(
             pipe(
               I.gen(function* (_) {
                 const queue = yield* _(Q.boundedQueue<Ex.Exit<O.Option<E>, A>>(1))
@@ -2576,7 +2576,7 @@ export function distributedWithDynamic_<R, E, A>(
             M.fork
           )
         )
-        return Sem.withPermit(queuesLock)(I.flatten(newQueue.get))
+        return queuesLock.withPermit(I.flatten(newQueue.get))
       })
     )
     return add

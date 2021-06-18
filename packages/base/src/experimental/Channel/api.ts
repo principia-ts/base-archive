@@ -1094,7 +1094,7 @@ export function interruptWhenP_<Env, InErr, InElem, InDone, OutErr, OutErr1, Out
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   promise: PR.Promise<OutErr1, OutDone1>
 ): Channel<Env, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone | OutDone1> {
-  return interruptWhen_(self, PR.await(promise))
+  return interruptWhen_(self, promise.await)
 }
 
 /**
@@ -1413,7 +1413,7 @@ export function mergeAllWith_<
         const cancelers   = yield* _(M.make_(Q.boundedQueue<PR.Promise<never, void>>(n), Q.shutdown))
         const lastDone    = yield* _(Ref.ref<O.Option<OutDone>>(O.none()))
         const errorSignal = yield* _(PR.promise<never, void>())
-        const permits     = yield* _(Sem.make(n))
+        const permits     = yield* _(Sem.semaphore(n))
         const pull        = yield* _(toPull(channels))
 
         const evaluatePull = (pull: I.IO<Env & Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem>) =>
@@ -1454,7 +1454,7 @@ export function mergeAllWith_<
                   (outDone) =>
                     I.raceWith_(
                       errorSignal.await,
-                      Sem.withPermits(n, permits)(I.unit()),
+                      permits.withPermits(n, I.unit()),
                       (_, permitAcquisition) =>
                         getChildren['>>='](F.interruptAll)['*>'](F.interrupt(permitAcquisition)['$>'](() => false)),
                       (_, failureAwait) =>
@@ -1475,7 +1475,7 @@ export function mergeAllWith_<
                     return I.gen(function* (_) {
                       const latch   = yield* _(PR.promise<never, void>())
                       const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(errorSignal.await))))
-                      yield* _(I.fork(Sem.withPermit(permits)(latch.succeed(undefined)['*>'](raceIOs))))
+                      yield* _(I.fork(permits.withPermit(latch.succeed(undefined)['*>'](raceIOs))))
                       yield* _(latch.await)
                       return !(yield* _(errorSignal.isDone))
                     })
@@ -1490,7 +1490,7 @@ export function mergeAllWith_<
                         toPull(channel),
                         M.use(flow(evaluatePull, I.race(errorSignal.await), I.race(canceler.await)))
                       )
-                      yield* _(I.fork(Sem.withPermit(permits)(latch.succeed(undefined)['*>'](raceIOs))))
+                      yield* _(I.fork(permits.withPermit(latch.succeed(undefined)['*>'](raceIOs))))
                       yield* _(latch.await)
                       return !(yield* _(errorSignal.isDone))
                     })
@@ -1940,7 +1940,7 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
           M.make_(Q.boundedQueue<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
         )
         const errorSignal = yield* _(PR.promise<OutErr1, never>())
-        const permits     = yield* _(Sem.make(n))
+        const permits     = yield* _(Sem.semaphore(n))
         const pull        = yield* _(toPull(self))
         yield* _(
           pipe(
@@ -1950,7 +1950,7 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
                 Ca.flipCauseEither,
                 E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
                   pipe(
-                    Sem.withPermits(n, permits)(I.unit()),
+                    permits.withPermits(n, I.unit()),
                     I.makeInterruptible,
                     I.apr(pipe(E.right(outDone), I.fail, queue.offer))
                   )
@@ -1963,10 +1963,12 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
                   yield* _(queue.offer(pipe(p.await, I.mapError(E.left))))
                   yield* _(
                     I.fork(
-                      Sem.withPermit(permits)(
-                        PR.succeed_(latch, undefined)['*>'](
-                          pipe(errorSignal.await, I.raceFirst(f(outElem)), I.tapCause(errorSignal.halt), I.to(p))
-                        )
+                      permits.withPermit(
+                        latch
+                          .succeed(undefined)
+                          ['*>'](
+                            pipe(errorSignal.await, I.raceFirst(f(outElem)), I.tapCause(errorSignal.halt), I.fulfill(p))
+                          )
                       )
                     )
                   )

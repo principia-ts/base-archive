@@ -77,7 +77,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
           switch (state._stateTag) {
             case StateTag.Emit: {
               return tuple(
-                T.bind_(P.await(state.notifyProducer), () => this.emit(el)),
+                T.bind_(state.notifyProducer.await, () => this.emit(el)),
                 state
               )
             }
@@ -89,7 +89,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
             }
             case StateTag.Empty: {
               return tuple(
-                T.bind_(P.succeed_(state.notifyConsumer, void 0), () => P.await(p)),
+                T.bind_(state.notifyConsumer.succeed(undefined), () => p.await),
                 new StateEmit(el, p)
               )
             }
@@ -100,54 +100,50 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
   }
 
   done(a: Done): UIO<unknown> {
-    return T.bind_(P.promise<never, void>(), (p) =>
-      T.flatten(
-        Ref.modify_(this.ref, (state) => {
-          switch (state._stateTag) {
-            case StateTag.Emit: {
-              return tuple(
-                T.bind_(P.await(state.notifyProducer), () => this.done(a)),
-                state
-              )
-            }
-            case StateTag.Error: {
-              return tuple(T.interrupt, state)
-            }
-            case StateTag.Done: {
-              return tuple(T.interrupt, state)
-            }
-            case StateTag.Empty: {
-              return tuple(P.succeed_(state.notifyConsumer, void 0), new StateDone(a))
-            }
+    return T.flatten(
+      Ref.modify_(this.ref, (state) => {
+        switch (state._stateTag) {
+          case StateTag.Emit: {
+            return tuple(
+              T.bind_(state.notifyProducer.await, () => this.done(a)),
+              state
+            )
           }
-        })
-      )
+          case StateTag.Error: {
+            return tuple(T.interrupt, state)
+          }
+          case StateTag.Done: {
+            return tuple(T.interrupt, state)
+          }
+          case StateTag.Empty: {
+            return tuple(state.notifyConsumer.succeed(undefined), new StateDone(a))
+          }
+        }
+      })
     )
   }
 
   error(cause: Cause<Err>): UIO<unknown> {
-    return T.bind_(P.promise<never, void>(), (p) =>
-      T.flatten(
-        Ref.modify_(this.ref, (state) => {
-          switch (state._stateTag) {
-            case StateTag.Emit: {
-              return tuple(
-                T.bind_(P.await(state.notifyProducer), () => this.error(cause)),
-                state
-              )
-            }
-            case StateTag.Error: {
-              return tuple(T.interrupt, state)
-            }
-            case StateTag.Done: {
-              return tuple(T.interrupt, state)
-            }
-            case StateTag.Empty: {
-              return tuple(P.succeed_(state.notifyConsumer, void 0), new StateError(cause))
-            }
+    return T.flatten(
+      Ref.modify_(this.ref, (state) => {
+        switch (state._stateTag) {
+          case StateTag.Emit: {
+            return tuple(
+              T.bind_(state.notifyProducer.await, () => this.error(cause)),
+              state
+            )
           }
-        })
-      )
+          case StateTag.Error: {
+            return tuple(T.interrupt, state)
+          }
+          case StateTag.Done: {
+            return tuple(T.interrupt, state)
+          }
+          case StateTag.Empty: {
+            return tuple(state.notifyConsumer.succeed(undefined), new StateError(cause))
+          }
+        }
+      })
     )
   }
 
@@ -158,7 +154,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
           switch (state._stateTag) {
             case StateTag.Emit: {
               return tuple(
-                T.map_(P.succeed_(state.notifyProducer, void 0), () => onElement(state.a)),
+                T.map_(state.notifyProducer.succeed(undefined), () => onElement(state.a)),
                 new StateEmpty(p)
               )
             }
@@ -170,7 +166,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
             }
             case StateTag.Empty: {
               return tuple(
-                T.bind_(P.await(state.notifyConsumer), () => this.takeWith(onError, onElement, onDone)),
+                T.bind_(state.notifyConsumer.await, () => this.takeWith(onError, onElement, onDone)),
                 state
               )
             }

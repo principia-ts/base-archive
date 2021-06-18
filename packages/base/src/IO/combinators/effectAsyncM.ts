@@ -8,8 +8,8 @@ import { pipe } from '../../function'
 import * as P from '../../Promise'
 import * as I from '../core'
 import { runtime } from '../runtime'
+import { fulfill } from './fulfill'
 import { uninterruptibleMask } from './interrupt'
-import { to } from './to'
 
 /**
  * Imports an asynchronous effect into an `IO`. This formulation is
@@ -28,7 +28,7 @@ export function effectAsyncM<R, E, R1, E1, A>(
         traceAs(register, ({ restore }) =>
           pipe(
             register((k) => {
-              r.run_(to(p)(k))
+              r.run_(fulfill(p)(k))
             }),
             I.catchAllCause((c) => p.halt(c)),
             restore,

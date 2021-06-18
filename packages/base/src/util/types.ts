@@ -1,3 +1,4 @@
+import type { Has, Tag } from '../Has'
 import type { NonEmptyArray } from '../NonEmptyArray'
 
 export type Primitive = string | number | boolean | null | symbol
@@ -38,3 +39,19 @@ export type Mutable<T> = T extends NonEmptyArray<infer A>
   : { -readonly [K in keyof T]: T[K] }
 
 export type IsEqualTo<X, Y> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false
+
+export type ServicesStruct<SS extends Record<string, Tag<any>>> = {
+  [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? T : never
+}
+
+export type HasStruct<SS extends Record<string, Tag<any>>> = UnionToIntersection<
+  { [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]
+>
+
+export type ServicesTuple<SS extends ReadonlyArray<Tag<any>>> = {
+  [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? T : never
+}
+
+export type HasTuple<SS extends ReadonlyArray<Tag<any>>> = UnionToIntersection<
+  { [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS & number]
+>

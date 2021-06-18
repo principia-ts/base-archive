@@ -21,7 +21,7 @@ export class IOAspect<R, E, A, EC = unknown> {
 }
 
 export const debug = new IOAspect<Has<Console>, never, unknown>((io) =>
-  I.tapBoth_(
+  I.bitap_(
     io,
     (e) => Console.putStrLn(`[ERROR]: ${show(e)}`),
     (a) => Console.putStrLn(`[INFO]: ${show(a)}`)

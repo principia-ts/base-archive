@@ -5,8 +5,8 @@ import type { Managed, UManaged } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { pipe } from '../../function'
+import { fulfill } from '../../IO/combinators/fulfill'
 import { once } from '../../IO/combinators/once'
-import { to } from '../../IO/combinators/to'
 import * as P from '../../Promise'
 import { fromEffect, mapM_ } from '../core'
 import * as I from '../internal/io'
@@ -31,7 +31,7 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A
                 ma.io,
                 I.giveAll([r, finalizers] as const),
                 I.map(([_, a]) => a),
-                to(promise)
+                fulfill(promise)
               )
             )
           )

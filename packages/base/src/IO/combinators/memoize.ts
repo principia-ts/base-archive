@@ -6,11 +6,12 @@ import type { IO, UIO } from '../core'
 import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../function'
+import * as HM from '../../HashMap'
+import * as O from '../../Option'
 import * as P from '../../Promise'
 import * as RefM from '../../RefM'
 import { tuple } from '../../tuple'
 import * as I from '../core'
-import { to } from './to'
 
 /**
  * Returns a memoized version of the specified effectual function.
@@ -19,7 +20,7 @@ import { to } from './to'
  */
 export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> {
   return pipe(
-    RefM.refM(new Map<A, P.Promise<E, B>>()),
+    RefM.refM(HM.makeDefault<A, P.Promise<E, B>>()),
     I.map(
       traceAs(
         f,
@@ -28,14 +29,14 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
             const promise = yield* _(
               pipe(
                 RefM.modifyM_(ref, (m) => {
-                  const memo = m.get(a)
-                  if (memo) {
-                    return I.succeed(tuple(memo, m))
+                  const memo = HM.get_(m, a)
+                  if (O.isSome(memo)) {
+                    return I.succeed(tuple(memo.value, m))
                   } else {
                     return I.gen(function* (_) {
                       const p = yield* _(P.promise<E, B>())
-                      yield* _(I.fork(to(p)(f(a))))
-                      return tuple(p, m.set(a, p))
+                      yield* _(I.fork(p.fulfill(f(a))))
+                      return tuple(p, HM.set_(m, a, p))
                     })
                   }
                 })
@@ -60,7 +61,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
      */
     <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
       pipe(
-        RefM.refM(new Map<A, P.Promise<E, B>>()),
+        RefM.refM(HM.makeDefault<A, P.Promise<E, B>>()),
         I.map(
           traceAs(
             f,
@@ -69,15 +70,15 @@ export function memoizeEq<A>(eq: Eq<A>) {
                 const promise = yield* _(
                   pipe(
                     RefM.modifyM_(ref, (m) => {
-                      for (const [k, v] of m.entries()) {
+                      for (const [k, v] of m) {
                         if (eq.equals_(k, a)) {
                           return I.succeed(tuple(v, m))
                         }
                       }
                       return I.gen(function* (_) {
                         const p = yield* _(P.promise<E, B>())
-                        yield* _(I.fork(to(p)(f(a))))
-                        return tuple(p, m.set(a, p))
+                        yield* _(I.fork(p.fulfill(f(a))))
+                        return tuple(p, HM.set_(m, a, p))
                       })
                     })
                   )
