@@ -4,7 +4,7 @@
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
 import { tag } from './Has'
-import { effectAsyncInterrupt } from './IO/combinators/interrupt'
+import { asyncInterrupt } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as L from './Layer/core'
 
@@ -18,15 +18,15 @@ export const ClockTag = tag<Clock>()
  * Live clock implementation
  */
 export class LiveClock implements Clock {
-  currentTime: I.UIO<number> = I.effectTotal(() => new Date().getTime())
+  currentTime: I.UIO<number> = I.succeedWith(() => new Date().getTime())
 
   sleep = (ms: number): I.UIO<void> =>
-    effectAsyncInterrupt((cb) => {
+    asyncInterrupt((cb) => {
       const timeout = setTimeout(() => {
         cb(I.unit())
       }, ms)
 
-      return I.effectTotal(() => {
+      return I.succeedWith(() => {
         clearTimeout(timeout)
       })
     })

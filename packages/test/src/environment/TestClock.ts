@@ -84,7 +84,7 @@ export class TestClock implements Clock {
   sleep = (ms: number) => {
     const self = this
     return I.gen(function* (_) {
-      const promise = yield* _(P.promise<never, void>())
+      const promise = yield* _(P.make<never, void>())
       const wait    = yield* _(
         Ref.modify_(self.clockState, (data) => {
           const end = data.duration + ms
@@ -96,7 +96,7 @@ export class TestClock implements Clock {
         })
       )
       yield* _(
-        I.deferTotal(() => {
+        I.defer(() => {
           if (wait) {
             return self.warningStart['*>'](promise.await)
           } else {
@@ -241,7 +241,7 @@ export class TestClock implements Clock {
         Start: () =>
           pipe(
             this.live.provide(pipe(Console.putStrLn(warning), I.delay(5000))),
-            I.makeInterruptible,
+            I.interruptible,
             I.fork,
             I.map(Pending),
             O.some
@@ -256,10 +256,10 @@ export class TestClock implements Clock {
       pipe(
         M.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
           M.gen(function* (_) {
-            const ref  = yield* _(Ref.ref(data))
-            const refM = yield* _(RefM.refM(Start))
+            const ref  = yield* _(Ref.make(data))
+            const refM = yield* _(RefM.make(Start))
             const test = yield* _(
-              M.make_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
+              M.bracket_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )
             return intersect(ClockTag.of(new ProxyClock(test.currentTime, test.sleep)), TestClockTag.of(test))
           })

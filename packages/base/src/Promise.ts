@@ -5,11 +5,7 @@ import type { FIO } from './IO/core'
 import type { Option } from './Option'
 
 import * as E from './Either'
-import {
-  effectAsyncInterruptEither,
-  interruptAs as interruptAsIO,
-  uninterruptibleMask
-} from './IO/combinators/interrupt'
+import { asyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as O from './Option'
 import * as P from './prelude'
@@ -40,7 +36,7 @@ export class Promise<E, A> {
    * `Promise.fulfill`.
    */
   fulfillWith(io: FIO<E, A>): I.UIO<boolean> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -120,7 +116,7 @@ export class Promise<E, A> {
   }
 
   private interruptJoiner(joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       const state = this.state.get
       if (state._tag === 'Pending') {
         this.state.set(new Pending(state.joiners.filter((j) => j !== joiner)))
@@ -133,7 +129,7 @@ export class Promise<E, A> {
    * until the result is available.
    */
   get await() {
-    return effectAsyncInterruptEither<unknown, E, A>((k) => {
+    return asyncInterruptEither<unknown, E, A>((k) => {
       const state = this.state.get
       switch (state._tag) {
         case 'Done': {
@@ -152,7 +148,7 @@ export class Promise<E, A> {
    * already been completed with a value or an error and false otherwise.
    */
   get isDone(): I.UIO<boolean> {
-    return I.effectTotal(() => this.state.get._tag === 'Done')
+    return I.succeedWith(() => this.state.get._tag === 'Done')
   }
 
   /**
@@ -160,7 +156,7 @@ export class Promise<E, A> {
    * promise has already been completed or a `None` otherwise.
    */
   get poll(): I.UIO<Option<FIO<E, A>>> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       const state = this.state.get
 
       switch (state._tag) {
@@ -382,15 +378,15 @@ export function isDone<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
 /**
  * Makes a new promise to be completed by the fiber creating the promise.
  */
-export function promise<E, A>() {
-  return I.bind_(I.fiberId(), (id) => promiseAs<E, A>(id))
+export function make<E, A>() {
+  return I.bind_(I.fiberId(), (id) => makeAs<E, A>(id))
 }
 
 /**
  * Makes a new promise to be completed by the fiber with the specified id.
  */
-export function promiseAs<E, A>(fiberId: FiberId) {
-  return I.effectTotal(() => unsafePromise<E, A>(fiberId))
+export function makeAs<E, A>(fiberId: FiberId) {
+  return I.succeedWith(() => unsafeMake<E, A>(fiberId))
 }
 
 /**
@@ -424,7 +420,7 @@ export function unsafeDone<E, A>(io: FIO<E, A>) {
   return (promise: Promise<E, A>) => promise.unsafeDone(io)
 }
 
-export function unsafePromise<E, A>(fiberId: FiberId) {
+export function unsafeMake<E, A>(fiberId: FiberId) {
   return new Promise<E, A>(new AtomicReference(new Pending([])), [fiberId])
 }
 

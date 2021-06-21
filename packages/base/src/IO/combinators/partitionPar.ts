@@ -6,7 +6,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { flow, identity } from '../../function'
 import * as I from '../../Iterable'
-import { attempt, map_ } from '../core'
+import { map_, memento } from '../core'
 import { foreachPar_ } from './foreachPar'
 
 /**
@@ -20,7 +20,7 @@ export function partitionPar_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreachPar_(as, traceAs(f, flow(f, attempt))), I.partitionMap(identity))
+  return map_(foreachPar_(as, traceAs(f, flow(f, memento))), I.partitionMap(identity))
 }
 
 /**

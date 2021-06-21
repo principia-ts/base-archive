@@ -11,27 +11,26 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import * as C from '../../Cause/core'
 import { left } from '../../Either'
 import { join } from '../../Fiber/combinators/join'
-import { interruptible, uninterruptible } from '../../Fiber/core'
-import { flow, pipe } from '../../function'
+import * as F from '../../Fiber/core'
+import { pipe } from '../../function'
 import { none, some } from '../../Option'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import { OneShot } from '../../util/support/OneShot'
 import {
+  asyncOption,
   bind,
   bind_,
   checkInterruptible,
-  deferTotal,
-  die,
-  effectAsync,
-  effectAsyncOption,
-  effectTotal,
+  defer,
   fiberId,
   flatten,
+  fromPromiseDie,
   halt,
   matchCauseM_,
   pure,
   SetInterrupt,
   succeed,
+  succeedWith,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
@@ -91,9 +90,9 @@ export function setInterruptStatus(flag: InterruptStatus): <R, E, A>(ma: IO<R, E
  *
  * @trace call
  */
-export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
+export function interruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return traceCall(setInterruptStatus_, trace)(ma, interruptible)
+  return traceCall(setInterruptStatus_, trace)(ma, F.interruptible)
 }
 
 /**
@@ -106,9 +105,9 @@ export function makeInterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  *
  * @trace call
  */
-export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
+export function uninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return traceCall(setInterruptStatus_, trace)(ma, uninterruptible)
+  return traceCall(setInterruptStatus_, trace)(ma, F.uninterruptible)
 }
 
 /**
@@ -119,7 +118,7 @@ export function makeUninterruptible<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  * @trace 0
  */
 export function uninterruptibleMask<R, E, A>(f: (restore: InterruptStatusRestore) => IO<R, E, A>): IO<R, E, A> {
-  return checkInterruptible(traceAs(f, (flag) => makeUninterruptible(f(new InterruptStatusRestore(flag)))))
+  return checkInterruptible(traceAs(f, (flag) => uninterruptible(f(new InterruptStatusRestore(flag)))))
 }
 
 /**
@@ -235,7 +234,7 @@ export class InterruptStatusRestore {
 
   force = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => {
     if (this.flag.isUninteruptible) {
-      return makeInterruptible(disconnect(makeUninterruptible(ma)))
+      return interruptible(disconnect(uninterruptible(ma)))
     }
     return setInterruptStatus_(ma, this.flag)
   }
@@ -259,15 +258,15 @@ export class InterruptStatusRestore {
  *
  * @trace 0
  */
-export function effectAsyncInterruptEither<R, E, A>(
+export function asyncInterruptEither<R, E, A>(
   register: (cb: (resolve: IO<R, E, A>) => void) => Either<Canceler<R>, IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return pipe(
-    effectTotal(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
+    succeedWith(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
     bind(([started, cancel]) =>
       pipe(
-        effectAsyncOption<R, E, IO<R, E, A>>(
+        asyncOption<R, E, IO<R, E, A>>(
           traceAs(register, (k) => {
             started.set(true)
             const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
@@ -293,7 +292,7 @@ export function effectAsyncInterruptEither<R, E, A>(
           blockingOn
         ),
         flatten,
-        onInterrupt(() => deferTotal(() => (started.get ? cancel.get() : unit())))
+        onInterrupt(() => defer(() => (started.get ? cancel.get() : unit())))
       )
     )
   )
@@ -302,11 +301,11 @@ export function effectAsyncInterruptEither<R, E, A>(
 /**
  * @trace 0
  */
-export function effectAsyncInterrupt<R, E, A>(
+export function asyncInterrupt<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return effectAsyncInterruptEither<R, E, A>(
+  return asyncInterruptEither<R, E, A>(
     traceAs(register, (cb) => left(register(cb))),
     blockingOn
   )
@@ -315,23 +314,12 @@ export function effectAsyncInterrupt<R, E, A>(
 /**
  * @trace 0
  */
-export function effectAsyncInterruptPromise<R, E, A>(
+export function asyncInterruptPromise<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Promise<Canceler<R>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return effectAsyncInterruptEither<R, E, A>(
+  return asyncInterruptEither<R, E, A>(
     traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten))),
     blockingOn
-  )
-}
-
-/**
- * @trace 0
- */
-function fromPromiseDie<A>(promise: () => Promise<A>): UIO<A> {
-  return effectAsync(
-    traceAs(promise, (resolve) => {
-      promise().then(flow(pure, resolve)).catch(flow(die, resolve))
-    })
   )
 }

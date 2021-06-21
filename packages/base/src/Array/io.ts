@@ -12,7 +12,7 @@ export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, 
     A.foldl(I.succeed([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
       I.crossWith_(
         b,
-        I.deferTotal(() => f(a)),
+        I.defer(() => f(a)),
         ([i, mut_acc], b) => {
           mut_acc[i] = b
           return tuple(i + 1, mut_acc)
@@ -37,9 +37,9 @@ export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, 
   return I.bind_(I.succeed<never, B[]>(Array(as.length)), (mut_bs) => {
     function fn([a, n]: [A, number]) {
       return I.bind_(
-        I.deferTotal(() => f(a)),
+        I.defer(() => f(a)),
         (b) =>
-          I.effectTotal(() => {
+          I.succeedWith(() => {
             mut_bs[n] = b
           })
       )
@@ -49,7 +49,7 @@ export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, 
         A.imap_(as, (n, a) => [a, n] as [A, number]),
         fn
       ),
-      () => I.effectTotal(() => mut_bs)
+      () => I.succeedWith(() => mut_bs)
     )
   })
 }
@@ -72,7 +72,7 @@ export function mapAccumM_<S, A, R, E, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
 ): I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     let dest: I.IO<R, E, S> = I.succeed(s)
     const mut_out: Array<B> = Array(as.length)
     for (let i = 0; i < as.length; i++) {
@@ -103,7 +103,7 @@ export function dropWhileM_<A, R, E>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     let dropping        = I.succeed(true) as I.IO<R, E, boolean>
     const ret: Array<A> = []
 
@@ -136,7 +136,7 @@ export function takeWhileM_<R, E, A>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     let taking          = I.succeed(true) as I.IO<R, E, boolean>
     const ret: Array<A> = []
 

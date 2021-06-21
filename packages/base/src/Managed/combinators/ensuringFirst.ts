@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import { onExitFirst_ } from './onExitFirst'
+import { ensuringFirstWith_ } from './ensuringFirstWith'
 
 /**
  * Ensures that `f` is executed when this `Managed` is finalized, before
@@ -17,7 +17,7 @@ import { onExitFirst_ } from './onExitFirst'
  */
 export function ensuringFirst_<R, E, A, R1>(self: Managed<R, E, A>, f: IO<R1, never, unknown>): Managed<R & R1, E, A> {
   const trace = accessCallTrace()
-  return onExitFirst_(
+  return ensuringFirstWith_(
     self,
     traceFrom(trace, () => f)
   )

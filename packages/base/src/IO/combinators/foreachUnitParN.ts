@@ -17,7 +17,7 @@ import { foreachUnitPar_ } from './foreachUnitPar'
  */
 export function foreachUnitParN_<A, R, E>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
   return pipe(
-    Semaphore.semaphore(n),
+    Semaphore.make(n),
     I.bind((s) =>
       foreachUnitPar_(
         as,

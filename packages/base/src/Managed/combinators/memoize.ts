@@ -23,7 +23,7 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A
     releaseMap(),
     traceFrom(trace, (finalizers) =>
       I.gen(function* (_) {
-        const promise  = yield* _(P.promise<E, A>())
+        const promise  = yield* _(P.make<E, A>())
         const complete = yield* _(
           once(
             I.asksM((r: R) =>

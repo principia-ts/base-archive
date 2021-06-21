@@ -210,8 +210,8 @@ export class TestRandom implements Random {
   static make(initialData: Data): L.Layer<unknown, never, Has<Random> & Has<TestRandom>> {
     return L.fromRawEffect(
       I.gen(function* (_) {
-        const data   = yield* _(Ref.ref(initialData))
-        const buffer = yield* _(Ref.ref(new Buffer()))
+        const data   = yield* _(Ref.make(initialData))
+        const buffer = yield* _(Ref.make(new Buffer()))
         const test   = new TestRandom(data, buffer)
         return intersect(TestRandomTag.of(test), RandomTag.of(test))
       })

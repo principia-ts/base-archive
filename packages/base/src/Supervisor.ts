@@ -114,7 +114,7 @@ export function unsafeTrack(
   set: Set<RuntimeFiber<any, any>> = new Set()
 ): Supervisor<ReadonlyArray<RuntimeFiber<any, any>>> {
   return new Supervisor(
-    I.effectTotal(() => Array.from(set)),
+    I.succeedWith(() => Array.from(set)),
     (_, __, ___, fiber) => {
       set.add(fiber)
       return _continue
@@ -129,13 +129,13 @@ export function unsafeTrack(
 /**
  * Creates a new supervisor that tracks children in a set.
  */
-export const track = I.effectTotal(() => unsafeTrack())
+export const track = I.succeedWith(() => unsafeTrack())
 
 /**
  * Creates a new supervisor that tracks children in a set.
  */
 export const fibersIn = (ref: Atomic<Set<RuntimeFiber<any, any>>>) =>
-  I.effectTotal(
+  I.succeedWith(
     () =>
       new Supervisor(
         ref.get,
@@ -172,7 +172,7 @@ function unsafeTrackMainFibers(): Supervisor<Set<RuntimeFiber<any, any>>> {
   const interval = new AtomicReference<NodeJS.Timeout | undefined>(undefined)
 
   return new Supervisor(
-    I.effectTotal(() => mainFibers),
+    I.succeedWith(() => mainFibers),
     (_, __, ___, fiber) => {
       if (mainFibers.has(fiber)) {
         if (typeof interval.get === 'undefined') {

@@ -376,7 +376,7 @@ export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<
   return (fa) => catchMap_(fa, f)
 }
 
-export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
+export function memento<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
   return right(fa)
 }
 
@@ -817,7 +817,7 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function refail<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
+export function absolve<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
   return flatten(mma)
 }
 
@@ -967,11 +967,13 @@ export const as_: <E, A, B>(fa: Either<E, A>, b: () => B) => Either<E, B> = P.as
 
 export const as: <B>(b: () => B) => <E, A>(fa: Either<E, A>) => Either<E, B> = P.asF<URI, V>(Functor)
 
-export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> =
-  P.fcrossF_<URI, V>(Functor)
+export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> = P.fcrossF_<URI, V>(
+  Functor
+)
 
-export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> =
-  P.fcrossF<URI, V>(Functor)
+export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> = P.fcrossF<URI, V>(
+  Functor
+)
 
 export const tupled: <E, A>(fa: Either<E, A>) => Either<E, readonly [A]> = P.tupledF(Functor)
 

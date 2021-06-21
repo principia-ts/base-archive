@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { makeExit_ } from '../core'
+import { bracketExit_ } from '../core'
 import * as RM from '../ReleaseMap'
 import { releaseAll_ } from './releaseAll'
 
@@ -18,5 +18,5 @@ import { releaseAll_ } from './releaseAll'
  */
 export function makeManagedReleaseMap(es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> {
   const trace = accessCallTrace()
-  return traceCall(makeExit_, trace)(RM.make, (rm, e) => releaseAll_(rm, e, es))
+  return traceCall(bracketExit_, trace)(RM.make, (rm, e) => releaseAll_(rm, e, es))
 }

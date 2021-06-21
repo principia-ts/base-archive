@@ -1020,7 +1020,7 @@ function doneCollectReader<Env, OutErr, OutElem, OutDone>(
   return readWith(
     (out) =>
       fromEffect(
-        I.effectTotal(() => {
+        I.succeedWith(() => {
           builder.append(out)
         })
       )['*>'](doneCollectReader(builder)),
@@ -1041,7 +1041,7 @@ export function doneCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, never, readonly [A.Chunk<OutElem>, OutDone]> {
   return unwrap(
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const builder = A.builder<OutElem>()
 
       return mapM_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeed(tuple(builder.result(), z)))
@@ -1408,12 +1408,12 @@ export function mergeAllWith_<
       M.gen(function* (_) {
         yield* _(M.finalizer(getChildren['>>='](F.interruptAll)))
         const queue       = yield* _(
-          M.make_(Q.boundedQueue<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
+          M.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
         )
-        const cancelers   = yield* _(M.make_(Q.boundedQueue<PR.Promise<never, void>>(n), Q.shutdown))
-        const lastDone    = yield* _(Ref.ref<O.Option<OutDone>>(O.none()))
-        const errorSignal = yield* _(PR.promise<never, void>())
-        const permits     = yield* _(Sem.semaphore(n))
+        const cancelers   = yield* _(M.bracket_(Q.makeBounded<PR.Promise<never, void>>(n), Q.shutdown))
+        const lastDone    = yield* _(Ref.make<O.Option<OutDone>>(O.none()))
+        const errorSignal = yield* _(PR.make<never, void>())
+        const permits     = yield* _(Sem.make(n))
         const pull        = yield* _(toPull(channels))
 
         const evaluatePull = (pull: I.IO<Env & Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem>) =>
@@ -1473,7 +1473,7 @@ export function mergeAllWith_<
                 switch (mergeStrategy) {
                   case 'BackPressure':
                     return I.gen(function* (_) {
-                      const latch   = yield* _(PR.promise<never, void>())
+                      const latch   = yield* _(PR.make<never, void>())
                       const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(errorSignal.await))))
                       yield* _(I.fork(permits.withPermit(latch.succeed(undefined)['*>'](raceIOs))))
                       yield* _(latch.await)
@@ -1481,8 +1481,8 @@ export function mergeAllWith_<
                     })
                   case 'BufferSliding':
                     return I.gen(function* (_) {
-                      const canceler = yield* _(PR.promise<never, void>())
-                      const latch    = yield* _(PR.promise<never, void>())
+                      const canceler = yield* _(PR.make<never, void>())
+                      const latch    = yield* _(PR.make<never, void>())
                       const size     = yield* _(cancelers.size)
                       yield* _(I.when(() => size >= n)(cancelers.take['>>='](PR.succeed<void>(undefined))))
                       yield* _(cancelers.offer(canceler))
@@ -1937,10 +1937,10 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
       M.gen(function* (_) {
         yield* _(M.finalizer(getChildren['>>='](F.interruptAll)))
         const queue       = yield* _(
-          M.make_(Q.boundedQueue<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
+          M.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
         )
-        const errorSignal = yield* _(PR.promise<OutErr1, never>())
-        const permits     = yield* _(Sem.semaphore(n))
+        const errorSignal = yield* _(PR.make<OutErr1, never>())
+        const permits     = yield* _(Sem.make(n))
         const pull        = yield* _(toPull(self))
         yield* _(
           pipe(
@@ -1951,15 +1951,15 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
                 E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
                   pipe(
                     permits.withPermits(n, I.unit()),
-                    I.makeInterruptible,
+                    I.interruptible,
                     I.apr(pipe(E.right(outDone), I.fail, queue.offer))
                   )
                 )
               ),
               (outElem) =>
                 I.gen(function* (_) {
-                  const p     = yield* _(PR.promise<OutErr1, OutElem1>())
-                  const latch = yield* _(PR.promise<never, void>())
+                  const p     = yield* _(PR.make<OutErr1, OutElem1>())
+                  const latch = yield* _(PR.make<never, void>())
                   yield* _(queue.offer(pipe(p.await, I.mapError(E.left))))
                   yield* _(
                     I.fork(
@@ -1976,7 +1976,7 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
                 })
             ),
             I.forever,
-            I.makeInterruptible,
+            I.interruptible,
             I.forkManaged
           )
         )
@@ -2055,11 +2055,11 @@ export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, unknown, InDone, OutErr, never, OutDone>
 ): M.Managed<Env, OutErr, OutDone> {
   return M.mapM_(
-    M.makeExit_(
-      I.effectTotal(() => new ChannelExecutor(() => self, undefined)),
+    M.bracketExit_(
+      I.succeedWith(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
-    (exec) => I.deferTotal(() => runManagedInterpret(exec.run(), exec))
+    (exec) => I.defer(() => runManagedInterpret(exec.run(), exec))
   )
 }
 
@@ -2100,11 +2100,11 @@ export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): M.Managed<Env, never, IO<Env, E.Either<OutErr, OutDone>, OutElem>> {
   return M.map_(
-    M.makeExit_(
-      I.effectTotal(() => new ChannelExecutor(() => self, undefined)),
+    M.bracketExit_(
+      I.succeedWith(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
-    (exec) => I.deferTotal(() => toPullInterpret(exec.run(), exec))
+    (exec) => I.defer(() => toPullInterpret(exec.run(), exec))
   )
 }
 
@@ -2274,10 +2274,10 @@ export function bracketExit_<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDo
   release: (a: Acquired, exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDone> {
   return pipe(
-    fromEffect(Ref.ref<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
+    fromEffect(Ref.make<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
     bind((ref) =>
       pipe(
-        fromEffect(I.makeUninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
+        fromEffect(I.uninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
         bind(use),
         ensuringWith((ex) => I.bind_(ref.get, (_) => _(ex)))
       )

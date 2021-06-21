@@ -13,7 +13,7 @@ import { builder, concrete, foldl_ } from './core'
  */
 
 export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     const out = builder<B>()
     return pipe(
       as,
@@ -81,7 +81,7 @@ export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as:
 }
 
 export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
     const out                       = builder<A>()
@@ -113,7 +113,7 @@ export function takeWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chun
 }
 
 export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
     const out                         = builder<A>()
@@ -145,7 +145,7 @@ export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chun
 }
 
 export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     concrete(as)
     const c                              = builder<A>()
     let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)

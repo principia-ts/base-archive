@@ -116,7 +116,7 @@ export class Semaphore {
     if (n === 0) {
       return I.pure(new Acquisition(I.unit(), I.unit()))
     } else {
-      return I.bind_(P.promise<never, void>(), (p) =>
+      return I.bind_(P.make<never, void>(), (p) =>
         pipe(
           this.state,
           Ref.modify(
@@ -196,15 +196,15 @@ export function available(s: Semaphore): I.IO<unknown, never, number> {
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export function semaphore(permits: number): I.IO<unknown, never, Semaphore> {
-  return I.map_(Ref.ref<State>(E.right(permits)), (state) => new Semaphore(state))
+export function make(permits: number): I.IO<unknown, never, Semaphore> {
+  return I.map_(Ref.make<State>(E.right(permits)), (state) => new Semaphore(state))
 }
 
 /**
  * Creates a new `Sempahore` with the specified number of permits.
  */
-export function unsafeSemaphore(permits: number): Semaphore {
-  const state = Ref.unsafeRef<State>(E.right(permits))
+export function unsafeMake(permits: number): Semaphore {
+  const state = Ref.unsafeMake<State>(E.right(permits))
 
   return new Semaphore(state)
 }

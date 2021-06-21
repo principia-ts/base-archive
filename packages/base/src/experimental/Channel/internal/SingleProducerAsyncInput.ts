@@ -71,7 +71,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
   constructor(readonly ref: Ref.URef<State<Err, Elem, Done>>) {}
 
   emit(el: Elem): UIO<unknown> {
-    return T.bind_(P.promise<never, void>(), (p) =>
+    return T.bind_(P.make<never, void>(), (p) =>
       T.flatten(
         Ref.modify_(this.ref, (state) => {
           switch (state._stateTag) {
@@ -148,7 +148,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
   }
 
   takeWith<X>(onError: (cause: Cause<Err>) => X, onElement: (element: Elem) => X, onDone: (done: Done) => X): UIO<X> {
-    return T.bind_(P.promise<never, void>(), (p) =>
+    return T.bind_(P.make<never, void>(), (p) =>
       T.flatten(
         Ref.modify_(this.ref, (state) => {
           switch (state._stateTag) {
@@ -190,7 +190,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
  */
 export function makeSingleProducerAsyncInput<Err, Elem, Done>(): UIO<SingleProducerAsyncInput<Err, Elem, Done>> {
   return T.map_(
-    T.bind_(P.promise<never, void>(), (p) => Ref.ref<State<Err, Elem, Done>>(new StateEmpty(p))),
+    T.bind_(P.make<never, void>(), (p) => Ref.make<State<Err, Elem, Done>>(new StateEmpty(p))),
     (ref) => new SingleProducerAsyncInput(ref)
   )
 }

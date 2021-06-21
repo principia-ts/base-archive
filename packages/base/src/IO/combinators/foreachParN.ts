@@ -40,19 +40,19 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
     )
 
   return pipe(
-    Q.boundedQueue<readonly [P.Promise<E, B>, A]>(n),
+    Q.makeBounded<readonly [P.Promise<E, B>, A]>(n),
     bracket(
       (q) =>
         I.gen(function* (_) {
           const pairs = yield* _(
             I.foreach_(as, (a) =>
               pipe(
-                P.promise<E, B>(),
+                P.make<E, B>(),
                 I.map((p) => tuple(p, a))
               )
             )
           )
-          const ref   = yield* _(Ref.ref(pairs.length))
+          const ref   = yield* _(Ref.make(pairs.length))
           yield* _(I.fork(I.foreach_(pairs, (pair) => q.offer(pair))))
           yield* _(
             I.collectAllUnit(

@@ -104,7 +104,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
   return Spec.test(
     label,
     I.matchCauseM_(
-      I.deferTotal(assertion),
+      I.defer(assertion),
       flow(TF.halt, I.fail),
       flow(
         BA.failures,
@@ -119,7 +119,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
 }
 
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
-  return testM(label, () => I.effectTotal(assertion))
+  return testM(label, () => I.succeedWith(assertion))
 }
 
 export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {
@@ -158,7 +158,7 @@ function checkStream<R, A, R1, E>(
                   I.map(
                     BA.map((fd) => FailureDetails(fd.assertion, O.some(GenFailureDetails(initial.value, input, index))))
                   ),
-                  I.attempt
+                  I.memento
                 )
               )
             )

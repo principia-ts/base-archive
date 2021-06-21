@@ -172,7 +172,7 @@ export function matchTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
-    cross_(attempt(left), attempt(right)),
+    cross_(memento(left), memento(right)),
     bind(([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
       switch (ea._tag) {
         case 'Left': {
@@ -351,9 +351,9 @@ export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => S
  * -------------------------------------------------------------------------------------------------
  */
 
-export const attempt: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = Z.attempt
+export const memento: <R, E, A>(fa: Sync<R, E, A>) => Sync<R, never, E.Either<E, A>> = Z.memento
 
-export const refail: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = Z.refail
+export const absolve: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sync<R, E | E1, A> = Z.absolve
 
 /*
  * -------------------------------------------------------------------------------------------------

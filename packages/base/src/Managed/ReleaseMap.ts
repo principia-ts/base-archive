@@ -128,4 +128,4 @@ export function updateAll(_: ReleaseMap, f: (_: Finalizer) => Finalizer): I.UIO<
   })
 }
 
-export const make = I.map_(XR.ref<State>(new Running(0, new Map(), identity)), (s) => new ReleaseMap(s))
+export const make = I.map_(XR.make<State>(new Running(0, new Map(), identity)), (s) => new ReleaseMap(s))

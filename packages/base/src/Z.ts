@@ -859,7 +859,7 @@ export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function attempt<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, never, E.Either<E, A>> {
+export function memento<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, never, E.Either<E, A>> {
   return matchM_(
     fa,
     (e) => succeed(E.left(e)),
@@ -867,7 +867,7 @@ export function attempt<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1,
   )
 }
 
-export function refail<W, S1, S2, R, E, E1, A>(fa: Z<W, S1, S2, R, E, E.Either<E1, A>>): Z<W, S1, S2, R, E | E1, A> {
+export function absolve<W, S1, S2, R, E, E1, A>(fa: Z<W, S1, S2, R, E, E.Either<E1, A>>): Z<W, S1, S2, R, E | E1, A> {
   return bind_(fa, E.match(fail, succeed))
 }
 

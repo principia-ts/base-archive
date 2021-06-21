@@ -15,7 +15,7 @@ import * as P from '../../Promise'
 import * as Ref from '../../Ref'
 import { tuple } from '../../tuple'
 import * as I from '../core'
-import { makeInterruptible, onInterrupt, uninterruptibleMask } from './interrupt'
+import { interruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
 const arbiter =
   <E, A>(
@@ -59,13 +59,13 @@ export function raceAll<R, E, A>(
 ): IO<R, E, A> {
   const trace = accessCallTrace()
   return I.gen(function* (_) {
-    const done    = yield* _(P.promise<E, readonly [A, Fiber.Fiber<E, A>]>())
-    const fails   = yield* _(Ref.ref(ios.length))
+    const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
+    const fails   = yield* _(Ref.make(ios.length))
     const [c, fs] = yield* _(
       uninterruptibleMask(
         traceFrom(trace, ({ restore }) =>
           I.gen(function* (_) {
-            const fs = yield* _(I.foreach_(ios, flow(makeInterruptible, I.fork)))
+            const fs = yield* _(I.foreach_(ios, flow(interruptible, I.fork)))
             yield* _(
               C.foldl_(fs, I.unit(), (io, f) =>
                 I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))

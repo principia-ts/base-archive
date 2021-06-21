@@ -23,10 +23,10 @@ export class IOStateFiberRef<S> implements IOState<S> {
   readonly update = (f: (s: S) => S) => FR.update_(this.fiberRef, f)
 }
 
-export function state<S>(initial: S): UIO<IOState<S>> {
-  return FR.fiberRef(initial)['<$>']((fiberRef) => new IOStateFiberRef(fiberRef))
+export function make<S>(initial: S): UIO<IOState<S>> {
+  return FR.make(initial)['<$>']((fiberRef) => new IOStateFiberRef(fiberRef))
 }
 
 export function makeLayer<S>(initial: S, tag: Tag<IOState<S>>): Layer<unknown, never, Has<IOState<S>>> {
-  return toLayer(tag)(state(initial))
+  return toLayer(tag)(make(initial))
 }

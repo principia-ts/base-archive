@@ -17,8 +17,8 @@ export class BufferedPull<R, E, A> {
 export function make<R, E, A>(upstream: I.IO<R, O.Option<E>, C.Chunk<A>>) {
   return pipe(
     I.do,
-    I.bindS('done', () => Ref.ref(false)),
-    I.bindS('cursor', () => Ref.ref(tuple(C.empty<A>(), 0))),
+    I.bindS('done', () => Ref.make(false)),
+    I.bindS('cursor', () => Ref.make(tuple(C.empty<A>(), 0))),
     I.map(({ cursor, done }) => new BufferedPull<R, E, A>(upstream, done, cursor))
   )
 }

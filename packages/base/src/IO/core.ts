@@ -110,7 +110,7 @@ export const yieldNow: UIO<void> = new Yield()
  *
  * @trace 0
  */
-export function effectAsync<R, E, A>(
+export function async<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => void,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
@@ -133,7 +133,7 @@ export function effectAsync<R, E, A>(
  * @since 1.0.0
  * @trace 0
  */
-export function effectAsyncOption<R, E, A>(
+export function asyncOption<R, E, A>(
   register: (k: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
@@ -146,23 +146,11 @@ export function effectAsyncOption<R, E, A>(
  *
  * @trace 0
  */
-export function effect<A>(effect: () => A): FIO<unknown, A> {
+function try_<A>(effect: () => A): FIO<unknown, A> {
   return new EffectPartial(effect, identity)
 }
 
-/**
- * Imports a total synchronous effect into a pure `IO` value.
- * The effect must not throw any exceptions. If you wonder if the effect
- * throws exceptions, then do not use this method, use `IO.effect`
- *
- * @category Constructors
- * @since 1.0.0
- *
- * @trace 0
- */
-export function effectTotal<A>(effect: () => A): UIO<A> {
-  return new EffectTotal(effect)
-}
+export { try_ as try }
 
 /**
  * Imports a synchronous side-effect into an `IO`, translating any
@@ -174,7 +162,7 @@ export function effectTotal<A>(effect: () => A): UIO<A> {
  * @trace 0
  * @trace 1
  */
-export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
+export function tryCatch_<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
   return new EffectPartial(effect, onThrow)
 }
 
@@ -185,25 +173,25 @@ export function effectCatch_<E, A>(effect: () => A, onThrow: (error: unknown) =>
  * @category Constructors
  * @since 1.0.0
  *
- * @dataFirst effectCatch_
+ * @dataFirst tryCatch_
  * @trace 0
  */
-export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A) => FIO<E, A> {
+export function tryCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A) => FIO<E, A> {
   return (
     /**
      * @trace 0
      */
-    (effect) => effectCatch_(effect, onThrow)
+    (effect) => tryCatch_(effect, onThrow)
   )
 }
 
 /**
  * Returns a lazily constructed effect, whose construction may itself require effects.
- * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
+ * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(try(io))`.
  *
  * @trace 0
  */
-export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
+export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
   return new DeferPartialWith(io, identity)
 }
 
@@ -213,7 +201,9 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
  *
  * @trace 0
  */
-export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, unknown, A> {
+export function deferTryWith<R, E, A>(
+  io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>
+): IO<R, unknown, A> {
   return new DeferPartialWith(io, identity)
 }
 
@@ -226,7 +216,7 @@ export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId
  * @trace 0
  * @trace 1
  */
-export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
+export function deferTryCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
   return new DeferPartialWith(io, onThrow)
 }
 
@@ -238,12 +228,14 @@ export function deferCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error:
  *
  * @trace 0
  */
-export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
+export function deferTryCatch<E1>(
+  onThrow: (error: unknown) => E1
+): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
   return (
     /**
      * @trace 0
      */
-    (io) => deferCatch_(io, onThrow)
+    (io) => deferTryCatch_(io, onThrow)
   )
 }
 
@@ -256,7 +248,7 @@ export function deferCatch<E1>(onThrow: (error: unknown) => E1): <R, E, A>(io: (
  * @trace 0
  * @trace 1
  */
-export function deferCatchWith_<R, E, A, E1>(
+export function deferTryCatchWith_<R, E, A, E1>(
   io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
@@ -269,15 +261,15 @@ export function deferCatchWith_<R, E, A, E1>(
  *
  * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
  *
- * @dataFirst deferCatchWith_
+ * @dataFirst deferTryCatchWith_
  * @trace 0
  */
-export function deferCatchWith<E1>(onThrow: (error: unknown) => E1) {
+export function deferTryCatchWith<E1>(onThrow: (error: unknown) => E1) {
   /**
    * @trace 0
    */
   return <R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E | E1, A> =>
-    deferCatchWith_(io, onThrow)
+    deferTryCatchWith_(io, onThrow)
 }
 
 /**
@@ -292,14 +284,14 @@ export function deferMaybeWith<E, A, R, E1, A1>(
 /**
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
- * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
- * do not use this method, use `IO.defer`.
+ * it is conceptually equivalent to `flatten(succeedWith(io))`. If you wonder if the effect throws exceptions,
+ * do not use this method, use `IO.deferTryCatch`.
  *
  * @category Constructors
  * @since 1.0.0
  * @trace 0
  */
-export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
+export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
   return new DeferTotalWith(io)
 }
 
@@ -307,13 +299,13 @@ export function deferTotal<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
  * Returns a lazily constructed effect, whose construction may itself require
  * effects. The effect must not throw any exceptions. When no environment is required (i.e., when R == unknown)
  * it is conceptually equivalent to `flatten(effectTotal(io))`. If you wonder if the effect throws exceptions,
- * do not use this method, use `IO.defer`.
+ * do not use this method, use `IO.deferTryCatchWith`.
  *
  * @category Constructors
  * @since 1.0.0
  * @trace 0
  */
-export function deferTotalWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
+export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
   return new DeferTotalWith(io)
 }
 
@@ -451,7 +443,7 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * @trace 0
  */
 export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
-  return deferTotal(traceAs(exit, () => Ex.match_(exit(), halt, succeed)))
+  return defer(traceAs(exit, () => Ex.match_(exit(), halt, succeed)))
 }
 
 /**
@@ -460,7 +452,7 @@ export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
  * @trace 0
  */
 export function fromEitherWith<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return bind_(effectTotal(f), E.match(fail, succeed))
+  return bind_(succeedWith(f), E.match(fail, succeed))
 }
 
 /**
@@ -481,7 +473,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
  */
 export function fromOptionWith<A>(m: () => Option<A>): FIO<Option<never>, A> {
   return bind_(
-    effectTotal(m),
+    succeedWith(m),
     O.match(() => fail(O.none()), succeed)
   )
 }
@@ -502,7 +494,7 @@ export function fromOption<A = never>(option: Option<A>): IO<unknown, Option<nev
  * @trace 1
  */
 export function fromPromiseCatch_<E, A>(promise: () => Promise<A>, onReject: (reason: unknown) => E): FIO<E, A> {
-  return effectAsync((resolve) => {
+  return async((resolve) => {
     promise().then(flow(succeed, resolve)).catch(flow(onReject, fail, resolve))
   })
 }
@@ -530,7 +522,7 @@ export function fromPromiseCatch<E>(onReject: (reason: unknown) => E) {
  * @trace 0
  */
 export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
-  return effectAsync((resolve) => {
+  return async((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(fail, resolve))
   })
 }
@@ -541,7 +533,7 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
  * @trace 0
  */
 export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
-  return effectAsync((resolve) => {
+  return async((resolve) => {
     promise().then(flow(pure, resolve)).catch(flow(die, resolve))
   })
 }
@@ -565,7 +557,7 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
   return asksM(
     traceAs(trace, (_: R) =>
-      effectAsync<unknown, E, A>((k) => {
+      async<unknown, E, A>((k) => {
         runAsyncEnv(effect, _, (ex) => {
           switch (ex._tag) {
             case 'Success': {
@@ -823,7 +815,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Fallible IO
+ * MonadExcept
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -835,7 +827,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  *
  * @trace call
  */
-export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
+export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   const trace = accessCallTrace()
   return bind_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
@@ -845,7 +837,7 @@ export function refail<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1
  *
  * @trace call
  */
-export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
+export function memento<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
   return traceFrom(trace, match_)(ma, E.left, E.right)
 }
@@ -1962,7 +1954,7 @@ export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>)
  */
 export function evaluate<A>(a: Eval<A>): UIO<A> {
   const trace = accessCallTrace()
-  return effectTotal(traceFrom(trace, () => a.value))
+  return succeedWith(traceFrom(trace, () => a.value))
 }
 
 /**
@@ -2053,9 +2045,7 @@ export function filterOrElse_<R, E, A, R1, E1, A1>(
   return bind_(
     fa,
     (a): IO<R1, E1, A | A1> =>
-      predicate(a)
-        ? traceCall(succeed, trace)(a)
-        : deferTotal(traceFrom(trace, () => (or as (a: A) => IO<R1, E1, A1>)(a)))
+      predicate(a) ? traceCall(succeed, trace)(a) : defer(traceFrom(trace, () => (or as (a: A) => IO<R1, E1, A1>)(a)))
   )
 }
 
@@ -2295,7 +2285,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
   return pipe(
     as,
     I.foldl(succeed(Ch.builder()) as IO<R, E, Ch.ChunkBuilder<B>>, (b, a) =>
-      crossWith_(b, deferTotal(traceAs(f, () => f(a))), (builder, r) => {
+      crossWith_(b, defer(traceAs(f, () => f(a))), (builder, r) => {
         builder.append(r)
         return builder
       })
@@ -2586,7 +2576,7 @@ export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementError, A> {
  * @trace 0
  */
 export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> {
-  return deferTotal(traceAs(v, () => O.match_(v(), () => fail(e()), succeed)))
+  return defer(traceAs(v, () => O.match_(v(), () => fail(e()), succeed)))
 }
 
 /**
@@ -2637,8 +2627,8 @@ export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
 ): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
   return bind_(mb, (b) =>
     b
-      ? deferTotal(traceAs(onTrue, () => onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>))
-      : deferTotal(traceAs(onFalse, () => onFalse()))
+      ? defer(traceAs(onTrue, () => onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>))
+      : defer(traceAs(onFalse, () => onFalse()))
   )
 }
 
@@ -2677,7 +2667,7 @@ export function if_<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return ifM_(effectTotal(b), onTrue, onFalse)
+  return ifM_(succeedWith(b), onTrue, onFalse)
 }
 
 /**
@@ -2840,7 +2830,7 @@ export function joinEither<R1, E1, A1>(
  *  @trace 0
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return bind_(effectTotal(a), flow(E.left, pure))
+  return bind_(succeedWith(a), flow(E.left, pure))
 }
 
 /**
@@ -2925,7 +2915,7 @@ export function mapEffectCatch_<R, E, A, E1, B>(
 ): IO<R, E | E1, B> {
   return bind_(
     io,
-    traceAs(f, (a) => effectCatch_(() => f(a), onThrow))
+    traceAs(f, (a) => tryCatch_(() => f(a), onThrow))
   )
 }
 
@@ -3200,7 +3190,7 @@ export function partition_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreach_(as, traceAs(f, flow(f, attempt))), I.partitionMap(identity))
+  return map_(foreach_(as, traceAs(f, flow(f, memento))), I.partitionMap(identity))
 }
 
 /**
@@ -3508,7 +3498,7 @@ export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO
     ma,
     traceAs(
       error,
-      O.match(() => bind_(effectTotal(error), fail), succeed)
+      O.match(() => bind_(succeedWith(error), fail), succeed)
     )
   )
 }
@@ -3953,7 +3943,7 @@ export function whenM<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A
  * @trace 1
  */
 export function when_<R, E, A>(ma: IO<R, E, A>, b: () => boolean) {
-  return whenM_(ma, effectTotal(b))
+  return whenM_(ma, succeedWith(b))
 }
 
 /**
@@ -4270,7 +4260,7 @@ export function gen<T extends GenIO<any, any, any>, A>(
 export function gen(...args: any[]): any {
   const trace = accessCallTrace()
   const _gen  = <T extends GenIO<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): IO<P._R<T>, P._E<T>, A> =>
-    deferTotal(
+    defer(
       traceFrom(trace, () => {
         const iterator = f(adapter as any)
         const state    = iterator.next()

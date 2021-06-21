@@ -18,7 +18,7 @@ export function withEarlyReleaseExit_<R, E, A>(
   return new Managed(
     I.map_(
       ma.io,
-      traceFrom(trace, ([finalizer, a]) => [finalizer, [I.makeUninterruptible(finalizer(exit)), a]] as const)
+      traceFrom(trace, ([finalizer, a]) => [finalizer, [I.uninterruptible(finalizer(exit)), a]] as const)
     )
   )
 }

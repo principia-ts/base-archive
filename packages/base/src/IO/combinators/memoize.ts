@@ -20,7 +20,7 @@ import * as I from '../core'
  */
 export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> {
   return pipe(
-    RefM.refM(HM.makeDefault<A, P.Promise<E, B>>()),
+    RefM.make(HM.makeDefault<A, P.Promise<E, B>>()),
     I.map(
       traceAs(
         f,
@@ -34,7 +34,7 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
                     return I.succeed(tuple(memo.value, m))
                   } else {
                     return I.gen(function* (_) {
-                      const p = yield* _(P.promise<E, B>())
+                      const p = yield* _(P.make<E, B>())
                       yield* _(I.fork(p.fulfill(f(a))))
                       return tuple(p, HM.set_(m, a, p))
                     })
@@ -61,7 +61,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
      */
     <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
       pipe(
-        RefM.refM(HM.makeDefault<A, P.Promise<E, B>>()),
+        RefM.make(HM.makeDefault<A, P.Promise<E, B>>()),
         I.map(
           traceAs(
             f,
@@ -76,7 +76,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
                         }
                       }
                       return I.gen(function* (_) {
-                        const p = yield* _(P.promise<E, B>())
+                        const p = yield* _(P.make<E, B>())
                         yield* _(I.fork(p.fulfill(f(a))))
                         return tuple(p, HM.set_(m, a, p))
                       })

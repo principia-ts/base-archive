@@ -6,7 +6,7 @@ import * as I from '../IO/core'
 
 export function getAndSet<A>(a: A) {
   return (self: Atomic<A>): UIO<A> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const v = self.value.get
       self.value.set(a)
       return v
@@ -15,7 +15,7 @@ export function getAndSet<A>(a: A) {
 
 export function getAndUpdate<A>(f: (a: A) => A) {
   return (self: Atomic<A>): UIO<A> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const v = self.value.get
       self.value.set(f(v))
       return v
@@ -24,7 +24,7 @@ export function getAndUpdate<A>(f: (a: A) => A) {
 
 export function getAndUpdateSome<A>(f: (a: A) => Option<A>) {
   return (self: Atomic<A>): UIO<A> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const v = self.value.get
       const o = f(v)
       if (o._tag === 'Some') {
@@ -36,7 +36,7 @@ export function getAndUpdateSome<A>(f: (a: A) => Option<A>) {
 
 export function modify<A, B>(f: (a: A) => readonly [B, A]) {
   return (self: Atomic<A>): UIO<B> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const v = self.value.get
       const o = f(v)
       self.value.set(o[1])
@@ -45,30 +45,31 @@ export function modify<A, B>(f: (a: A) => readonly [B, A]) {
 }
 
 export function modifySome<B>(def: B) {
-  return <A>(f: (a: A) => Option<readonly [B, A]>) => (self: Atomic<A>): UIO<B> =>
-    I.effectTotal(() => {
-      const v = self.value.get
-      const o = f(v)
+  return <A>(f: (a: A) => Option<readonly [B, A]>) =>
+    (self: Atomic<A>): UIO<B> =>
+      I.succeedWith(() => {
+        const v = self.value.get
+        const o = f(v)
 
-      if (o._tag === 'Some') {
-        self.value.set(o.value[1])
-        return o.value[0]
-      }
+        if (o._tag === 'Some') {
+          self.value.set(o.value[1])
+          return o.value[0]
+        }
 
-      return def
-    })
+        return def
+      })
 }
 
 export function update<A>(f: (a: A) => A) {
   return (self: Atomic<A>): UIO<void> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       self.value.set(f(self.value.get))
     })
 }
 
 export function updateAndGet<A>(f: (a: A) => A) {
   return (self: Atomic<A>): UIO<A> => {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       self.value.set(f(self.value.get))
       return self.value.get
     })
@@ -77,7 +78,7 @@ export function updateAndGet<A>(f: (a: A) => A) {
 
 export function updateSome<A>(f: (a: A) => Option<A>) {
   return (self: Atomic<A>): UIO<void> =>
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       const o = f(self.value.get)
 
       if (o._tag === 'Some') {
@@ -88,7 +89,7 @@ export function updateSome<A>(f: (a: A) => Option<A>) {
 
 export function updateSomeAndGet<A>(f: (a: A) => Option<A>) {
   return (self: Atomic<A>): UIO<A> => {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       const o = f(self.value.get)
 
       if (o._tag === 'Some') {

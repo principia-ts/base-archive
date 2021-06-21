@@ -24,7 +24,7 @@ export class FiberRef<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function fiberRef<A>(
+export function make<A>(
   initial: A,
   onFork: (a: A) => A = identity,
   onJoin: (a: A, a1: A) => A = (_, a) => a

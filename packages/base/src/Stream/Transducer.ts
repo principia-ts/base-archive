@@ -171,7 +171,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
   return new Transducer(
     M.bind_(M.scope(), (scope) =>
       M.map_(
-        RefM.managedRefM<State>(initialState),
+        RefM.makeManaged<State>(initialState),
         (state) => (is: O.Option<Chunk<I>>) =>
           O.match_(
             is,

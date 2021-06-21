@@ -105,30 +105,30 @@ export interface Enqueue<A> extends Queue<unknown, never, never, unknown, A, any
  * -------------------------------------------------------------------------------------------------
  */
 
-export function slidingQueue<A>(capacity: number): I.UIO<UQueue<A>> {
+export function makeSliding<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.bind_(
-    I.effectTotal(() => new Bounded<A>(capacity)),
+    I.succeedWith(() => new Bounded<A>(capacity)),
     _queue(new SlidingStrategy())
   )
 }
 
-export function unboundedQueue<A>(): I.UIO<UQueue<A>> {
+export function makeUnbounded<A>(): I.UIO<UQueue<A>> {
   return I.bind_(
-    I.effectTotal(() => new Unbounded<A>()),
+    I.succeedWith(() => new Unbounded<A>()),
     _queue(new DroppingStrategy())
   )
 }
 
-export function droppingQueue<A>(capacity: number): I.UIO<UQueue<A>> {
+export function makeDropping<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.bind_(
-    I.effectTotal(() => new Bounded<A>(capacity)),
+    I.succeedWith(() => new Bounded<A>(capacity)),
     _queue(new DroppingStrategy())
   )
 }
 
-export function boundedQueue<A>(capacity: number): I.UIO<UQueue<A>> {
+export function makeBounded<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.bind_(
-    I.effectTotal(() => new Bounded<A>(capacity)),
+    I.succeedWith(() => new Bounded<A>(capacity)),
     _queue(new BackPressureStrategy())
   )
 }
@@ -637,7 +637,7 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RB1, EB1>(
           }
         })
       })
-    takeUpTo = (n: number): IO<RB & RB1, EB | EB1, C.Chunk<B>> => I.deferTotal(() => this.loop(n, C.empty()))
+    takeUpTo = (n: number): IO<RB & RB1, EB | EB1, C.Chunk<B>> => I.defer(() => this.loop(n, C.empty()))
   })()
 }
 
@@ -708,9 +708,9 @@ function _unsafeQueue<A>(
   return new (class extends Queue<unknown, unknown, never, never, A, A> {
     awaitShutdown: I.UIO<void>                     = shutdownHook.await
     capacity: number                               = queue.capacity
-    isShutdown: I.UIO<boolean>                     = I.effectTotal(() => shutdownFlag.get)
+    isShutdown: I.UIO<boolean>                     = I.succeedWith(() => shutdownFlag.get)
     offer: (a: A) => I.IO<unknown, never, boolean> = (a) =>
-      I.deferTotal(() => {
+      I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -732,7 +732,7 @@ function _unsafeQueue<A>(
       })
     offerAll: (as: Iterable<A>) => I.IO<unknown, never, boolean> = (as) => {
       const arr = C.from(as)
-      return I.deferTotal(() => {
+      return I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
@@ -763,17 +763,17 @@ function _unsafeQueue<A>(
       })
     }
     shutdown: I.UIO<void>         = I.descriptorWith((d) =>
-      I.deferTotal(() => {
+      I.defer(() => {
         shutdownFlag.set(true)
 
-        return I.makeUninterruptible(
+        return I.uninterruptible(
           I.whenM(shutdownHook.succeed(undefined))(
             I.bind_(I.foreachPar_(_unsafePollAll(takers), P.interruptAs(d.id)), () => strategy.shutdown)
           )
         )
       })
     )
-    size: I.UIO<number>           = I.deferTotal(() => {
+    size: I.UIO<number>           = I.defer(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
@@ -781,7 +781,7 @@ function _unsafeQueue<A>(
       }
     })
     take: I.IO<unknown, never, A> = I.descriptorWith((d) =>
-      I.deferTotal(() => {
+      I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -792,10 +792,10 @@ function _unsafeQueue<A>(
           strategy.unsafeOnQueueEmptySpace(queue)
           return I.pure(item)
         } else {
-          const p = P.unsafePromise<never, A>(d.id)
+          const p = P.unsafeMake<never, A>(d.id)
 
           return I.onInterrupt_(
-            I.deferTotal(() => {
+            I.defer(() => {
               takers.offer(p)
               _unsafeCompleteTakers(strategy, queue, takers)
               if (shutdownFlag.get) {
@@ -804,16 +804,16 @@ function _unsafeQueue<A>(
                 return p.await
               }
             }),
-            () => I.effectTotal(() => _unsafeRemove(takers, p))
+            () => I.succeedWith(() => _unsafeRemove(takers, p))
           )
         }
       })
     )
-    takeAll: I.IO<unknown, never, Chunk<A>> = I.deferTotal(() => {
+    takeAll: I.IO<unknown, never, Chunk<A>> = I.defer(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       } else {
-        return I.effectTotal(() => {
+        return I.succeedWith(() => {
           const as = _unsafePollAll(queue)
           strategy.unsafeOnQueueEmptySpace(queue)
           return as
@@ -821,11 +821,11 @@ function _unsafeQueue<A>(
       }
     })
     takeUpTo: (n: number) => I.IO<unknown, never, Chunk<A>> = (max) =>
-      I.deferTotal(() => {
+      I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         } else {
-          return I.effectTotal(() => {
+          return I.succeedWith(() => {
             const as = _unsafePollN(queue, max)
             strategy.unsafeOnQueueEmptySpace(queue)
             return as
@@ -837,7 +837,7 @@ function _unsafeQueue<A>(
 
 function _queue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<unknown, never, UQueue<A>> {
   return (queue) =>
-    I.map_(P.promise<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
+    I.map_(P.make<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
 function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
@@ -950,11 +950,11 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
-      I.deferTotal(() => {
-        const p = P.unsafePromise<never, boolean>(d.id)
+      I.defer(() => {
+        const p = P.unsafeMake<never, boolean>(d.id)
 
         return I.onInterrupt_(
-          I.deferTotal(() => {
+          I.defer(() => {
             this.unsafeOffer(as, p)
             this.unsafeOnQueueEmptySpace(queue)
             _unsafeCompleteTakers(this, queue, takers)
@@ -964,7 +964,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
               return p.await
             }
           }),
-          () => I.effectTotal(() => this.unsafeRemove(p))
+          () => I.succeedWith(() => this.unsafeRemove(p))
         )
       })
     )
@@ -1017,7 +1017,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     const self = this
     return I.gen(function* (_) {
       const fiberId = yield* _(I.fiberId())
-      const putters = yield* _(I.effectTotal(() => _unsafePollAll(self.putters)))
+      const putters = yield* _(I.succeedWith(() => _unsafePollAll(self.putters)))
       yield* _(I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(p.interruptAs(fiberId)) : I.unit())))
     })
   }
@@ -1057,7 +1057,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
     takers: MutableQueue<Promise<never, A>>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       this.unsafeSlidingOffer(queue, as)
       _unsafeCompleteTakers(this, queue, takers)
       return true

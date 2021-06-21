@@ -359,12 +359,13 @@ export function prepare<T>(tag: H.Tag<T>) {
       release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
         fromManaged(tag)(
           M.bind_(
-            M.makeExit_(acquire, (a) => release(a)),
+            M.bracketExit_(acquire, (a) => release(a)),
             (a) => M.fromEffect(I.map_(open(a), () => a))
           )
         )
     }),
-    release: <R2>(release: (_: A) => I.IO<R2, never, any>) => fromManaged(tag)(M.makeExit_(acquire, (a) => release(a)))
+    release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
+      fromManaged(tag)(M.bracketExit_(acquire, (a) => release(a)))
   })
 }
 
@@ -990,9 +991,9 @@ export class MemoMap {
             return I.pure(tuple(cached, m))
           } else {
             return I.gen(function* (_) {
-              const observers    = yield* _(Ref.ref(0))
-              const promise      = yield* _(P.promise<E, A>())
-              const finalizerRef = yield* _(Ref.ref<Finalizer>(RelMap.noopFinalizer))
+              const observers    = yield* _(Ref.make(0))
+              const promise      = yield* _(P.make<E, A>())
+              const finalizerRef = yield* _(Ref.make<Finalizer>(RelMap.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {
@@ -1072,7 +1073,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {
   return pipe(
-    RefM.refM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
-    I.bind((r) => I.effectTotal(() => new MemoMap(r)))
+    RefM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
+    I.bind((r) => I.succeedWith(() => new MemoMap(r)))
   )
 }

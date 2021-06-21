@@ -136,7 +136,7 @@ export function aroundAll<R, E, A, R1>(
     const aroundAll = (
       specs: M.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
     ): M.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, M.make(after), M.mapError(TF.fail), M.apr(specs))
+      pipe(before, M.bracket(after), M.mapError(TF.fail), M.apr(specs))
 
     const around = (
       test: I.IO<R0, TestFailure<E0>, TestSuccess>

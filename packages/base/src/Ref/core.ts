@@ -127,7 +127,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
             (s) => [E.right(undefined), s]
           )
         ),
-        I.refail
+        I.absolve
       )
     )
   }
@@ -227,11 +227,11 @@ export class Atomic<A> implements Ref<never, never, A, A> {
   }
 
   get get(): UIO<A> {
-    return I.effectTotal(() => this.value.get)
+    return I.succeedWith(() => this.value.get)
   }
 
   set(a: A): UIO<void> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       this.value.set(a)
     })
   }
@@ -263,14 +263,14 @@ export function concrete<EA, EB, A>(ref: Ref<EA, EB, A, A>) {
 /**
  * Creates a new `Ref` with the specified value.
  */
-export function ref<A>(a: A): UIO<URef<A>> {
-  return I.effectTotal(() => new Atomic(new AtomicReference(a)))
+export function make<A>(a: A): UIO<URef<A>> {
+  return I.succeedWith(() => new Atomic(new AtomicReference(a)))
 }
 
 /**
  * Creates a new `Ref` with the specified value.
  */
-export function unsafeRef<A>(a: A): URef<A> {
+export function unsafeMake<A>(a: A): URef<A> {
   return new Atomic(new AtomicReference(a))
 }
 
@@ -647,7 +647,7 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
                 )
               )
             ),
-            I.refail
+            I.absolve
           )
         ),
       DerivedAll: (derivedAll) =>
@@ -673,7 +673,7 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
                 )
               )
             ),
-            I.refail
+            I.absolve
           )
         )
     })

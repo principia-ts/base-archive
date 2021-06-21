@@ -130,9 +130,9 @@ export class GlobalScope extends CommonScope<never> {
     this.unsafeExtend = this.unsafeExtend.bind(this)
   }
 
-  private unsafeEnsureResult = E.right(new Key(I.effectTotal(() => true)))
+  private unsafeEnsureResult = E.right(new Key(I.succeedWith(() => true)))
 
-  private ensureResult = I.effectTotal(() => this.unsafeEnsureResult)
+  private ensureResult = I.succeedWith(() => this.unsafeEnsureResult)
 
   get closed(): UIO<boolean> {
     return I.pure(false)
@@ -189,19 +189,19 @@ export class LocalScope<A> extends CommonScope<A> {
   }
 
   get closed(): UIO<boolean> {
-    return I.effectTotal(() => this.unsafeClosed)
+    return I.succeedWith(() => this.unsafeClosed)
   }
 
   get empty(): UIO<boolean> {
-    return I.effectTotal(() => this.finalizers.size === 0)
+    return I.succeedWith(() => this.finalizers.size === 0)
   }
 
   ensure(finalizer: (a: A) => UIO<any>): UIO<E.Either<A, Key>> {
-    return I.effectTotal(() => this.unsafeEnsure(finalizer))
+    return I.succeedWith(() => this.unsafeEnsure(finalizer))
   }
 
   get released(): UIO<boolean> {
-    return I.effectTotal(() => this.unsafeReleased())
+    return I.succeedWith(() => this.unsafeReleased())
   }
 
   unsafeExtend(that: Scope<any>): boolean {
@@ -224,7 +224,7 @@ export class LocalScope<A> extends CommonScope<A> {
   }
 
   get release(): UIO<boolean> {
-    return I.deferTotal(() => {
+    return I.defer(() => {
       const result = this.unsafeRelease()
 
       if (result != null) {
@@ -328,7 +328,7 @@ export function unsafeMakeScope<A>(): Open<A> {
   const scope      = new LocalScope(new AtomicNumber(Number.MIN_SAFE_INTEGER), exitValue, new AtomicNumber(1), finalizers)
 
   return new Open<A>((a) => {
-    return I.deferTotal(() => {
+    return I.defer(() => {
       const result = scope.unsafeClose(a)
 
       if (result != null) {
@@ -341,5 +341,5 @@ export function unsafeMakeScope<A>(): Open<A> {
 }
 
 export function makeScope<A>(): UIO<Open<A>> {
-  return I.effectTotal(() => unsafeMakeScope<A>())
+  return I.succeedWith(() => unsafeMakeScope<A>())
 }

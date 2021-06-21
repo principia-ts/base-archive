@@ -313,7 +313,7 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
   return (fa) => catchMap_(fa, f)
 }
 
-export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
+export function memento<A>(fa: Option<A>): Option<Either<void, A>> {
   return catchAll_(
     map_(fa, (a) => _E.right(a)),
     () => some(_E.left(undefined))

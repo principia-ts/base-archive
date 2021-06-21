@@ -23,7 +23,7 @@ import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon, transplant } from './core-scope'
 import { ensuring } from './ensuring'
-import { makeInterruptible, makeUninterruptible, uninterruptibleMask } from './interrupt'
+import { interruptible, uninterruptible, uninterruptibleMask } from './interrupt'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
@@ -49,9 +49,9 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
   return I.gen(function* (_) {
     const parentId    = yield* _(I.fiberId())
-    const causes      = yield* _(Ref.ref<C.Cause<E>>(C.empty))
-    const result      = yield* _(P.promise<void, void>())
-    const status      = yield* _(Ref.ref<[number, number, boolean]>([0, 0, false]))
+    const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
+    const result      = yield* _(P.make<void, void>())
+    const status      = yield* _(Ref.make<[number, number, boolean]>([0, 0, false]))
     const startEffect = pipe(
       status,
       Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] => {
@@ -71,8 +71,8 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
 
     const effect = (a: A) =>
       pipe(
-        I.deferTotal(traceAs(f, () => f(a))),
-        makeInterruptible,
+        I.defer(traceAs(f, () => f(a))),
+        interruptible,
         I.tapCause((cause) =>
           pipe(
             causes,
@@ -92,7 +92,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
           )
         ),
         I.whenM(startEffect),
-        makeUninterruptible
+        uninterruptible
       )
 
     const fibers = yield* _(transplant((graft) => I.foreach_(arr, flow(effect, graft, I.fork))))
@@ -158,19 +158,19 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  */
 export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return pipe(
-    I.effectTotal<B[]>(() => []),
+    I.succeedWith<B[]>(() => []),
     I.bind((mut_array) =>
       I.bind_(
         foreachUnitPar_(
           It.imap_(as, (n, a) => [a, n] as [A, number]),
           ([a, n]) =>
-            I.bind_(I.deferTotal(traceAs(f, () => f(a))), (b) =>
-              I.effectTotal(() => {
+            I.bind_(I.defer(traceAs(f, () => f(a))), (b) =>
+              I.succeedWith(() => {
                 mut_array[n] = b
               })
             )
         ),
-        () => I.effectTotal(() => mut_array)
+        () => I.succeedWith(() => mut_array)
       )
     ),
     I.map(Ch.from)

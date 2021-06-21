@@ -80,7 +80,7 @@ export class Driver<R, I, O> {
 
 export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
-    Ref.ref([O.none<O>(), schedule.step] as const),
+    Ref.make([O.none<O>(), schedule.step] as const),
     I.map((ref) => {
       const reset = ref.set([O.none(), schedule.step])
 
@@ -1385,7 +1385,7 @@ const unfoldLoop =
 export function unfold_<A>(a: () => A, f: (a: A) => A): Schedule<unknown, unknown, A> {
   return new Schedule((now) =>
     pipe(
-      I.effectTotal(a),
+      I.succeedWith(a),
       I.map((a) => makeContinue(a, now, unfoldLoop(f(a), f)))
     )
   )

@@ -111,10 +111,10 @@ export function concrete<RA, RB, EA, EB, A, B>(_: Hub<RA, RB, EA, EB, A, B>): as
  *
  * For best performance use capacities that are powers of two.
  */
-export function boundedHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
+export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.bind_(
-    I.effectTotal(() => _makeBounded<A>(requestedCapacity)),
-    (_) => _hub(_, new BackPressure())
+    I.succeedWith(() => _makeBounded<A>(requestedCapacity)),
+    (_) => _make(_, new BackPressure())
   )
 }
 
@@ -125,14 +125,14 @@ export function boundedHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  *
  * For best performance use capacities that are powers of two.
  */
-export function unsafeBoundedHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
+export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
 
-  return _unsafeHub(
+  return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafePromise<never, void>(F.emptyFiberId),
+    P.unsafeMake<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new BackPressure()
   )
@@ -144,12 +144,12 @@ export function unsafeBoundedHub<A>(requestedCapacity: number): UHub<A> {
  *
  * For best performance use capacities that are powers of two.
  */
-export function droppingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
+export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.bind_(
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
-    (_) => _hub(_, new Dropping())
+    (_) => _make(_, new Dropping())
   )
 }
 
@@ -159,14 +159,14 @@ export function droppingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  *
  * For best performance use capacities that are powers of two.
  */
-export function unsafeDroppingHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
+export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
 
-  return _unsafeHub(
+  return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafePromise<never, void>(F.emptyFiberId),
+    P.unsafeMake<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -178,12 +178,12 @@ export function unsafeDroppingHub<A>(requestedCapacity: number): UHub<A> {
  *
  * For best performance use capacities that are powers of two.
  */
-export function slidingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
+export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.bind_(
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
-    (_) => _hub(_, new Sliding())
+    (_) => _make(_, new Sliding())
   )
 }
 
@@ -193,14 +193,14 @@ export function slidingHub<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  *
  * For best performance use capacities that are powers of two.
  */
-export function unsafeSlidingHub<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
+export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
 
-  return _unsafeHub(
+  return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafePromise<never, void>(F.emptyFiberId),
+    P.unsafeMake<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Sliding()
   )
@@ -209,35 +209,35 @@ export function unsafeSlidingHub<A>(requestedCapacity: number): UHub<A> {
 /**
  * Creates an unbounded hub.
  */
-export function unboundedHub<A>(): I.UIO<UHub<A>> {
+export function makeUnbounded<A>(): I.UIO<UHub<A>> {
   return I.bind_(
-    I.effectTotal(() => {
+    I.succeedWith(() => {
       return _makeUnbounded<A>()
     }),
-    (_) => _hub(_, new Dropping())
+    (_) => _make(_, new Dropping())
   )
 }
 
 /**
  * Creates an unbounded hub.
  */
-export function unsafeUnboundedHub<A>(): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeRef<RM.State>(new RM.Running(0, new Map(), identity)))
+export function unsafeMakeUnbounded<A>(): UHub<A> {
+  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
 
-  return _unsafeHub(
+  return _unsafeMake(
     _makeUnbounded<A>(),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafePromise<never, void>(F.emptyFiberId),
+    P.unsafeMake<never, void>(F.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
 }
 
-function _hub<A>(hub: HubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
+function _make<A>(hub: HubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
   return I.bind_(RM.make, (releaseMap) => {
-    return I.map_(P.promise<never, void>(), (promise) => {
-      return _unsafeHub(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
+    return I.map_(P.make<never, void>(), (promise) => {
+      return _unsafeMake(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
     })
   })
 }
@@ -245,7 +245,7 @@ function _hub<A>(hub: HubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
 /**
  * Unsafely creates a hub with the specified strategy.
  */
-function _unsafeHub<A>(
+function _unsafeMake<A>(
   hub: HubInternal<A>,
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   releaseMap: RM.ReleaseMap,
@@ -256,11 +256,11 @@ function _unsafeHub<A>(
   return new (class extends Hub<unknown, unknown, never, never, A, A> {
     awaitShutdown = shutdownHook.await
     capacity      = hub.capacity
-    isShutdown    = I.effectTotal(() => shutdownFlag.get)
+    isShutdown    = I.succeedWith(() => shutdownFlag.get)
     shutdown      = pipe(
       I.fiberId(),
       I.bind((fiberId) =>
-        I.deferTotal(() => {
+        I.defer(() => {
           shutdownFlag.set(true)
           return pipe(
             M.releaseAll_(releaseMap, Ex.interrupt(fiberId), parallel)['*>'](strategy.shutdown),
@@ -268,10 +268,10 @@ function _unsafeHub<A>(
           )
         })
       ),
-      I.makeUninterruptible
+      I.uninterruptible
     )
 
-    size = I.deferTotal(() => {
+    size = I.defer(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       }
@@ -283,7 +283,7 @@ function _unsafeHub<A>(
       M.do,
       M.bindS('dequeue', () => I.toManaged_(subscription(hub, subscribers, strategy))),
       M.tap(({ dequeue }) =>
-        M.makeExit_(
+        M.bracketExit_(
           RM.add(releaseMap, (_) => Q.shutdown(dequeue)),
           (finalizer, exit) => finalizer(exit)
         )
@@ -292,7 +292,7 @@ function _unsafeHub<A>(
     )
 
     publish = (a: A): I.IO<unknown, never, boolean> =>
-      I.deferTotal(() => {
+      I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -306,7 +306,7 @@ function _unsafeHub<A>(
       })
 
     publishAll = (as: Iterable<A>): I.IO<unknown, never, boolean> =>
-      I.deferTotal(() => {
+      I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -357,7 +357,7 @@ function subscription<A>(
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   strategy: Strategy<A>
 ): I.UIO<Q.Dequeue<A>> {
-  return I.map_(P.promise<never, void>(), (promise) => {
+  return I.map_(P.make<never, void>(), (promise) => {
     return unsafeSubscription(
       hub,
       subscribers,
@@ -387,16 +387,16 @@ function unsafeSubscription<A>(
 
     capacity: number = hub.capacity
 
-    isShutdown: I.UIO<boolean> = I.effectTotal(() => shutdownFlag.get)
+    isShutdown: I.UIO<boolean> = I.succeedWith(() => shutdownFlag.get)
 
     shutdown: I.UIO<void> = pipe(
       I.fiberId(),
       I.bind((fiberId) =>
-        I.deferTotal(() => {
+        I.defer(() => {
           shutdownFlag.set(true)
           return pipe(
             I.foreachPar_(_unsafePollAllQueue(pollers), P.interruptAs(fiberId))['*>'](
-              I.effectTotal(() => subscription.unsubscribe())
+              I.succeedWith(() => subscription.unsubscribe())
             ),
             I.whenM(shutdownHook.succeed(undefined))
           )
@@ -404,7 +404,7 @@ function unsafeSubscription<A>(
       )
     )
 
-    size: I.UIO<number> = I.deferTotal(() => {
+    size: I.UIO<number> = I.defer(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       }
@@ -419,7 +419,7 @@ function unsafeSubscription<A>(
     take: I.IO<unknown, never, A> = pipe(
       I.fiberId(),
       I.bind((fiberId) =>
-        I.deferTotal(() => {
+        I.defer(() => {
           if (shutdownFlag.get) {
             return I.interrupt
           }
@@ -428,10 +428,10 @@ function unsafeSubscription<A>(
           const message = pollers.isEmpty ? subscription.poll(empty) : empty
 
           if (message === null) {
-            const promise = P.unsafePromise<never, A>(fiberId)
+            const promise = P.unsafeMake<never, A>(fiberId)
 
             return I.onInterrupt_(
-              I.deferTotal(() => {
+              I.defer(() => {
                 pollers.offer(promise)
                 subscribers.add(new HashedPair(subscription, pollers))
                 strategy.unsafeCompletePollers(hub, subscribers, subscription, pollers)
@@ -442,7 +442,7 @@ function unsafeSubscription<A>(
                 }
               }),
               () =>
-                I.effectTotal(() => {
+                I.succeedWith(() => {
                   _unsafeRemove(pollers, promise)
                 })
             )
@@ -454,7 +454,7 @@ function unsafeSubscription<A>(
       )
     )
 
-    takeAll: I.IO<unknown, never, C.Chunk<A>> = I.deferTotal(() => {
+    takeAll: I.IO<unknown, never, C.Chunk<A>> = I.defer(() => {
       if (shutdownFlag.get) {
         return I.interrupt
       }
@@ -467,7 +467,7 @@ function unsafeSubscription<A>(
     })
 
     takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
-      return I.deferTotal(() => {
+      return I.defer(() => {
         if (shutdownFlag.get) {
           return I.interrupt
         }
@@ -931,18 +931,18 @@ export class BackPressure<A> extends Strategy<A> {
     return pipe(
       I.fiberId(),
       I.bind((fiberId) =>
-        I.deferTotal(() => {
-          const promise = P.unsafePromise<never, boolean>(fiberId)
+        I.defer(() => {
+          const promise = P.unsafeMake<never, boolean>(fiberId)
 
           return pipe(
-            I.deferTotal(() => {
+            I.defer(() => {
               this.unsafeOffer(as, promise)
               this.unsafeOnHubEmptySpace(hub, subscribers)
               this.unsafeCompleteSubscribers(hub, subscribers)
 
               return isShutdown.get ? I.interrupt : P.await(promise)
             }),
-            I.onInterrupt(() => I.effectTotal(() => this.unsafeRemove(promise)))
+            I.onInterrupt(() => I.succeedWith(() => this.unsafeRemove(promise)))
           )
         })
       )
@@ -953,7 +953,7 @@ export class BackPressure<A> extends Strategy<A> {
     return pipe(
       I.do,
       I.bindS('fiberId', () => I.fiberId()),
-      I.bindS('publishers', () => I.effectTotal(() => _unsafePollAllQueue(this.publishers))),
+      I.bindS('publishers', () => I.succeedWith(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
         I.foreachPar_(publishers, ([_, promise, last]) => (last ? I.asUnit(promise.interruptAs(fiberId)) : I.unit()))
       ),
@@ -1069,7 +1069,7 @@ export class Sliding<A> extends Strategy<A> {
     as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.effectTotal(() => {
+    return I.succeedWith(() => {
       this.unsafeSlidingPublish(hub, as)
       this.unsafeCompleteSubscribers(hub, subscribers)
       return true
@@ -1823,7 +1823,7 @@ function _nextPow2(n: number): number {
   return Math.max(Math.pow(2, nextPow), 2)
 }
 
-export function _makeBounded<A>(requestedCapacity: number): HubInternal<A> {
+function _makeBounded<A>(requestedCapacity: number): HubInternal<A> {
   _ensureCapacity(requestedCapacity)
 
   if (requestedCapacity === 1) {
@@ -1835,56 +1835,56 @@ export function _makeBounded<A>(requestedCapacity: number): HubInternal<A> {
   }
 }
 
-export function _makeUnbounded<A>(): HubInternal<A> {
+function _makeUnbounded<A>(): HubInternal<A> {
   return new UnboundedHub()
 }
 
 /**
  * Unsafely completes a promise with the specified value.
  */
-export function _unsafeCompletePromise<A>(promise: P.Promise<never, A>, a: A): void {
+function _unsafeCompletePromise<A>(promise: P.Promise<never, A>, a: A): void {
   P.unsafeDone(I.succeed(a))(promise)
 }
 
 /**
  * Unsafely offers the specified values to a queue.
  */
-export function _unsafeOfferAll<A>(queue: MutableQueue<A>, as: Iterable<A>): C.Chunk<A> {
+function _unsafeOfferAll<A>(queue: MutableQueue<A>, as: Iterable<A>): C.Chunk<A> {
   return queue.offerAll(as)
 }
 
 /**
  * Unsafely polls all values from a queue.
  */
-export function _unsafePollAllQueue<A>(queue: MutableQueue<A>): C.Chunk<A> {
+function _unsafePollAllQueue<A>(queue: MutableQueue<A>): C.Chunk<A> {
   return queue.pollUpTo(Number.MAX_SAFE_INTEGER)
 }
 
 /**
  * Unsafely polls all values from a subscription.
  */
-export function _unsafePollAllSubscription<A>(subscription: SubscriptionInternal<A>): C.Chunk<A> {
+function _unsafePollAllSubscription<A>(subscription: SubscriptionInternal<A>): C.Chunk<A> {
   return subscription.pollUpTo(Number.MAX_SAFE_INTEGER)
 }
 
 /**
  * Unsafely polls the specified number of values from a subscription.
  */
-export function _unsafePollN<A>(subscription: SubscriptionInternal<A>, max: number): C.Chunk<A> {
+function _unsafePollN<A>(subscription: SubscriptionInternal<A>, max: number): C.Chunk<A> {
   return subscription.pollUpTo(max)
 }
 
 /**
  * Unsafely publishes the specified values to a hub.
  */
-export function _unsafePublishAll<A>(hub: HubInternal<A>, as: Iterable<A>): C.Chunk<A> {
+function _unsafePublishAll<A>(hub: HubInternal<A>, as: Iterable<A>): C.Chunk<A> {
   return hub.publishAll(as)
 }
 
 /**
  * Unsafely removes the specified item from a queue.
  */
-export function _unsafeRemove<A>(queue: MutableQueue<A>, a: A): void {
+function _unsafeRemove<A>(queue: MutableQueue<A>, a: A): void {
   _unsafeOfferAll(
     queue,
     C.filter_(_unsafePollAllQueue(queue), (_) => _ !== a)

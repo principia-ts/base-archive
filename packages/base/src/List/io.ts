@@ -8,7 +8,7 @@ export function mapM_<A, R, E, B>(l: List<A>, f: (a: A) => I.IO<R, E, B>): I.IO<
   return L.foldl_(l, I.succeed(L.emptyPushable<B>()) as I.IO<R, E, L.MutableList<B>>, (b, a) =>
     I.crossWith_(
       b,
-      I.deferTotal(() => f(a)),
+      I.defer(() => f(a)),
       (acc, r) => {
         L.push(r, acc)
         return acc
@@ -22,7 +22,7 @@ export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (l: List<A>) => I.
 }
 
 export function dropWhileM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, List<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     let dropping  = I.succeed(true) as I.IO<R, E, boolean>
     const newList = L.emptyPushable<A>()
     L.forEach_(l, (a) => {
@@ -48,7 +48,7 @@ export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (l: List<
 }
 
 export function filterM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, List<A>> {
-  return I.deferTotal(() => {
+  return I.defer(() => {
     let r = I.succeed(L.emptyPushable<A>()) as I.IO<R, E, L.MutableList<A>>
     L.forEach_(l, (a) => {
       r = I.crossWith_(r, p(a), (l, b) => {

@@ -5,7 +5,7 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { fromEffect, makeExit_ } from '../../Managed/core'
+import { bracketExit_, fromEffect } from '../../Managed/core'
 
 /**
  * @trace call
@@ -21,7 +21,7 @@ export function toManaged_<R, E, A, R1 = unknown>(
   release?: (a: A) => IO<R1, never, any>
 ): Managed<R & R1, E, A> {
   const trace = accessCallTrace()
-  return release ? traceCall(makeExit_, trace)(ma, release) : traceCall(fromEffect, trace)(ma)
+  return release ? traceCall(bracketExit_, trace)(ma, release) : traceCall(fromEffect, trace)(ma)
 }
 
 /**
@@ -39,5 +39,5 @@ export function toManaged<A, R>(
   release?: (a: A) => IO<R, never, any>
 ): <R1, E1>(ma: IO<R1, E1, A>) => Managed<R & R1, E1, A> {
   const trace = accessCallTrace()
-  return (ma) => (release ? traceCall(makeExit_, trace)(ma, release) : traceCall(fromEffect, trace)(ma))
+  return (ma) => (release ? traceCall(bracketExit_, trace)(ma, release) : traceCall(fromEffect, trace)(ma))
 }

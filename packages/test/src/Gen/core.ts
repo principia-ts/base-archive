@@ -89,7 +89,7 @@ export function constant<A>(a: A): Gen<unknown, A> {
 }
 
 export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
-  return pipe(I.effectTotal(gen), fromEffect, flatten)
+  return pipe(I.succeedWith(gen), fromEffect, flatten)
 }
 
 export function fromEffect<R, A>(effect: IO<R, never, A>): Gen<R, A> {
@@ -125,7 +125,7 @@ export const exponential: Gen<Has<Random>, number> = map_(uniform(), (n) => -Mat
 
 export function int(constraints: NumberConstraints = {}): Gen<Has<Random>, number> {
   return fromEffectSample(
-    I.deferTotal(() => {
+    I.defer(() => {
       const min = constraints.min ?? -0x80000000
       const max = constraints.max ?? 0x7fffffff
       if (min > max || min < Number.MIN_SAFE_INTEGER || max > Number.MAX_SAFE_INTEGER) {

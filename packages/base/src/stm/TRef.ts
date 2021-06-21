@@ -242,7 +242,7 @@ export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): _.STM<unkno
       return E.match_(self.setEither(a), STM.fail, (s) => set_(self.value, s))
     }
     case 'DerivedAll': {
-      return STM.refail(
+      return STM.absolve(
         modify_(self.value, (s) =>
           E.match_(
             self.setEither(a)(s),
@@ -272,7 +272,7 @@ export function modify_<E, A, B>(self: ETRef<E, A>, f: (a: A) => readonly [B, A]
       })
     }
     case 'Derived': {
-      return STM.refail(
+      return STM.absolve(
         modify_(self.value, (s) =>
           E.match_(
             self.getEither(s),
@@ -290,7 +290,7 @@ export function modify_<E, A, B>(self: ETRef<E, A>, f: (a: A) => readonly [B, A]
       )
     }
     case 'DerivedAll': {
-      return STM.refail(
+      return STM.absolve(
         modify_(self.value, (s) =>
           E.match_(
             self.getEither(s),

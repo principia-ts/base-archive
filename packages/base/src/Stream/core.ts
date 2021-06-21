@@ -222,7 +222,7 @@ export function fromChunk<A>(c: Chunk<A>): UStream<A> {
   return new Stream(
     I.toManaged_(
       I.gen(function* (_) {
-        const doneRef = yield* _(Ref.ref(false))
+        const doneRef = yield* _(Ref.make(false))
         const pull    = pipe(
           doneRef,
           Ref.modify<I.FIO<Option<never>, Chunk<A>>, boolean>((done) =>
@@ -278,7 +278,7 @@ export const empty: UStream<never> = new Stream(M.succeed(Pull.end))
  * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
  */
 export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
-  return new Stream(pipe(Ref.ref(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.single)))))
+  return new Stream(pipe(Ref.make(a), I.toManaged(), M.map(flow(Ref.getAndUpdate(f), I.map(C.single)))))
 }
 
 export function defer<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
@@ -339,7 +339,7 @@ export function finalizer<R>(finalizer: I.URIO<R, unknown>): URStream<R, unknown
 export function fromEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
 
       const pull = pipe(
         doneRef,
@@ -392,10 +392,10 @@ export function asyncOption<R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const output      = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
+      const output      = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
-        M.effectTotal(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
+        M.succeedWith(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
       )
 
       const pull = yield* _(
@@ -463,10 +463,10 @@ export function effectAsyncInterruptEither<R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const output       = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
+      const output       = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
-        M.effectTotal(() =>
+        M.succeedWith(() =>
           register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb)))
         )
       )
@@ -565,7 +565,7 @@ export function paginateChunkM<S, R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const ref = yield* _(Ref.ref(O.some(s)))
+      const ref = yield* _(Ref.make(O.some(s)))
       return pipe(
         ref.get,
         I.bind(
@@ -611,7 +611,7 @@ export function repeat<A>(a: A): Stream<unknown, never, A> {
 export function repeatEffectChunkOption<R, E, A>(ef: I.IO<R, Option<E>, Chunk<A>>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const pull    = I.bind_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
@@ -750,11 +750,11 @@ class StreamEnd extends Error {}
  */
 export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, unknown, A> {
   return pipe(
-    fromEffect(I.effectTotal(() => iterable()[Symbol.iterator]())),
+    fromEffect(I.succeedWith(() => iterable()[Symbol.iterator]())),
     bind((it) =>
       repeatEffectOption(
         pipe(
-          I.effect(() => {
+          I.try(() => {
             const v = it.next()
             if (!v.done) {
               return v.value
@@ -783,7 +783,7 @@ export function bracket_<R, E, A, R1>(
   acquire: I.IO<R, E, A>,
   release: (a: A) => I.IO<R1, never, any>
 ): Stream<R & R1, E, A> {
-  return managed(M.make_(acquire, release))
+  return managed(M.bracket_(acquire, release))
 }
 
 /**
@@ -802,7 +802,7 @@ export function bracketExit_<R, E, A, R1>(
   acquire: I.IO<R, E, A>,
   release: (a: A, exit: Ex.Exit<unknown, unknown>) => I.IO<R1, never, unknown>
 ): Stream<R & R1, E, A> {
-  return managed(M.makeExit_(acquire, release))
+  return managed(M.bracketExit_(acquire, release))
 }
 
 /**
@@ -831,10 +831,10 @@ export function asyncM<R, E, A, R1 = R, E1 = E>(
 ): Stream<R & R1, E | E1, A> {
   return pipe(
     M.gen(function* (_) {
-      const output  = yield* _(Queue.boundedQueue<Take.Take<E, A>>(outputBuffer))
+      const output  = yield* _(Queue.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime = yield* _(I.runtime<R>())
       yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), (x) => runtime.runCancel_(x, cb))))
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const pull    = I.bind_(doneRef.get, (done) => {
         if (done) {
           return Pull.end
@@ -1356,8 +1356,8 @@ export function bind_<R, E, A, R1, E1, B>(
   return new Stream(
     M.gen(function* (_) {
       const outerStream     = yield* _(ma.proc)
-      const currOuterChunk  = yield* _(Ref.ref<[Chunk<A>, number]>([C.empty(), 0]))
-      const currInnerStream = yield* _(Ref.ref<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
+      const currOuterChunk  = yield* _(Ref.make<[Chunk<A>, number]>([C.empty(), 0]))
+      const currInnerStream = yield* _(Ref.make<I.IO<R_, Option<E_>, Chunk<B>>>(Pull.end))
       const innerFinalizer  = yield* _(M.finalizerRef(RM.noopFinalizer))
       return new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
     })
@@ -1466,7 +1466,7 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
   return new Stream(
     M.gen(function* (_) {
       const upstream = yield* _(M.mapM_(ma.proc, BPull.make))
-      const doneRef  = yield* _(Ref.ref(false))
+      const doneRef  = yield* _(Ref.make(false))
       const pull     = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -1546,10 +1546,10 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const pull         = yield* _(ma.proc)
         const push         = yield* _(transducer.push)
         const handoff      = yield* _(Ha.make<Take.Take<E, A>>())
-        const raceNextTime = yield* _(Ref.ref(false))
-        const waitingFiber = yield* _(Ref.ref<O.Option<Fiber<never, Take.Take<E | E1, A>>>>(O.none()))
+        const raceNextTime = yield* _(Ref.make(false))
+        const waitingFiber = yield* _(Ref.make<O.Option<Fiber<never, Take.Take<E | E1, A>>>>(O.none()))
         const sdriver      = yield* _(Sc.driver(schedule))
-        const lastChunk    = yield* _(Ref.ref<Chunk<P>>(C.empty()))
+        const lastChunk    = yield* _(Ref.make<Chunk<P>>(C.empty()))
 
         const producer = pipe(
           pull,
@@ -1731,7 +1731,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
     M.gen(function* (_) {
       const pull    = yield* _(ma.proc)
       const push    = yield* _(transducer.push)
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
 
       const go: I.IO<R & R1, O.Option<E | E1>, Chunk<P>> = pipe(
         doneRef.get,
@@ -1827,18 +1827,18 @@ export function distributedWithDynamic_<R, E, A>(
   return M.gen(function* (_) {
     const queuesRef = yield* _(
       pipe(
-        Ref.ref(Map.empty<symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>>()),
-        M.make((_) => I.bind_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
+        Ref.make(Map.empty<symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>>()),
+        M.bracket((_) => I.bind_(_.get, (qs) => I.foreach_(qs.values(), (q) => q.shutdown)))
       )
     )
     const add       = yield* _(
       M.gen(function* (_) {
-        const queuesLock = yield* _(Semaphore.semaphore(1))
+        const queuesLock = yield* _(Semaphore.make(1))
         const newQueue   = yield* _(
-          Ref.ref<I.UIO<readonly [symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
+          Ref.make<I.UIO<readonly [symbol, Queue.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
-              const queue = yield* _(Queue.boundedQueue<Ex.Exit<O.Option<E>, A>>(maximumLag))
-              const id    = yield* _(I.effectTotal(() => Symbol()))
+              const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
+              const id    = yield* _(I.succeedWith(() => Symbol()))
               yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
               return tuple(id, queue)
             })
@@ -1848,7 +1848,7 @@ export function distributedWithDynamic_<R, E, A>(
           queuesLock.withPermit(
             pipe(
               I.gen(function* (_) {
-                const queue = yield* _(Queue.boundedQueue<Ex.Exit<O.Option<E>, A>>(1))
+                const queue = yield* _(Queue.makeBounded<Ex.Exit<O.Option<E>, A>>(1))
                 yield* _(queue.offer(endTake))
                 const id = Symbol() as symbol
                 yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
@@ -1888,7 +1888,7 @@ export function distributedWithDynamic_<R, E, A>(
             M.fork
           )
         )
-        return (queuesLock.withPermit)(I.flatten(newQueue.get))
+        return queuesLock.withPermit(I.flatten(newQueue.get))
       })
     )
     return add
@@ -1920,7 +1920,7 @@ export function distributedWith_<R, E, A>(
   decide: (_: A) => I.UIO<(_: number) => boolean>
 ): M.Managed<R, never, Chunk<Queue.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return pipe(
-    P.promise<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
+    P.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromEffect,
     M.bind((prom) =>
       pipe(
@@ -2099,7 +2099,7 @@ export function broadcastDynamic(
 export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const queue   = yield* _(toQueue_(ma, capacity))
       return pipe(
         doneRef.get,
@@ -2161,10 +2161,10 @@ function bufferSignal_<R, E, A>(
 ): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<A>>> {
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
-    const start = yield* _(P.promise<never, void>())
+    const start = yield* _(P.make<never, void>())
     yield* _(start.succeed(undefined))
-    const ref     = yield* _(Ref.ref(start))
-    const doneRef = yield* _(Ref.ref(false))
+    const ref     = yield* _(Ref.make(start))
+    const doneRef = yield* _(Ref.make(false))
     const offer   = (take: Take.Take<E, A>): I.UIO<void> =>
       Ex.match_(
         take,
@@ -2172,14 +2172,14 @@ function bufferSignal_<R, E, A>(
           I.gen(function* ($) {
             const latch = yield* $(ref.get)
             yield* $(latch.await)
-            const p = yield* $(P.promise<never, void>())
+            const p = yield* $(P.make<never, void>())
             yield* $(queue.offer([take, p]))
             yield* $(ref.set(p))
             yield* $(p.await)
           }),
         (_) =>
           I.gen(function* ($) {
-            const p     = yield* $(P.promise<never, void>())
+            const p     = yield* $(P.make<never, void>())
             const added = yield* $(queue.offer([take, p]))
             yield* $(I.when_(ref.set(p), () => added))
           })
@@ -2223,7 +2223,7 @@ export function bufferSliding_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Stre
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Queue.slidingQueue<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
+        I.toManaged_(Queue.makeSliding<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2250,7 +2250,7 @@ export function bufferDropping_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Str
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Queue.droppingQueue<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
+        I.toManaged_(Queue.makeDropping<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), (q) => q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2283,14 +2283,14 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
   return new Stream<R & R1, E1, A | B>(
     M.gen(function* (_) {
       const finalizerRef = yield* _(M.finalizerRef(RM.noopFinalizer))
-      const stateRef     = yield* _(Ref.ref<State<E>>({ _tag: 'NotStarted' }))
+      const stateRef     = yield* _(Ref.make<State<E>>({ _tag: 'NotStarted' }))
 
       const closeCurrent = (cause: Ca.Cause<any>) =>
         pipe(
           finalizerRef,
           Ref.getAndSet(RM.noopFinalizer),
           I.bind((f) => f(Ex.halt(cause))),
-          I.makeUninterruptible
+          I.uninterruptible
         )
 
       const open =
@@ -2452,10 +2452,10 @@ export function bindPar_<R, E, A, R1, E1, A1>(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
         const outQueue     = yield* _(
-          I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
+          I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), (q) => q.shutdown)
         )
-        const permits      = yield* _(Semaphore.semaphore(n))
-        const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
+        const permits      = yield* _(Semaphore.make(n))
+        const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
         // - The driver stream forks an inner fiber for each stream created
         //   by f, with an upper bound of n concurrent fibers, enforced by the semaphore.
         //   - On completion, the driver stream tries to acquire all permits to verify
@@ -2474,7 +2474,7 @@ export function bindPar_<R, E, A, R1, E1, A1>(
           pipe(
             foreachManaged_(ma, (o) =>
               I.gen(function* (_) {
-                const latch       = yield* _(P.promise<never, void>())
+                const latch       = yield* _(P.make<never, void>())
                 const innerStream = pipe(
                   Semaphore.withPermitManaged(permits),
                   managed,
@@ -2501,9 +2501,9 @@ export function bindPar_<R, E, A, R1, E1, A1>(
               () =>
                 pipe(
                   innerFailure.await,
-                  I.makeInterruptible,
+                  I.interruptible,
                   I.raceWith(
-                    permits.withPermits(n, I.makeInterruptible(I.unit())),
+                    permits.withPermits(n, I.interruptible(I.unit())),
                     (_, permitsAcquisition) =>
                       pipe(getChildren, I.bind(Fi.interruptAll), I.apr(I.asUnit(Fi.interrupt(permitsAcquisition)))),
                     (_, failureAwait) => pipe(outQueue.offer(Pull.end), I.apr(I.asUnit(Fi.interrupt(failureAwait))))
@@ -2546,18 +2546,18 @@ export function bindParSwitch_(n: number, bufferSize = 16) {
       M.withChildren((getChildren) =>
         M.gen(function* (_) {
           const outQueue     = yield* _(
-            I.toManaged_(Queue.boundedQueue<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
+            I.toManaged_(Queue.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), (q) => q.shutdown)
           )
-          const permits      = yield* _(Semaphore.semaphore(n))
-          const innerFailure = yield* _(P.promise<Ca.Cause<E1>, never>())
-          const cancelers    = yield* _(I.toManaged_(Queue.boundedQueue<P.Promise<never, void>>(n), (q) => q.shutdown))
+          const permits      = yield* _(Semaphore.make(n))
+          const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
+          const cancelers    = yield* _(I.toManaged_(Queue.makeBounded<P.Promise<never, void>>(n), (q) => q.shutdown))
           yield* _(
             pipe(
               ma,
               foreachManaged((o) =>
                 I.gen(function* (_) {
-                  const canceler = yield* _(P.promise<never, void>())
-                  const latch    = yield* _(P.promise<never, void>())
+                  const canceler = yield* _(P.make<never, void>())
+                  const latch    = yield* _(P.make<never, void>())
                   const size     = yield* _(cancelers.size)
                   if (size < n) {
                     yield* _(I.unit())
@@ -2670,7 +2670,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
   } else {
     return new Stream(
       M.gen(function* (_) {
-        const ref = yield* _(Ref.ref<State<A>>({ buffer: C.empty(), done: false }))
+        const ref = yield* _(Ref.make<State<A>>({ buffer: C.empty(), done: false }))
         const p   = yield* _(ma.proc)
         return I.bind_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
       })
@@ -2932,9 +2932,9 @@ export function combineChunks<R, E, A, R1, E1, B, Z, C>(
 export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, E1, B>): Stream<R & R1, E | E1, A | B> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.ref<I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>(Pull.end))
+      const currStream   = yield* _(Ref.make<I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R & R1, never, I.IO<R & R1, O.Option<E | E1>, Chunk<A | B>>>())
-      const switched     = yield* _(Ref.ref(false))
+      const switched     = yield* _(Ref.make(false))
       yield* _(
         pipe(
           ma.proc,
@@ -2984,8 +2984,8 @@ export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E
   const chunkSize = streams.length
   return new Stream(
     M.gen(function* (_) {
-      const currIndex    = yield* _(Ref.ref(0))
-      const currStream   = yield* _(Ref.ref<I.IO<R, Option<E>, Chunk<A>>>(Pull.end))
+      const currIndex    = yield* _(Ref.make(0))
+      const currStream   = yield* _(Ref.make<I.IO<R, Option<E>, Chunk<A>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R, never, I.IO<R, Option<E>, Chunk<A>>>())
 
       const go: I.IO<R, Option<E>, Chunk<A>> = pipe(
@@ -3143,7 +3143,7 @@ export function drainFork_<R, E, A, R1, E1, A1>(
   mb: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A> {
   return pipe(
-    P.promise<E | E1, never>(),
+    P.make<E | E1, never>(),
     fromEffect,
     bind((bgDied) =>
       pipe(
@@ -3176,7 +3176,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
   return new Stream(
     M.gen(function* (_) {
       const chunks     = yield* _(self.proc)
-      const counterRef = yield* _(Ref.ref(0))
+      const counterRef = yield* _(Ref.make(0))
 
       const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk = yield* _(chunks)
@@ -3230,7 +3230,7 @@ export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks          = yield* _(ma.proc)
-      const keepDroppingRef = yield* _(Ref.ref(true))
+      const keepDroppingRef = yield* _(Ref.make(true))
 
       const pull: I.IO<R, O.Option<E>, Chunk<A>> = I.gen(function* (_) {
         const chunk        = yield* _(chunks)
@@ -3321,7 +3321,7 @@ export function fixed(duration: number) {
 export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const currStream   = yield* _(Ref.ref<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
+      const currStream   = yield* _(Ref.make<I.IO<R, O.Option<E>, Chunk<A>>>(Pull.end))
       const switchStream = yield* _(M.switchable<R, never, I.IO<R, O.Option<E>, Chunk<A>>>())
       yield* _(pipe(ma.proc, switchStream, I.bind(currStream.set)))
       const go: I.IO<R, O.Option<E>, Chunk<A>> = pipe(
@@ -3349,17 +3349,17 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
 ): GroupBy<R & R1, E | E1, K, V> {
   const qstream = unwrapManaged(
     M.gen(function* (_) {
-      const decider = yield* _(P.promise<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
+      const decider = yield* _(P.make<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
 
       const out = yield* _(
         pipe(
-          Queue.boundedQueue<Ex.Exit<O.Option<E | E1>, readonly [K, Queue.Dequeue<Ex.Exit<O.Option<E | E1>, V>>]>>(
+          Queue.makeBounded<Ex.Exit<O.Option<E | E1>, readonly [K, Queue.Dequeue<Ex.Exit<O.Option<E | E1>, V>>]>>(
             buffer
           ),
           I.toManaged((q) => q.shutdown)
         )
       )
-      const ref = yield* _(Ref.ref<ReadonlyMap<K, symbol>>(Map.empty()))
+      const ref = yield* _(Ref.make<ReadonlyMap<K, symbol>>(Map.empty()))
       const add = yield* _(
         pipe(
           stream,
@@ -3545,7 +3545,7 @@ export function haltOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>)
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const pull    = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -3729,7 +3729,7 @@ export function interleave<R1, E1, A1>(
 export function intersperse_<R, E, A, A1>(ma: Stream<R, E, A>, middle: A1): Stream<R, E, A | A1> {
   return new Stream(
     M.gen(function* (_) {
-      const state  = yield* _(Ref.ref(true))
+      const state  = yield* _(Ref.make(true))
       const chunks = yield* _(ma.proc)
       const pull   = pipe(
         chunks,
@@ -3806,7 +3806,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const asPull  = pipe(
         p.await,
         I.asSomeError,
@@ -3911,7 +3911,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
 ): Stream<R & R1, E | E1, B> {
   return new Stream<R & R1, E | E1, B>(
     M.gen(function* (_) {
-      const state = yield* _(Ref.ref(z))
+      const state = yield* _(Ref.make(z))
       const pull  = yield* _(pipe(stream.proc, M.mapM(BPull.make)))
       return pipe(
         pull,
@@ -4046,16 +4046,16 @@ export function mapMPar_(n: number) {
   return <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): Stream<R & R1, E | E1, B> =>
     new Stream(
       M.gen(function* (_) {
-        const out         = yield* _(Queue.boundedQueue<I.IO<R1, Option<E | E1>, B>>(n))
-        const errorSignal = yield* _(P.promise<E1, never>())
-        const permits     = yield* _(Semaphore.semaphore(n))
+        const out         = yield* _(Queue.makeBounded<I.IO<R1, Option<E | E1>, B>>(n))
+        const errorSignal = yield* _(P.make<E1, never>())
+        const permits     = yield* _(Semaphore.make(n))
         yield* _(
           pipe(
             stream,
             foreachManaged((o) =>
               I.gen(function* (_) {
-                const p     = yield* _(P.promise<E1, B>())
-                const latch = yield* _(P.promise<never, void>())
+                const p     = yield* _(P.make<E1, B>())
+                const latch = yield* _(P.make<never, void>())
                 yield* _(out.offer(pipe(p.await, I.mapError(O.some))))
                 yield* _(
                   pipe(
@@ -4114,7 +4114,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
   return new Stream(
     M.gen(function* (_) {
       const handoff = yield* _(Ha.make<Take.Take<E | E1, C | C1>>())
-      const doneRef = yield* _(RefM.refM<O.Option<boolean>>(O.none()))
+      const doneRef = yield* _(RefM.make<O.Option<boolean>>(O.none()))
       const chunksL = yield* _(sa.proc)
       const chunksR = yield* _(sb.proc)
 
@@ -4175,7 +4175,7 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
           }),
           I.repeatWhile(identity),
           I.fork,
-          I.makeInterruptible,
+          I.interruptible,
           I.toManaged(Fi.interrupt)
         )
 
@@ -4615,7 +4615,7 @@ export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> 
     return new Stream(
       M.gen(function* (_) {
         const chunks     = yield* _(ma.proc)
-        const counterRef = yield* _(Ref.ref(0))
+        const counterRef = yield* _(Ref.make(0))
 
         const pull = pipe(
           counterRef.get,
@@ -4653,7 +4653,7 @@ export function takeUntil_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.ref(true))
+      const keepTakingRef = yield* _(Ref.make(true))
       const pull          = pipe(
         keepTakingRef.get,
         I.bind((keepTaking) => {
@@ -4699,7 +4699,7 @@ export function takeUntilM_<R, E, A, R1, E1>(
   return new Stream(
     M.gen(function* (_) {
       const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.ref(true))
+      const keepTakingRef = yield* _(Ref.make(true))
       const pull          = pipe(
         keepTakingRef.get,
         I.bind((keepTaking) => {
@@ -4755,7 +4755,7 @@ export function takeWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
   return new Stream(
     M.gen(function* (_) {
       const chunks  = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.ref(false))
+      const doneRef = yield* _(Ref.make(false))
       const pull    = pipe(
         doneRef.get,
         I.bind((done) => {
@@ -4837,7 +4837,7 @@ export function throttleEnforceM_<R, E, A, R1, E1>(
     M.gen(function* (_) {
       const chunks                                                      = yield* _(ma.proc)
       const time                                                        = yield* _(Clock.currentTime)
-      const bucket                                                      = yield* _(Ref.ref(tuple(units, time)))
+      const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
       const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
         chunks,
         I.bind((chunk) =>
@@ -4896,7 +4896,7 @@ export function throttleShapeM_<R, E, A, R1, E1>(
     M.gen(function* (_) {
       const chunks = yield* _(ma.proc)
       const time   = yield* _(Clock.currentTime)
-      const bucket = yield* _(Ref.ref(tuple(units, time)))
+      const bucket = yield* _(Ref.make(tuple(units, time)))
       const pull   = I.gen(function* (_) {
         const chunk   = yield* _(chunks)
         const weight  = yield* _(I.mapError_(costFn(chunk), O.some) as I.IO<R1, O.Option<E | E1>, number>)
@@ -4960,7 +4960,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
       const chunks = yield* _(ma.proc)
       const ref    = yield* _(
         pipe(
-          Ref.ref<State>({ _tag: 'NotStarted' }),
+          Ref.make<State>({ _tag: 'NotStarted' }),
           I.toManaged((ref) =>
             I.bind_(
               ref.get,
@@ -5103,7 +5103,7 @@ export function toQueue_<R, E, A>(
   capacity = 2
 ): M.Managed<R, never, Queue.Dequeue<Take.Take<E, A>>> {
   return M.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Queue.boundedQueue<Take.Take<E, A>>(capacity), (q) => q.shutdown))
+    const queue = yield* _(I.toManaged_(Queue.makeBounded<Take.Take<E, A>>(capacity), (q) => q.shutdown))
     yield* _(M.fork(intoManaged_(ma, queue)))
     return queue
   })
@@ -5125,7 +5125,7 @@ export function toQueue(
  */
 export function toQueueUnbounded<R, E, A>(ma: Stream<R, E, A>): M.Managed<R, never, Queue.Dequeue<Take.Take<E, A>>> {
   return M.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Queue.unboundedQueue<Take.Take<E, A>>(), (q) => q.shutdown))
+    const queue = yield* _(I.toManaged_(Queue.makeUnbounded<Take.Take<E, A>>(), (q) => q.shutdown))
     yield* _(M.fork(intoManaged_(ma, queue)))
     return queue
   })
@@ -5194,8 +5194,8 @@ export function unfoldChunkM<S, R, E, A>(
 ): Stream<R, E, A> {
   return new Stream(
     M.gen(function* (_) {
-      const doneRef = yield* _(Ref.ref(false))
-      const ref     = yield* _(Ref.ref(s))
+      const doneRef = yield* _(Ref.make(false))
+      const ref     = yield* _(Ref.make(s))
 
       const pull = pipe(
         doneRef.get,
@@ -5743,8 +5743,8 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
           fromEffectOption,
           bind(([l, r, leftFirst]) =>
             pipe(
-              Ref.ref(C.unsafeGet_(l, l.length - 1)),
-              I.cross(Ref.ref(C.unsafeGet_(r, r.length - 1))),
+              Ref.make(C.unsafeGet_(l, l.length - 1)),
+              I.cross(Ref.make(C.unsafeGet_(r, r.length - 1))),
               fromEffect,
               bind(([latestLeft, latestRight]) =>
                 pipe(

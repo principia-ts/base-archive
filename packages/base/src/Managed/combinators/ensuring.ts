@@ -5,7 +5,7 @@ import type * as I from '../internal/io'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import { onExit_ } from './onExit'
+import { ensuringWith_ } from './ensuringWith'
 
 /**
  * Ensures that `f` is executed when this Managed is finalized, after
@@ -17,7 +17,7 @@ import { onExit_ } from './onExit'
  */
 export function ensuring_<R, E, A, R1>(self: Managed<R, E, A>, f: I.IO<R1, never, any>) {
   const trace = accessCallTrace()
-  return onExit_(
+  return ensuringWith_(
     self,
     traceFrom(trace, () => f)
   )

@@ -8,7 +8,7 @@ import { accessCallTrace, traceCall } from '@principia/compile/util'
 import { Clock } from '../../Clock'
 import { pipe } from '../../function'
 import { as, map } from '../core'
-import { makeInterruptible } from './interrupt'
+import { interruptible } from './interrupt'
 import { raceFirst } from './raceFirst'
 
 /**
@@ -39,7 +39,7 @@ export function timeoutTo_<R, E, A, B, B1>(
     )(
       pipe(
         Clock.sleep(d),
-        makeInterruptible,
+        interruptible,
         as(() => b)
       )
     )

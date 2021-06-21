@@ -210,7 +210,7 @@ export class DerivedAll<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
             (s) => [E.right(undefined), s]
           )
         ),
-        S.refail
+        S.absolve
       )
     )
   }
@@ -239,11 +239,11 @@ export function concrete<EA, EB, A>(ref: SyncRef<EA, EB, A, A>) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function makeSyncRef<A>(a: A): S.USync<USyncRef<A>> {
+export function make<A>(a: A): S.USync<USyncRef<A>> {
   return S.effectTotal(() => new Atomic(new AtomicReference(a)))
 }
 
-export function unsafeMakeSyncRef<A>(a: A): USyncRef<A> {
+export function unsafeMake<A>(a: A): USyncRef<A> {
   return new Atomic(new AtomicReference(a))
 }
 
@@ -535,7 +535,7 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 )
               )
             ),
-            S.refail
+            S.absolve
           )
         ),
       DerivedAll: (derivedAll) =>
@@ -561,7 +561,7 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 )
               )
             ),
-            S.refail
+            S.absolve
           )
         )
     })

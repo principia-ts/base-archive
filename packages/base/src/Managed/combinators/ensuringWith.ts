@@ -7,7 +7,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
-import { flow, pipe } from '../../function'
+import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/io'
@@ -15,13 +15,13 @@ import { add, make } from '../ReleaseMap'
 import { releaseAll_ } from './releaseAll'
 
 /**
- * Ensures that a cleanup function runs when this ZManaged is finalized, before
+ * Ensures that a cleanup function runs when this Managed is finalized, after
  * the existing finalizers.
  *
  * @trace call
  * @trace 1
  */
-export function onExitFirst_<R, E, A, R1>(
+export function ensuringWith_<R, E, A, R1>(
   self: Managed<R, E, A>,
   cleanup: (exit: Exit<E, A>) => I.IO<R1, never, any>
 ): Managed<R & R1, E, A> {
@@ -44,19 +44,13 @@ export function onExitFirst_<R, E, A, R1>(
           const releaseMapEntry      = yield* _(
             add(outerReleaseMap, (e) =>
               pipe(
-                cleanup(exitEA),
-                I.giveAll(r),
+                releaseAll_(innerReleaseMap, e, sequential),
                 I.result,
-                I.crossWith(
-                  I.result(releaseAll_(innerReleaseMap, e, sequential)),
-                  traceAs(cleanup, flow(Ex.apr_, I.done))
-                ),
-                I.flatten
+                I.crossWith(pipe(cleanup(exitEA), I.giveAll(r), I.result), traceAs(cleanup, Ex.apr_))
               )
             )
           )
-
-          const a = yield* _(I.done(exitEA))
+          const a                    = yield* _(I.done(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )
@@ -65,16 +59,16 @@ export function onExitFirst_<R, E, A, R1>(
 }
 
 /**
- * Ensures that a cleanup function runs when this ZManaged is finalized, before
+ * Ensures that a cleanup function runs when this Managed is finalized, after
  * the existing finalizers.
  *
- * @dataFirst onExitFirst_
+ * @dataFirst ensuringWith_
  * @trace call
  * @trace 0
  */
-export function onExitFirst<E, A, R1>(
+export function ensuringWith<E, A, R1>(
   cleanup: (exit: Exit<E, A>) => I.IO<R1, never, any>
 ): <R>(self: Managed<R, E, A>) => Managed<R & R1, E, A> {
   const trace = accessCallTrace()
-  return (self) => traceCall(onExitFirst_, trace)(self, cleanup)
+  return (self) => traceCall(ensuringWith_, trace)(self, cleanup)
 }
