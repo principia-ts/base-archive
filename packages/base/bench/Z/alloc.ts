@@ -14,7 +14,7 @@ export function iforeachArrayAlloc_<A, W, S, R, E, B>(
     A.ifoldl(Z.succeed([0, Array(as.length)]) as Z.Z<W, S, S, R, E, readonly [number, Array<B>]>, (b, i, a) =>
       Z.crossWith_(
         b,
-        Z.deferTotal(() => f(i, a)),
+        Z.defer(() => f(i, a)),
         ([prev, mut_acc], a) => {
           mut_acc[prev] = a
           return tuple(i, mut_acc)
@@ -34,7 +34,7 @@ export function iforeachArrayPush_<A, W, S, R, E, B>(
     A.ifoldl(Z.succeed([]) as Z.Z<W, S, S, R, E, Array<B>>, (b, i, a) =>
       Z.crossWith_(
         b,
-        Z.deferTotal(() => f(i, a)),
+        Z.defer(() => f(i, a)),
         (acc, a) => {
           acc.push(a)
           return acc

@@ -403,7 +403,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
             return context
           }),
           Z.apr(
-            Z.deferTotal(() => {
+            Z.defer(() => {
               let keys: ShowComputationChunk
               let indices: ShowComputationChunk
               let base: ShowComputation
@@ -579,7 +579,7 @@ function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
 
 function showTypedArray(value: TypedArray): ShowComputationChunk {
   return Z.getsM((context) =>
-    Z.deferTotal(() => {
+    Z.defer(() => {
       const maxLength = Math.min(Math.max(0, context.maxArrayLength), value.length)
       const remaining = value.length - maxLength
       let output      = C.empty<string>()
@@ -740,7 +740,7 @@ export function showProperty(
 ): ShowComputation {
   return Z.getsM((context: ShowContext) =>
     pipe(
-      Z.deferTotal(() => {
+      Z.defer(() => {
         let descriptor = desc || Object.getOwnPropertyDescriptor(value, key) || { value: value[key], enumerable: true }
 
         if (isDefined(descriptor.value)) {

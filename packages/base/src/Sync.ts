@@ -41,28 +41,26 @@ export const succeed: <A>(a: A) => Sync<unknown, never, A> = Z.succeed
 
 export const fail: <E>(e: E) => Sync<unknown, E, never> = Z.fail
 
-export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.effect
+export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.try
 
-export const effectTotal: <A>(effect: () => A) => Sync<unknown, never, A> = Z.effectTotal
+export const succeedWith: <A>(effect: () => A) => Sync<unknown, never, A> = Z.succeedWith
 
-export const effectCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> =
-  Z.effectCatch_
+export const tryCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> = Z.tryCatch_
 
-export const effectCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> =
-  Z.effectCatch
+export const tryCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> = Z.tryCatch
 
-export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = Z.defer
+export const deferTry: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = Z.deferTry
 
-export const deferTotal: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = Z.deferTotal
+export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = Z.defer
 
-export const deferCatch_: <R, E, A, E1>(
+export const deferTryCatch_: <R, E, A, E1>(
   effect: () => Sync<R, E, A>,
-  onThrow: (u: unknown) => E1
-) => Sync<R, E | E1, A> = Z.deferCatch_
+  nThrow: (u: unknown) => E1
+) => Sync<R, E | E1, A> = Z.deferTryCatch_
 
-export const deferCatch: <E1>(
+export const deferTryCatch: <E1>(
   onThrow: (u: unknown) => E1
-) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = Z.deferCatch
+) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = Z.deferTryCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.match(fail, succeed)
 
@@ -924,7 +922,7 @@ export function gen<T extends GenSync<any, any, any>, A>(
 ): Sync<P._R<T>, P._E<T>, A>
 export function gen(...args: any[]): any {
   const _gen = <T extends GenSync<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Sync<P._R<T>, P._E<T>, A> =>
-    deferTotal(() => {
+    defer(() => {
       const iterator = f(adapter as any)
       const state    = iterator.next()
 

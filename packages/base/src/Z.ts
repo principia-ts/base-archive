@@ -236,46 +236,48 @@ type Concrete =
  * -------------------------------------------------------------------------------------------------
  */
 
-export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
+export function deferTry<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
   return new DeferPartial(ma, P.identity)
 }
 
-export function deferCatch_<W, S1, S2, R, E, A, E1>(
+export function deferTryCatch_<W, S1, S2, R, E, A, E1>(
   ma: () => Z<W, S1, S2, R, E, A>,
   f: (e: unknown) => E1
 ): Z<W, S1, S2, R, E | E1, A> {
   return new DeferPartial(ma, f)
 }
 
-export function deferCatch<E1>(
+export function deferTryCatch<E1>(
   onThrow: (e: unknown) => E1
 ): <W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E | E1, A> {
-  return (ma) => deferCatch_(ma, onThrow)
+  return (ma) => deferTryCatch_(ma, onThrow)
 }
 
-export function deferTotal<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
+export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
   return new DeferTotal(ma)
 }
 
-export function effect<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
+function _try<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
   return new EffectPartial(effect, P.identity)
 }
 
-export function effectTotal<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
+export { _try as try }
+
+export function succeedWith<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
   return new EffectTotal(effect)
 }
 
-export function effectCatch_<A, E>(
+export function tryCatch_<A, E>(
   effect: () => A,
   onThrow: (reason: unknown) => E
 ): Z<never, unknown, never, unknown, E, A> {
   return new EffectPartial(effect, onThrow)
 }
 
-export function effectCatch<E>(
+export function tryCatch<E>(
   onThrow: (reason: unknown) => E
 ): <A>(effect: () => A) => Z<never, unknown, never, unknown, E, A> {
-  return (effect) => effectCatch_(effect, onThrow)
+  return (effect) => tryCatch_(effect, onThrow)
 }
 
 export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
@@ -291,7 +293,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, neve
 }
 
 export function fromEitherWith<E, A>(either: () => E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
-  return deferTotal(() => fromEither(either()))
+  return defer(() => fromEither(either()))
 }
 
 export function fromOption<A>(option: O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
@@ -299,7 +301,7 @@ export function fromOption<A>(option: O.Option<A>): Z<never, unknown, never, unk
 }
 
 export function fromOptionWith<A>(option: () => O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
-  return deferTotal(() => fromOption(option()))
+  return defer(() => fromOption(option()))
 }
 
 export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
@@ -307,17 +309,11 @@ export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, n
 }
 
 export function haltWith<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
-  return deferTotal(() => halt(cause()))
+  return defer(() => halt(cause()))
 }
 
 export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Z<W, S1, S2, unknown, never, A> {
   return new Succeed(a)
-}
-
-export function succeedWith<A, W = never, S1 = unknown, S2 = never, E = never>(
-  a: () => A
-): Z<W, S1, S2, unknown, E, A> {
-  return new EffectTotal(a)
 }
 
 /*
@@ -1278,7 +1274,7 @@ export function iforeach_<W, S, R, E, A, B>(
   return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (b, i, a) =>
     crossWith_(
       b,
-      deferTotal(() => f(i, a)),
+      defer(() => f(i, a)),
       C.append_
     )
   )
@@ -1323,7 +1319,7 @@ export function iforeachArray_<A, W, S, R, E, B>(
   return A.ifoldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (b, i, a) =>
     crossWith_(
       b,
-      deferTotal(() => f(i, a)),
+      defer(() => f(i, a)),
       (acc, a) => {
         acc.push(a)
         return acc
@@ -1358,7 +1354,7 @@ export function iforeachList_<A, W, S, R, E, B>(
   return I.ifoldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (b, i, a) =>
     crossWith_(
       b,
-      deferTotal(() => f(i, a)),
+      defer(() => f(i, a)),
       (acc, a) => {
         L.push(a, acc)
         return acc
@@ -1805,7 +1801,7 @@ type _S<Z> = [Z] extends [{ ['_S']: (_: infer S) => infer S }] ? S : never
 export function gen<T extends GenZ<any, any, any, any, any>, A>(
   f: (i: <W, S, R, E, A>(_: Z<W, S, S, R, E, A>) => GenZ<W, S, R, E, A>) => Generator<T, A, any>
 ): Z<_W<T>, _S<T>, _S<T>, _R<T>, _E<T>, A> {
-  return deferTotal(() => {
+  return defer(() => {
     const iterator = f(adapter as any)
     const state    = iterator.next()
 
