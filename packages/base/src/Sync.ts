@@ -41,7 +41,9 @@ export const succeed: <A>(a: A) => Sync<unknown, never, A> = Z.succeed
 
 export const fail: <E>(e: E) => Sync<unknown, E, never> = Z.fail
 
-export const effect: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.try
+const _try: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.try
+
+export { _try as try }
 
 export const succeedWith: <A>(effect: () => A) => Sync<unknown, never, A> = Z.succeedWith
 
@@ -80,11 +82,11 @@ export const fromOption = <E, A>(option: O.Option<A>, onNone: () => E): Sync<unk
  * @category Combinators
  * @since 1.0.0
  */
-export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
+export const matchSync_: <R, E, A, R1, E1, B, R2, E2, C>(
   fa: Sync<R, E, A>,
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchM_
+) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchZ_
 
 /**
  * Recovers from errors by accepting one computation to execute for the case
@@ -93,10 +95,10 @@ export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
  * @category Combinators
  * @since 1.0.0
  */
-export const matchM: <E, A, R1, E1, B, R2, E2, C>(
+export const matchSync: <E, A, R1, E1, B, R2, E2, C>(
   onFailure: (e: E) => Sync<R1, E1, B>,
   onSuccess: (a: A) => Sync<R2, E2, C>
-) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchM
+) => <R>(fa: Sync<R, E, A>) => Sync<R & R1 & R2, E1 | E2, B | C> = Z.matchZ
 
 /**
  * Folds over the failed or successful results of this computation to yield
@@ -161,7 +163,7 @@ export const catchSome: <E, R1, E1, B>(
  * @category Combinators
  * @since 1.0.0
  */
-export function matchTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
+export function matchTogetherSync_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
   left: Sync<R, E, A>,
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => Sync<R2, E2, C>,
@@ -205,14 +207,14 @@ export function matchTogetherM_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4
  * @category Combinators
  * @since 1.0.0
  */
-export function matchTogetherM<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
+export function matchTogetherSync<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
   right: Sync<R1, E1, B>,
   onBothFailure: (e: E, e1: E1) => Sync<R2, E2, C>,
   onRightFailure: (a: A, e1: E1) => Sync<R3, E3, D>,
   onLeftFailure: (b: B, e: E) => Sync<R4, E4, F>,
   onBothSuccess: (a: A, b: B) => Sync<R5, E5, G>
 ): <R>(left: Sync<R, E, A>) => Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
-  return (left) => matchTogetherM_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
+  return (left) => matchTogetherSync_(left, right, onBothFailure, onRightFailure, onLeftFailure, onBothSuccess)
 }
 
 /**
@@ -229,7 +231,7 @@ export function matchTogether_<R, E, A, R1, E1, B, C, D, F, G>(
   onLeftFailure: (b: B, e: E) => F,
   onBothSuccess: (a: A, b: B) => G
 ): Sync<R & R1, never, C | D | F | G> {
-  return matchTogetherM_(
+  return matchTogetherSync_(
     left,
     right,
     flow(onBothFailure, succeed),
@@ -408,7 +410,7 @@ export function getFailableMonoid<E, A>(MA: P.Monoid<A>, ME: P.Monoid<E>): P.Mon
 
 export const ask: <R>() => Sync<R, never, R> = Z.ask
 
-export const asksM: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = Z.asksM
+export const asksSync: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = Z.asksZ
 
 export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = Z.asks
 
@@ -436,7 +438,7 @@ export function getUnfailableSemigroup<S>(S: P.Semigroup<S>): P.Semigroup<USync<
 
 export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E>): P.Semigroup<FSync<E, A>> {
   return P.Semigroup((x, y) =>
-    matchTogetherM_(
+    matchTogetherSync_(
       x,
       y,
       (e, e1) => fail(SE.combine_(e, e1)),
@@ -464,7 +466,7 @@ export const unit: () => Sync<unknown, never, void> = Z.unit
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesM<SS extends Record<string, Tag<any>>>(
+export function asksServicesSync<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
@@ -474,7 +476,7 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    Z.asksM(
+    Z.asksZ(
       (
         r: P.UnionToIntersection<
           {
@@ -485,7 +487,7 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
     )
 }
 
-export function asksServicesTM<SS extends Tag<any>[]>(
+export function asksServicesTSync<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
@@ -495,7 +497,7 @@ export function asksServicesTM<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    Z.asksM(
+    Z.asksZ(
       (
         r: P.UnionToIntersection<
           {
@@ -549,61 +551,61 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
-  return (f) => Z.asksM((r: Has<T>) => f(r[s.key as any]))
+export function asksServiceSync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
+  return (f) => Z.asksZ((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
-  return (f) => asksServiceM(s)((a) => Z.pure(f(a)))
+  return (f) => asksServiceSync(s)((a) => Z.pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): Sync<Has<T>, never, T> {
-  return asksServiceM(s)((a) => Z.pure(a))
+  return asksServiceSync(s)((a) => Z.pure(a))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
-export function giveServiceM<T>(
+export function giveServiceSync<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) =>
     <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-      Z.asksM((r: R & R1) => Z.bind_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
+      Z.asksZ((r: R & R1) => Z.bind_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
-  return (f) => (ma) => giveServiceM(_)(Z.pure(f))(ma)
+  return (f) => (ma) => giveServiceSync(_)(Z.pure(f))(ma)
 }
 
 /**
  * Replaces the service with the required Service Entry
  */
-export function updateServiceM<R, E, T>(
+export function updateServiceSync<R, E, T>(
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1 & Has<T>, E | E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return (ma) => asksServiceSync(_)((t) => giveServiceSync(_)(f(t))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry
  */
-export function updateServiceM_<R, E, T, R1, E1, A1>(
+export function updateServiceSync_<R, E, T, R1, E1, A1>(
   ma: Sync<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
 ): Sync<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return asksServiceSync(_)((t) => giveServiceSync(_)(f(t))(ma))
 }
 
 /**
@@ -613,7 +615,7 @@ export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(Z.pure(f(t)))(ma))
+  return (ma) => asksServiceSync(_)((t) => giveServiceSync(_)(Z.pure(f(t)))(ma))
 }
 
 /**
@@ -624,7 +626,7 @@ export function updateService_<R1, E1, A1, T>(
   _: Tag<T>,
   f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(Z.pure(f(t)))(ma))
+  return asksServiceSync(_)((t) => giveServiceSync(_)(Z.pure(f(t)))(ma))
 }
 
 /**

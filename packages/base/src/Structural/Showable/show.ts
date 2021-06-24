@@ -143,7 +143,7 @@ export function showWithOptions(value: unknown, options: Partial<ShowOptions>): 
 }
 
 export function _show(value: unknown): ShowComputation {
-  return Z.getsM((context) => {
+  return Z.getsZ((context) => {
     if (value === undefined) {
       return Z.pure(context.stylize('undefined', 'undefined'))
     }
@@ -159,7 +159,7 @@ export function _show(value: unknown): ShowComputation {
 }
 
 function showValue(value: object): ShowComputation {
-  return Z.getsM((context) => {
+  return Z.getsZ((context) => {
     if (A.exists_(context.seen, (v) => v === value)) {
       return pipe(
         Z.modify((context: ShowContext) =>
@@ -428,7 +428,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                 case 'InspectionExternal': {
                   const externalComputation = info.computation
                   if (externalComputation._tag === 'Primitive') {
-                    return Z.getsM((context) =>
+                    return Z.getsZ((context) =>
                       externalComputation.computation['<$>'](
                         str.replace(/\n/g, `\n${' '.repeat(context.indentationLevel)}`)
                       )
@@ -445,7 +445,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
               }
 
               const output      = Z.crossWith_(indices, keys, C.concat_)
-              const baseWithRef = Z.getsM((context: ShowContext) =>
+              const baseWithRef = Z.getsZ((context: ShowContext) =>
                 pipe(
                   HM.get_(context.circular, value),
                   O.match(
@@ -578,7 +578,7 @@ function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
 }
 
 function showTypedArray(value: TypedArray): ShowComputationChunk {
-  return Z.getsM((context) =>
+  return Z.getsZ((context) =>
     Z.defer(() => {
       const maxLength = Math.min(Math.max(0, context.maxArrayLength), value.length)
       const remaining = value.length - maxLength
@@ -644,7 +644,7 @@ function showSpecialArray(
   currentIndex: number,
   currentLength: number
 ): ShowComputationChunk {
-  return Z.getsM((context) => {
+  return Z.getsZ((context) => {
     const keys       = Object.keys(value)
     let index        = currentIndex
     let i            = currentIndex
@@ -738,7 +738,7 @@ export function showProperty(
   type: number,
   desc?: PropertyDescriptor
 ): ShowComputation {
-  return Z.getsM((context: ShowContext) =>
+  return Z.getsZ((context: ShowContext) =>
     pipe(
       Z.defer(() => {
         let descriptor = desc || Object.getOwnPropertyDescriptor(value, key) || { value: value[key], enumerable: true }

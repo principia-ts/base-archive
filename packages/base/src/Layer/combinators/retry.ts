@@ -7,7 +7,7 @@ import { Clock } from '../../Clock'
 import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { matchTag } from '../../util/match'
-import { catchAll, crossPar_, defer, first, fresh, fromRawIO, fromRawFunctionM, identity } from '../core'
+import { catchAll, crossPar_, defer, first, fresh, fromRawIO, fromRawFunctionIO, identity } from '../core'
 import * as I from '../internal/io'
 
 /**
@@ -20,7 +20,7 @@ export function retry_<R, E, A, R1>(
   type S = StepFunction<R1, E, any>
 
   const loop = (): Layer<readonly [R & R1 & H.Has<Clock>, S], E, A> => {
-    const update = fromRawFunctionM(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
+    const update = fromRawFunctionIO(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
       pipe(
         Clock.currentTime,
         I.orDie,

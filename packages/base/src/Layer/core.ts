@@ -404,7 +404,7 @@ export function fromRawFunction<A, B>(f: (a: A) => B): Layer<A, never, B> {
   return fromRawIO(I.asks(f))
 }
 
-export function fromRawFunctionM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): Layer<R & A, E, B> {
+export function fromRawFunctionIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): Layer<R & A, E, B> {
   return fromRawIO(I.asksIO(f))
 }
 
@@ -651,7 +651,7 @@ export function apPar<R1, E1, A>(
 export function mapError_<R, E, A, E1>(la: Layer<R, E, A>, f: (e: E) => E1): Layer<R, E1, A> {
   return catchAll_(
     la,
-    fromRawFunctionM(([_, e]: readonly [unknown, E]) => I.fail(f(e)))
+    fromRawFunctionIO(([_, e]: readonly [unknown, E]) => I.fail(f(e)))
   )
 }
 
@@ -775,7 +775,7 @@ export function catchAll_<R, E, A, R1, E1, B>(
   la: Layer<R, E, A>,
   handler: Layer<readonly [R1, E], E1, B>
 ): Layer<R & R1, E1, A | B> {
-  const failureOrDie: Layer<readonly [R1, Cause<E>], never, readonly [R1, E]> = fromRawFunctionM(
+  const failureOrDie: Layer<readonly [R1, Cause<E>], never, readonly [R1, E]> = fromRawFunctionIO(
     ([r, cause]: readonly [R1, Cause<E>]) =>
       pipe(
         cause,
@@ -826,7 +826,7 @@ export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
 export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return matchLayer_(
     from,
-    fromRawFunctionM((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionIO((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
     to
   )
 }
@@ -854,7 +854,7 @@ export function matchLayer<E, A, R1, E1, B, E2, C>(
 export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
   return matchLayer_(
     from,
-    fromRawFunctionM((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
+    fromRawFunctionIO((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
     to
   )
 }
@@ -876,7 +876,7 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * unchecked and not a part of the type of the layer.
  */
 export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
-  return catchAll_(la, second<E>()['>=>'](fromRawFunctionM((e: E) => I.die(e))))
+  return catchAll_(la, second<E>()['>=>'](fromRawFunctionIO((e: E) => I.die(e))))
 }
 
 /**
@@ -909,7 +909,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
   return <E2, A2>(to: Layer<A, E2, A2>): Layer<R, E | E2, A2> =>
     matchLayer_(
       from,
-      fromRawFunctionM((_: readonly [R, Cause<E>]) => I.halt(_[1])),
+      fromRawFunctionIO((_: readonly [R, Cause<E>]) => I.halt(_[1])),
       to
     )
 }
@@ -922,7 +922,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
 export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return matchLayer_(
     from,
-    fromRawFunctionM((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionIO((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
     to
   )
 }

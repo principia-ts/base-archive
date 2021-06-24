@@ -20,7 +20,7 @@ export const modify: <S, A>(f: (s: S) => readonly [A, S]) => ZState<S, A> = Z.mo
 
 export const gets: <S, A>(f: (s: S) => A) => ZState<S, A> = Z.gets
 
-export const getsM: <S, A>(f: (s: S) => ZState<S, A>) => ZState<S, A> = Z.getsM
+export const getsM: <S, A>(f: (s: S) => ZState<S, A>) => ZState<S, A> = Z.getsZ
 
 export const execute_: <S, A>(ma: ZState<S, A>, s: S) => S = Z.runState_
 

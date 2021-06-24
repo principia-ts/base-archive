@@ -379,7 +379,7 @@ export function gets<S, A>(f: (s: S) => A): Z<never, S, S, unknown, never, A> {
   return modify((s) => [f(s), s])
 }
 
-export function getsM<S, W, R, E, A>(f: (s: S) => Z<W, S, S, R, E, A>): Z<W, S, S, R, E, A> {
+export function getsZ<S, W, R, E, A>(f: (s: S) => Z<W, S, S, R, E, A>): Z<W, S, S, R, E, A> {
   return P.pipe(get<S>(), bind(f))
 }
 
@@ -471,7 +471,7 @@ export function giveState<S1>(s: S1): <W, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
  *
  * @note the log is cleared after being provided
  */
-export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchLogCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
@@ -487,19 +487,19 @@ export function matchLogCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S
  *
  * @note the log is cleared after being provided
  */
-export function matchLogCauseM<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchLogCauseZ<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => matchLogCauseM_(fa, onFailure, onSuccess)
+  return (fa) => matchLogCauseZ_(fa, onFailure, onSuccess)
 }
 
-export function matchCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchLogCauseM_(
+  return matchLogCauseZ_(
     fa,
     (ws, e) =>
       P.pipe(
@@ -514,26 +514,26 @@ export function matchCauseM_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
   )
 }
 
-export function matchCauseM<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchCauseZ<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <W, R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1 & S0, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => matchCauseM_(fa, onFailure, onSuccess)
+  return (fa) => matchCauseZ_(fa, onFailure, onSuccess)
 }
 
-export function matchLogM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchLogZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchLogCauseM_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
+  return matchLogCauseZ_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
 }
 
-export function matchLogM<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchLogZ<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => matchLogM_(fa, onFailure, onSuccess)
+  return (fa) => matchLogZ_(fa, onFailure, onSuccess)
 }
 
 /**
@@ -543,12 +543,12 @@ export function matchLogM<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>
  * @category Combinators
  * @since 1.0.0
  */
-export function matchM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseM_(fa, P.flow(FS.first, onFailure), onSuccess)
+  return matchCauseZ_(fa, P.flow(FS.first, onFailure), onSuccess)
 }
 
 /**
@@ -558,11 +558,11 @@ export function matchM_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
  * @category Combinators
  * @since 1.0.0
  */
-export function matchM<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+export function matchZ<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: E) => Z<W1, S1, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <W, R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return (fa) => matchM_(fa, onFailure, onSuccess)
+  return (fa) => matchZ_(fa, onFailure, onSuccess)
 }
 
 /**
@@ -578,7 +578,7 @@ export function match_<W, S1, S2, R, E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): Z<W, S1, S2, R, never, B | C> {
-  return matchM_(
+  return matchZ_(
     fa,
     (e) => succeed(onFailure(e)),
     (a) => succeed(onSuccess(a))
@@ -610,7 +610,7 @@ export function alt_<W, S1, S2, R, E, A, W1, S3, R1, E1, A1>(
   fa: Z<W, S1, S2, R, E, A>,
   fb: () => Z<W1, S1, S3, R1, E1, A1>
 ): Z<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1> {
-  return matchM_(fa, () => fb(), succeed)
+  return matchZ_(fa, () => fb(), succeed)
 }
 
 export function alt<W1, S1, S3, R1, E1, A1>(
@@ -683,11 +683,11 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
 ): Z<W, S, S, R & R1, E | E1, C> {
   return P.pipe(
     fa,
-    matchCauseM(
+    matchCauseZ(
       (c1) =>
         P.pipe(
           fb,
-          matchCauseM(
+          matchCauseZ(
             (c2) => halt(FS.both(c1, c2)),
             (_) => halt(c1)
           )
@@ -827,7 +827,7 @@ export function bimap_<W, S1, S2, R, E, A, G, B>(
   f: (e: E) => G,
   g: (a: A) => B
 ): Z<W, S1, S2, R, G, B> {
-  return matchM_(
+  return matchZ_(
     pab,
     (e) => fail(f(e)),
     (a) => succeed(g(a))
@@ -842,7 +842,7 @@ export function bimap<E, A, G, B>(
 }
 
 export function mapError_<W, S1, S2, R, E, A, G>(pab: Z<W, S1, S2, R, E, A>, f: (e: E) => G): Z<W, S1, S2, R, G, A> {
-  return matchM_(pab, (e) => fail(f(e)), succeed)
+  return matchZ_(pab, (e) => fail(f(e)), succeed)
 }
 
 export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, G, A> {
@@ -856,7 +856,7 @@ export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, 
  */
 
 export function memento<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, never, E.Either<E, A>> {
-  return matchM_(
+  return matchZ_(
     fa,
     (e) => succeed(E.left(e)),
     (a) => succeed(E.right(a))
@@ -929,12 +929,12 @@ export function ask<R>(): Z<never, unknown, never, R, never, R> {
   return new Asks((r: R) => succeed(r))
 }
 
-export function asksM<R0, W, S1, S2, R, E, A>(f: (r: R0) => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R & R0, E, A> {
+export function asksZ<R0, W, S1, S2, R, E, A>(f: (r: R0) => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R & R0, E, A> {
   return new Asks(f)
 }
 
 export function asks<R0, A>(f: (r: R0) => A): Z<never, unknown, never, R0, never, A> {
-  return asksM((r: R0) => succeed(f(r)))
+  return asksZ((r: R0) => succeed(f(r)))
 }
 
 export function giveAll_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z<W, S1, S2, unknown, E, A> {
@@ -946,7 +946,7 @@ export function giveAll<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) =
 }
 
 export function gives_<R0, W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A> {
-  return asksM((r: R0) => giveAll_(ma, f(r)))
+  return asksZ((r: R0) => giveAll_(ma, f(r)))
 }
 
 export function gives<R0, R>(f: (r0: R0) => R): <W, S1, S2, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R0, E, A> {
@@ -1036,7 +1036,7 @@ export function write<W1>(w: W1): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
 }
 
 export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, readonly [A, C.Chunk<W>]> {
-  return matchLogCauseM_(
+  return matchLogCauseZ_(
     wa,
     (_, e) => halt(e),
     (ws, a) => succeed([a, ws])
@@ -1076,7 +1076,7 @@ export function catchAll_<W, S1, S2, R, E, A, S3, R1, E1, B>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Z<W, S1, S3, R1, E1, B>
 ): Z<W, S1, S3, R & R1, E1, A | B> {
-  return matchM_(fa, onFailure, (a) => succeed(a))
+  return matchZ_(fa, onFailure, (a) => succeed(a))
 }
 
 /**
@@ -1204,7 +1204,7 @@ export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
   fa: Z<W, S1, S2, R, E, A>,
   onFailure: (e: E) => Z<W, S3, S4, R1, E1, A>
 ): Z<W, S1 & S3, S2 | S4, R & R1, E1, A> {
-  return matchM_(fa, onFailure, succeed)
+  return matchZ_(fa, onFailure, succeed)
 }
 
 export function orElse<W, E, A, S3, S4, R1, E1>(
@@ -1224,7 +1224,7 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
   fa: Z<W, S1, S2, R, E, A>,
   that: Z<W, S3, S4, R1, E1, A1>
 ): Z<W, S1 & S3, S2 | S4, R & R1, E1, E.Either<A, A1>> {
-  return matchM_(
+  return matchZ_(
     fa,
     () => map_(that, E.right),
     (a) => succeed(E.left(a))
@@ -1543,7 +1543,7 @@ export function runAll_<W, S1, S2, E, A>(
       }
       case ZTag.Give: {
         pushEnv(Z.env)
-        current = matchM_(
+        current = matchZ_(
           Z.z,
           (e) => succeed(popEnv())['*>'](fail(e)),
           (a) => succeed(popEnv())['*>'](succeed(a))

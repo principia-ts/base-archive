@@ -19,7 +19,7 @@ export const ask: <R>() => ZReader<R, R> = Z.ask
 
 export const asks: <R, A>(f: (r: R) => A) => ZReader<R, A> = Z.asks
 
-export const asksM: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.asksM
+export const asksM: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.asksZ
 
 export const giveAll_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.giveAll_
 
