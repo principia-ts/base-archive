@@ -370,7 +370,7 @@ export function fromSchedule<R, A>(schedule: Sc.Schedule<R, unknown, A>): Stream
   return pipe(
     schedule,
     Sc.driver,
-    I.map((driver) => repeatEffectOption(driver.next(undefined))),
+    I.map((driver) => repeatIOOption(driver.next(undefined))),
     unwrap
   )
 }
@@ -640,7 +640,7 @@ export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, Chunk<A>>): Stream<R, E, A
 /**
  * Creates a stream from an IO producing values of type `A` until it fails with None.
  */
-export function repeatEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, E, A> {
+export function repeatIOOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R, E, A> {
   return pipe(fa, I.map(C.single), repeatIOChunkOption)
 }
 
@@ -648,7 +648,7 @@ export function repeatEffectOption<R, E, A>(fa: I.IO<R, Option<E>, A>): Stream<R
  * Creates a stream from an effect producing a value of type `A` which repeats forever.
  */
 export function repeatIO<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return repeatEffectOption(I.mapError_(fa, O.some))
+  return repeatIOOption(I.mapError_(fa, O.some))
 }
 
 /**
@@ -752,7 +752,7 @@ export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, un
   return pipe(
     fromIO(I.succeedWith(() => iterable()[Symbol.iterator]())),
     bind((it) =>
-      repeatEffectOption(
+      repeatIOOption(
         pipe(
           I.try(() => {
             const v = it.next()
@@ -5758,13 +5758,13 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
                       left,
                       I.tap((chunk) => latestLeft.set(C.unsafeGet_(chunk, chunk.length - 1))),
                       I.cross(latestRight.get),
-                      repeatEffectOption,
+                      repeatIOOption,
                       mergeWith(
                         pipe(
                           right,
                           I.tap((chunk) => latestRight.set(C.unsafeGet_(chunk, chunk.length - 1))),
                           I.cross(latestLeft.get),
-                          repeatEffectOption
+                          repeatIOOption
                         ),
                         ([leftChunk, rightLatest]) => C.map_(leftChunk, (o) => f(o, rightLatest)),
                         ([rightChunk, leftLatest]) => C.map_(rightChunk, (o1) => f(leftLatest, o1))
