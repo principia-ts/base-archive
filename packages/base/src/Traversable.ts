@@ -1,9 +1,12 @@
 import type { Applicative } from './Applicative'
 import type { Functor2, FunctorMin } from './Functor'
+import type { Monad } from './Monad'
 
 import { flow, identity } from './function'
 import { Functor, getFunctorComposition } from './Functor'
 import * as HKT from './HKT'
+import * as F from './SafeFunction'
+import { getStateT } from './StateT'
 
 export interface Traversable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly traverse_: TraverseFn_<F, C>
@@ -317,4 +320,55 @@ export function implementSequence<F extends HKT.URIS, C = HKT.Auto>(): (
 ) => SequenceFn<F, C>
 export function implementSequence() {
   return (i: any) => i()
+}
+
+export interface MapAccumMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <G extends HKT.URIS, CG = HKT.Auto>(M: Monad<G, CG>): <
+    FN extends string,
+    FK,
+    FQ,
+    FW,
+    FX,
+    FI,
+    FS,
+    FR,
+    FE,
+    GN extends string,
+    GK,
+    GQ,
+    GW,
+    GX,
+    GI,
+    GS,
+    GR,
+    GE,
+    A,
+    B,
+    C
+  >(
+    ta: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
+    s: C,
+    f: (s: C, a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, readonly [B, C]>
+  ) => HKT.Kind<
+    G,
+    CG,
+    GN,
+    GK,
+    GQ,
+    GW,
+    GX,
+    GI,
+    GS,
+    GR,
+    GE,
+    readonly [HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>, C]
+  >
+}
+
+export function mapAccumMF_<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F, C>): MapAccumMFn_<F, C> {
+  return (M) => {
+    const StateM          = getStateT(M)
+    const traverseStateM_ = T.traverse_(StateM)
+    return (ta, s0, f) => traverseStateM_(ta, (a) => F.single((s: typeof s0) => f(s, a))).run(s0 as any)
+  }
 }

@@ -3,9 +3,9 @@ import type { ZReaderURI } from './Modules'
 
 import { identity, pipe } from './function'
 import * as P from './prelude'
-import * as Mu from './Z'
+import * as Z from './Z'
 
-export interface ZReader<R, A> extends Mu.Z<never, unknown, never, R, never, A> {}
+export interface ZReader<R, A> extends Z.Z<never, unknown, never, R, never, A> {}
 
 export type V = HKT.V<'R', '-'>
 
@@ -15,24 +15,24 @@ export type V = HKT.V<'R', '-'>
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ask: <R>() => ZReader<R, R> = Mu.ask
+export const ask: <R>() => ZReader<R, R> = Z.ask
 
-export const asks: <R, A>(f: (r: R) => A) => ZReader<R, A> = Mu.asks
+export const asks: <R, A>(f: (r: R) => A) => ZReader<R, A> = Z.asks
 
-export const asksM: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Mu.asksM
+export const asksM: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.asksM
 
-export const giveAll_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Mu.giveAll_
+export const giveAll_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.giveAll_
 
-export const giveAll: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Mu.giveAll
+export const giveAll: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Z.giveAll
 
-export const gives_: <R0, R, A>(ra: ZReader<R, A>, f: (r0: R0) => R) => ZReader<R0, A> = Mu.gives_
+export const gives_: <R0, R, A>(ra: ZReader<R, A>, f: (r0: R0) => R) => ZReader<R0, A> = Z.gives_
 
-export const gives: <R0, R>(f: (r0: R0) => R) => <A>(ra: ZReader<R, A>) => ZReader<R0, A> = Mu.gives
+export const gives: <R0, R>(f: (r0: R0) => R) => <A>(ra: ZReader<R, A>) => ZReader<R0, A> = Z.gives
 
 export function runReader_<A>(ra: ZReader<unknown, A>): A
 export function runReader_<R, A>(ra: ZReader<R, A>, r: R): A
 export function runReader_<R, A>(ra: ZReader<R, A>, r?: R): A {
-  return r ? Mu.runReader_(ra, r) : Mu.runResult(ra as any)
+  return r ? Z.runReader_(ra, r) : Z.runResult(ra as any)
 }
 
 export function runReader(): <A>(ra: ZReader<unknown, A>) => A
@@ -47,7 +47,7 @@ export function runReader<R>(r?: R): <A>(ra: ZReader<R, A>) => A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const pure: <A>(a: A) => ZReader<unknown, A> = Mu.pure
+export const pure: <A>(a: A) => ZReader<unknown, A> = Z.pure
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ export const pure: <A>(a: A) => ZReader<unknown, A> = Mu.pure
  * -------------------------------------------------------------------------------------------------
  */
 
-export const unit: () => ZReader<unknown, void> = Mu.unit
+export const unit: () => ZReader<unknown, void> = Z.unit
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -63,21 +63,20 @@ export const unit: () => ZReader<unknown, void> = Mu.unit
  * -------------------------------------------------------------------------------------------------
  */
 
-export const cross_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, readonly [A, B]> = Mu.zip_
+export const cross_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, readonly [A, B]> = Z.zip_
 
-export const cross: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, readonly [A, B]> =
-  Mu.zip
+export const cross: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, readonly [A, B]> = Z.zip
 
 export const crossWith_: <R, A, R1, B, C>(
   fa: ZReader<R, A>,
   fb: ZReader<R1, B>,
   f: (a: A, b: B) => C
-) => ZReader<R & R1, C> = Mu.zipWith_
+) => ZReader<R & R1, C> = Z.zipWith_
 
 export const crossWith: <A, R1, B, C>(
   fb: ZReader<R1, B>,
   f: (a: A, b: B) => C
-) => <R>(fa: ZReader<R, A>) => ZReader<R & R1, C> = Mu.zipWith
+) => <R>(fa: ZReader<R, A>) => ZReader<R & R1, C> = Z.zipWith
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -85,17 +84,17 @@ export const crossWith: <A, R1, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ap_: <R, A, R1, B>(fab: ZReader<R1, (a: A) => B>, fa: ZReader<R, A>) => ZReader<R & R1, B> = Mu.zap_
+export const ap_: <R, A, R1, B>(fab: ZReader<R1, (a: A) => B>, fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zap_
 
-export const ap: <R, A>(fa: ZReader<R, A>) => <R1, B>(fab: ZReader<R1, (a: A) => B>) => ZReader<R & R1, B> = Mu.zap
+export const ap: <R, A>(fa: ZReader<R, A>) => <R1, B>(fab: ZReader<R1, (a: A) => B>) => ZReader<R & R1, B> = Z.zap
 
-export const apl_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Mu.zipl_
+export const apl_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Z.zipl_
 
-export const apl: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Mu.zipl
+export const apl: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Z.zipl
 
-export const apr_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Mu.zipr_
+export const apr_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Z.zipr_
 
-export const apr: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Mu.zipr
+export const apr: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zipr
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -103,9 +102,9 @@ export const apr: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZR
  * -------------------------------------------------------------------------------------------------
  */
 
-export const map_: <R, A, B>(fa: ZReader<R, A>, f: (a: A) => B) => ZReader<R, B> = Mu.map_
+export const map_: <R, A, B>(fa: ZReader<R, A>, f: (a: A) => B) => ZReader<R, B> = Z.map_
 
-export const map: <A, B>(f: (a: A) => B) => <R>(fa: ZReader<R, A>) => ZReader<R, B> = Mu.map
+export const map: <A, B>(f: (a: A) => B) => <R>(fa: ZReader<R, A>) => ZReader<R, B> = Z.map
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -113,17 +112,17 @@ export const map: <A, B>(f: (a: A) => B) => <R>(fa: ZReader<R, A>) => ZReader<R,
  * -------------------------------------------------------------------------------------------------
  */
 
-export const bind_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, B> = Mu.bind_
+export const bind_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, B> = Z.bind_
 
-export const bind: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, B> = Mu.bind
+export const bind: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, B> = Z.bind
 
 export function flatten<R, R1, A>(mma: ZReader<R, ZReader<R1, A>>): ZReader<R & R1, A> {
   return bind_(mma, identity)
 }
 
-export const tap_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, A> = Mu.tap_
+export const tap_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, A> = Z.tap_
 
-export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, A> = Mu.tap
+export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, A> = Z.tap
 
 /*
  * -------------------------------------------------------------------------------------------------

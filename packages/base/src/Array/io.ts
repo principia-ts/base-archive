@@ -70,21 +70,21 @@ export function mapMPar<A, R, E, B>(
 export function mapAccumM_<S, A, R, E, B>(
   as: ReadonlyArray<A>,
   s: S,
-  f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
-): I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
+  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
+): I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
   return I.defer(() => {
     let dest: I.IO<R, E, S> = I.succeed(s)
     const mut_out: Array<B> = Array(as.length)
     for (let i = 0; i < as.length; i++) {
       const v = as[i]
       dest    = I.bind_(dest, (state) =>
-        I.map_(f(state, v), ([s2, b]) => {
+        I.map_(f(state, v), ([b, s2]) => {
           mut_out[i] = b
           return s2
         })
       )
     }
-    return I.map_(dest, (s) => [s, mut_out])
+    return I.map_(dest, (s) => [mut_out, s])
   })
 }
 
@@ -94,8 +94,8 @@ export function mapAccumM_<S, A, R, E, B>(
  */
 export function mapAccumM<S, A, R, E, B>(
   s: S,
-  f: (s: S, a: A) => I.IO<R, E, readonly [S, B]>
-): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [S, ReadonlyArray<B>]> {
+  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
+): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
   return (as) => mapAccumM_(as, s, f)
 }
 

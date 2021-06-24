@@ -13,10 +13,10 @@ import * as HS from './HashSet'
 import * as L from './List/core'
 import { FreeSemiringURI } from './Modules'
 import * as P from './prelude'
-import { isObject } from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
+import { isObject } from './util/predicates'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
 /*

@@ -117,9 +117,21 @@ export class Promise<E, A> {
 
   private interruptJoiner(joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> {
     return I.succeedWith(() => {
-      const state = this.state.get
-      if (state._tag === 'Pending') {
-        this.state.set(new Pending(state.joiners.filter((j) => j !== joiner)))
+      let retry = true
+      while (retry) {
+        const oldState = this.state.get
+        let newState
+        switch (oldState._tag) {
+          case 'Pending': {
+            newState = new Pending(oldState.joiners.filter((j) => j !== joiner))
+            break
+          }
+          case 'Done': {
+            newState = oldState
+            break
+          }
+        }
+        retry = !this.state.compareAndSet(oldState, newState)
       }
     })
   }
@@ -130,16 +142,26 @@ export class Promise<E, A> {
    */
   get await() {
     return asyncInterruptEither<unknown, E, A>((k) => {
-      const state = this.state.get
-      switch (state._tag) {
-        case 'Done': {
-          return E.right(state.value)
+      let result
+      let retry = true
+      while (retry) {
+        const oldState = this.state.get
+        let newState
+        switch (oldState._tag) {
+          case 'Done': {
+            newState = oldState
+            result   = E.right(oldState.value)
+            break
+          }
+          case 'Pending': {
+            newState = new Pending([k, ...oldState.joiners])
+            result   = E.left(this.interruptJoiner(k))
+            break
+          }
         }
-        case 'Pending': {
-          this.state.set(new Pending([k, ...state.joiners]))
-          return E.left(this.interruptJoiner(k))
-        }
+        retry = !this.state.compareAndSet(oldState, newState)
       }
+      return result as any
     }, this.blockingOn)
   }
 

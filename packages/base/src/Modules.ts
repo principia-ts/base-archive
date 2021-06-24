@@ -18,6 +18,7 @@ import type { ReadonlyRecord } from './Record'
 import type { RoseTree } from './RoseTree'
 import type { Show } from './Show'
 import type { State } from './State'
+import type { StateIn, StateOut } from './StateT'
 import type { Store } from './Store'
 import type { Sync } from './Sync'
 import type { These } from './These'
@@ -25,6 +26,7 @@ import type { Tuple2 } from './Tuple2'
 import type { Writer } from './Writer'
 import type { Z } from './Z'
 import type { ZReader } from './ZReader'
+import type { ZState } from './ZState'
 
 export const ShowURI = 'Show'
 export type ShowURI = typeof ShowURI
@@ -95,6 +97,12 @@ export type WriterURI = typeof WriterURI
 export const StateURI = 'State'
 export type StateURI = typeof StateURI
 
+export const StateInURI = 'StateIn'
+export type StateInURI = typeof StateInURI
+
+export const StateOutURI = 'StateOut'
+export type StateOutURI = typeof StateOutURI
+
 export const ZURI = 'Z'
 export type ZURI = typeof ZURI
 
@@ -103,6 +111,9 @@ export type SyncURI = typeof SyncURI
 
 export const ZReaderURI = 'ZReader'
 export type ZReaderURI = typeof ZReaderURI
+
+export const ZStateURI = 'ZState'
+export type ZStateURI = typeof ZStateURI
 
 export const FreeSemiringURI = 'FreeSemiring'
 export type FreeSemiringURI = typeof FreeSemiringURI
@@ -148,10 +159,13 @@ declare module './HKT' {
     [ZURI]: Z<W, S, S, R, E, A>
     [FreeSemiringURI]: FreeSemiring<X, A>
     [ZReaderURI]: ZReader<R, A>
+    [ZStateURI]: ZState<S, A>
     [AsyncURI]: Async<R, E, A>
     [IOURI]: IO<R, E, A>
     [ChunkURI]: Chunk<A>
     [RoseTreeURI]: RoseTree<A>
+    [StateInURI]: StateIn<S, A>
+    [StateOutURI]: StateOut<S, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

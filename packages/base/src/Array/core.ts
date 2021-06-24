@@ -1589,6 +1589,116 @@ export function findLastIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
 }
 
 /**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function ifoldlWhile_<A, B>(
+  as: ReadonlyArray<A>,
+  b: B,
+  predicate: P.Predicate<B>,
+  f: (b: B, i: number, a: A) => B
+): B {
+  let out  = b
+  let cont = predicate(out)
+  for (let i = 0; cont && i < as.length; i++) {
+    out  = f(out, i, as[i])
+    cont = predicate(out)
+  }
+  return out
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function ifoldlWhile<A, B>(
+  b: B,
+  predicate: P.Predicate<B>,
+  f: (b: B, i: number, a: A) => B
+): (as: ReadonlyArray<A>) => B {
+  return (as) => ifoldlWhile_(as, b, predicate, f)
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldlWhile_<A, B>(as: ReadonlyArray<A>, b: B, predicate: P.Predicate<B>, f: (b: B, a: A) => B): B {
+  return ifoldlWhile_(as, b, predicate, (b, _, a) => f(b, a))
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldlWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) => B {
+  return (as) => foldlWhile_(as, b, predicate, f)
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function ifoldrWhile_<A, B>(
+  as: ReadonlyArray<A>,
+  b: B,
+  predicate: P.Predicate<B>,
+  f: (a: A, i: number, b: B) => B
+): B {
+  let out  = b
+  let cont = predicate(out)
+  for (let i = as.length - 1; cont && i >= 0; i--) {
+    out  = f(as[i], i, out)
+    cont = predicate(out)
+  }
+  return out
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function ifoldrWhile<A, B>(
+  b: B,
+  predicate: P.Predicate<B>,
+  f: (a: A, i: number, b: B) => B
+): (as: ReadonlyArray<A>) => B {
+  return (as) => ifoldrWhile_(as, b, predicate, f)
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldrWhile_<A, B>(as: ReadonlyArray<A>, b: B, predicate: P.Predicate<B>, f: (a: A, b: B) => B): B {
+  return ifoldrWhile_(as, b, predicate, (a, _, b) => f(a, b))
+}
+
+/**
+ * Perform a left-associative fold on an array while the predicate holds
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldrWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (a: A, b: B) => B): (as: ReadonlyArray<A>) => B {
+  return (as) => foldrWhile_(as, b, predicate, f)
+}
+
+/**
  * Group equal, consecutive elements of an array into non empty arrays.
  *
  * @category combinators
@@ -1727,6 +1837,40 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
     }
   }
   return ls
+}
+
+/**
+ * Statefully maps over the array, producing new elements of type B. Analogous to a combination of map + foldl.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function mapAccum_<A, S, B>(
+  as: ReadonlyArray<A>,
+  s: S,
+  f: (s: S, a: A) => readonly [B, S]
+): readonly [ReadonlyArray<B>, S] {
+  const mut_bs = new Array(as.length)
+  let state    = s
+  for (let i = 0; i < as.length; i++) {
+    const result = f(s, as[i])
+    mut_bs[i]    = result[0]
+    state        = result[1]
+  }
+  return [mut_bs, state]
+}
+
+/**
+ * Statefully maps over the array, producing new elements of type B. Analogous to a combination of map + foldl.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function mapAccum<A, S, B>(
+  s: S,
+  f: (s: S, a: A) => readonly [B, S]
+): (as: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, S] {
+  return (as) => mapAccum_(as, s, f)
 }
 
 /**
@@ -2034,6 +2178,8 @@ export function spanr<A>(
 }
 
 /**
+ * Splits an array on the specified index
+ *
  * @category combinators
  * @since 1.0.0
  */
@@ -2042,11 +2188,44 @@ export function splitAt_<A>(as: ReadonlyArray<A>, n: number): readonly [Readonly
 }
 
 /**
+ * Splits an array on the specified index
+ *
  * @category combinators
  * @since 1.0.0
  */
 export function splitAt(n: number): <A>(as: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return (as) => splitAt_(as, n)
+}
+
+/**
+ * Splits an array on the first element that matches this predicate.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function splitWhere_<A>(as: ReadonlyArray<A>, f: P.Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
+  let cont = true
+  let i    = 0
+  while (cont && i < as.length) {
+    if (f(as[i])) {
+      cont = false
+    } else {
+      i++
+    }
+  }
+  return splitAt_(as, i)
+}
+
+/**
+ * Splits an array on the first element that matches this predicate.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function splitWhere<A>(
+  predicate: P.Predicate<A>
+): (as: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
+  return (as) => splitWhere_(as, predicate)
 }
 
 /**

@@ -3907,7 +3907,7 @@ export function intoManaged<E, A, R1, E1>(
 export function mapAccumM_<R, E, A, R1, E1, B, Z>(
   stream: Stream<R, E, A>,
   z: Z,
-  f: (z: Z, a: A) => I.IO<R1, E1, readonly [Z, B]>
+  f: (z: Z, a: A) => I.IO<R1, E1, readonly [B, Z]>
 ): Stream<R & R1, E | E1, B> {
   return new Stream<R & R1, E | E1, B>(
     M.gen(function* (_) {
@@ -3921,8 +3921,8 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
             I.gen(function* (_) {
               const s = yield* _(state.get)
               const t = yield* _(f(s, o))
-              yield* _(state.set(t[0]))
-              return C.single(t[1])
+              yield* _(state.set(t[1]))
+              return C.single(t[0])
             }),
             I.mapError(O.some)
           )
@@ -3939,7 +3939,7 @@ export function mapAccumM_<R, E, A, R1, E1, B, Z>(
 export function mapAccumM<Z>(
   z: Z
 ): <A, R1, E1, B>(
-  f: (z: Z, a: A) => I.IO<R1, E1, [Z, B]>
+  f: (z: Z, a: A) => I.IO<R1, E1, [B, Z]>
 ) => <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
   return (f) => (stream) => mapAccumM_(stream, z, f)
 }
@@ -3947,7 +3947,7 @@ export function mapAccumM<Z>(
 /**
  * Statefully maps over the elements of this stream to produce new elements.
  */
-export function mapAccum_<R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z, a: A) => readonly [Z, B]) {
+export function mapAccum_<R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z, a: A) => readonly [B, Z]) {
   return mapAccumM_(stream, z, (z, a) => I.pure(f(z, a)))
 }
 
@@ -3956,7 +3956,7 @@ export function mapAccum_<R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z
  */
 export function mapAccum<Z>(
   z: Z
-): <A, B>(f: (z: Z, a: A) => [Z, B]) => <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
+): <A, B>(f: (z: Z, a: A) => [B, Z]) => <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
   return (f) => (stream) => mapAccum_(stream, z, f)
 }
 
@@ -5524,7 +5524,7 @@ function _zipChunks<A, B, C>(
  * Zips this stream together with the index of elements.
  */
 export function zipWithIndex<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, readonly [A, number]> {
-  return mapAccum_(ma, 0, (index, a) => tuple(index + 1, tuple(a, index)))
+  return mapAccum_(ma, 0, (index, a) => tuple(tuple(a, index), index + 1))
 }
 
 /**

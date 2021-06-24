@@ -584,7 +584,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     const toExecute = this.parentScopeOp(parentScope, childContext, i0)
 
-    Promise.resolve(toExecute).then(childContext.evaluateNow)
+    Promise.resolve(toExecute).then((io) => childContext.evaluateNow(io))
 
     return childContext
   }

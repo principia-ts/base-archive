@@ -3066,11 +3066,11 @@ export function interruptWhen<R1, E1>(
 
 function mapAccumAccumulator<S, E = never, A = never, B = never>(
   currS: S,
-  f: (s: S, a: A) => readonly [S, B]
+  f: (s: S, a: A) => readonly [B, S]
 ): Ch.Channel<unknown, E, C.Chunk<A>, unknown, E, C.Chunk<B>, void> {
   return Ch.readWith(
     (inp: C.Chunk<A>) => {
-      const [nextS, bs] = C.mapAccum_(inp, currS, f)
+      const [bs, nextS] = C.mapAccum_(inp, currS, f)
       return Ch.write(bs)['*>'](mapAccumAccumulator(nextS, f))
     },
     Ch.fail,
@@ -3084,7 +3084,7 @@ function mapAccumAccumulator<S, E = never, A = never, B = never>(
 export function mapAccum_<R, E, A, S, B>(
   stream: Stream<R, E, A>,
   s: S,
-  f: (s: S, a: A) => readonly [S, B]
+  f: (s: S, a: A) => readonly [B, S]
 ): Stream<R, E, B> {
   return new Stream(stream.channel['>>>'](mapAccumAccumulator(s, f)))
 }
@@ -3094,14 +3094,14 @@ export function mapAccum_<R, E, A, S, B>(
  */
 export function mapAccum<A, S, B>(
   s: S,
-  f: (s: S, a: A) => readonly [S, B]
+  f: (s: S, a: A) => readonly [B, S]
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
   return (stream) => mapAccum_(stream, s, f)
 }
 
 export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
   s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, readonly [S, B]>
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<B>, void> {
   return Ch.readWith(
     (inp: C.Chunk<A>) =>
@@ -3117,7 +3117,7 @@ export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
             I.foldl(s, (s1, a) =>
               pipe(
                 f(s1, a),
-                I.bind(([s2, b]) => emit(b)['$>'](() => s2))
+                I.bind(([b, s2]) => emit(b)['$>'](() => s2))
               )
             ),
             I.match(
@@ -3142,7 +3142,7 @@ export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
 export function mapAccumM_<R, E, A, R1, E1, S, B>(
   stream: Stream<R, E, A>,
   s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, readonly [S, B]>
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): Stream<R & R1, E | E1, B> {
   return new Stream(stream.channel['>>>'](mapAccumMAccumulator(s, f)))
 }
@@ -3153,7 +3153,7 @@ export function mapAccumM_<R, E, A, R1, E1, S, B>(
  */
 export function mapAccumM<A, S, R1, E1, B>(
   s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, readonly [S, B]>
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (stream) => mapAccumM_(stream, s, f)
 }
@@ -4448,7 +4448,7 @@ export function zipWith<A, R1, E1, A1, B>(
 }
 
 export function zipWithIndex<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, readonly [A, number]> {
-  return mapAccum_(stream, 0, (index, a) => [index + 1, [a, index]])
+  return mapAccum_(stream, 0, (index, a) => [[a, index], index + 1])
 }
 
 /**

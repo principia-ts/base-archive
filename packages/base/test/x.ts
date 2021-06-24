@@ -1,23 +1,12 @@
-import { pipe } from '@principia/base/function'
+import * as A from '../src/Array'
+import * as E from '../src/Either'
+import { show } from '../src/Structural'
+import { mapAccumMF_ } from '../src/Traversable'
 
-import { tag } from '../src/Has'
-import * as I from '../src/IO'
-import { debug } from '../src/IOAspect'
+const mapAccumM_ = mapAccumMF_(A.Traversable)
 
-interface ServiceX {
-  readonly x: number
-}
-const xTag = tag<ServiceX>()
+const as = A.range(0, 100000)
 
-interface ServiceY {
-  readonly y: number
-}
-const yTag = tag<ServiceY>()
+const x = mapAccumM_(E.Monad)(as, '', (s, n) => E.right([n + 1, s + n.toString()]))
 
-I.run_(
-  pipe(
-    I.askServicesT(xTag, yTag),
-    I.map(([x, y]) => x.x + y.y),
-    I.giveServicesT(xTag, yTag)({ x: 1 }, { y: 2 })
-  )['@@'](debug)
-)
+console.log(show(x))

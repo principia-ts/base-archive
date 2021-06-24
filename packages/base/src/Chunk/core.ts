@@ -1987,7 +1987,14 @@ export function find<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
   return (as) => find_(as, f)
 }
 
-export function foldWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): B {
+/**
+ * Folds over the elements in this chunk from the left.
+ * Stops the fold early when the condition is not fulfilled.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldlWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): B {
   concrete(as)
   const iterator = as.arrayIterator()
   let s          = b
@@ -2003,8 +2010,15 @@ export function foldWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f:
   return s
 }
 
-export function foldWhile<A, B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): (as: Chunk<A>) => B {
-  return (as) => foldWhile_(as, b, predicate, f)
+/**
+ * Folds over the elements in this chunk from the left.
+ * Stops the fold early when the condition is not fulfilled.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function foldlWhile<A, B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): (as: Chunk<A>) => B {
+  return (as) => foldlWhile_(as, b, predicate, f)
 }
 
 export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
@@ -2026,7 +2040,13 @@ export function join(separator: string): (chunk: Chunk<string>) => string {
   return (chunk) => join_(chunk, separator)
 }
 
-export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readonly [S, B]): readonly [S, Chunk<B>] {
+/**
+ * Statefully maps over the chunk, producing new elements of type `B`.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readonly [B, S]): readonly [Chunk<B>, S] {
   concrete(as)
   const iterator = as.arrayIterator()
   const out      = builder<B>()
@@ -2038,14 +2058,20 @@ export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readon
     for (let i = 0; i < length; i++) {
       const a   = array[i]
       const tup = f(state, a)
-      state     = tup[0]
-      out.append(tup[1])
+      out.append(tup[0])
+      state = tup[1]
     }
   }
-  return P.tuple(s, out.result())
+  return P.tuple(out.result(), s)
 }
 
-export function mapAccum<A, S, B>(s: S, f: (s: S, a: A) => readonly [S, B]): (as: Chunk<A>) => readonly [S, Chunk<B>] {
+/**
+ * Statefully maps over the chunk, producing new elements of type `B`.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function mapAccum<A, S, B>(s: S, f: (s: S, a: A) => readonly [B, S]): (as: Chunk<A>) => readonly [Chunk<B>, S] {
   return (as) => mapAccum_(as, s, f)
 }
 
