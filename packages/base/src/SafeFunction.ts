@@ -3,6 +3,8 @@ import { flow } from '@principia/base/function'
 /**
  * A unary function that can compose in constant stack space with amortized
  * linear time application (in the number of constituent functions).
+ *
+ * A port of `AndThen` from `cats`
  */
 export abstract class SafeFunction<I, A> {
   readonly _U!: 'SafeFunction'
