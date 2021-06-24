@@ -13,14 +13,15 @@ export abstract class Sized {
   abstract withSize(size: number): <R, E, A>(io: IO<R, E, A>) => IO<R, E, A>
 
   static get size(): URIO<Has<Sized>, number> {
-    return I.asksServiceM(SizedTag)((_) => _.size)
+    return I.asksServiceIO(SizedTag)((_) => _.size)
   }
   static withSize(size: number) {
-    return <R, E, A>(io: IO<R, E, A>): IO<R & Has<Sized>, E, A> => I.asksServiceM(SizedTag)((_) => _.withSize(size)(io))
+    return <R, E, A>(io: IO<R, E, A>): IO<R & Has<Sized>, E, A> =>
+      I.asksServiceIO(SizedTag)((_) => _.withSize(size)(io))
   }
 
   static live(size: number): Layer<unknown, never, Has<Sized>> {
-    return L.fromEffect(SizedTag)(
+    return L.fromIO(SizedTag)(
       pipe(
         FR.make(size),
         I.map(

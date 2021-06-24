@@ -147,7 +147,7 @@ export function match<E, A, B, C>(
 /**
  * Folds over the value or cause.
  */
-export function matchM_<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchIO_<E, A, R1, E1, A1, R2, E2, A2>(
   exit: Exit<E, A>,
   onFailure: (e: C.Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
@@ -162,11 +162,11 @@ export function matchM_<E, A, R1, E1, A1, R2, E2, A2>(
   }
 }
 
-export function matchM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchIO<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (e: C.Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): (exit: Exit<E, A>) => IO<R1 & R2, E1 | E2, A1 | A2> {
-  return (exit) => matchM_(exit, onFailure, onSuccess)
+  return (exit) => matchIO_(exit, onFailure, onSuccess)
 }
 
 /*

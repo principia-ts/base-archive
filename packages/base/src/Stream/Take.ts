@@ -41,7 +41,7 @@ export function fromPull<R, E, O>(pull: Pull<R, E, O>): I.IO<R, never, Take<E, O
 }
 
 export function tap_<E, A, R, E1>(take: Take<E, A>, f: (as: Chunk<A>) => I.IO<R, E1, any>): I.IO<R, E1, void> {
-  return I.asUnit(Ex.foreachM_(take, f))
+  return I.asUnit(Ex.foreachIO_(take, f))
 }
 
 export function tap<A, R, E1>(
@@ -56,7 +56,7 @@ export function matchM_<E, A, R, E1, Z>(
   error: (cause: Ca.Cause<E>) => I.IO<R, E1, Z>,
   value: (chunk: Chunk<A>) => I.IO<R, E1, Z>
 ): I.IO<R, E1, Z> {
-  return Ex.matchM_(take, flow(Ca.sequenceCauseOption, O.match(end, error)), value)
+  return Ex.matchIO_(take, flow(Ca.sequenceCauseOption, O.match(end, error)), value)
 }
 
 export function matchM<E, A, R, E1, Z>(

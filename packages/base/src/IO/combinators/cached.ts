@@ -102,7 +102,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
       I.bind((time) =>
         pipe(
           cache,
-          RefM.updateSomeAndGetM((o) =>
+          RefM.updateSomeAndGetIO((o) =>
             pipe(
               o,
               O.match(

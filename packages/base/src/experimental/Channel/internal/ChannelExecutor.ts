@@ -237,7 +237,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       return new State.Effect(
         pipe(
           closeEffect,
-          I.matchCauseM(
+          I.matchCauseIO(
             (cause) =>
               this.finishWithExit(
                 Ex.halt(
@@ -345,13 +345,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
             if (closeEffect) {
               return new State.Effect(
-                I.matchCauseM_(
+                I.matchCauseIO_(
                   closeEffect,
                   (cause) => {
                     const restClose = rest.exec.close(Ex.halt(cause))
 
                     if (restClose) {
-                      return I.matchCauseM_(
+                      return I.matchCauseIO_(
                         restClose,
                         (restCause) => this.finishWithExit(Ex.halt(Ca.then(cause, restCause))),
                         () => this.finishWithExit(Ex.halt(cause))
@@ -532,7 +532,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         })
       }
       case State.ChannelStateTag.Effect: {
-        return I.matchCauseM_(
+        return I.matchCauseIO_(
           state.effect,
           (cause) =>
             I.succeedWith(() => {
@@ -564,7 +564,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         }
         case State.ChannelStateTag.Effect: {
           return new State.Effect(
-            I.matchCauseM_(
+            I.matchCauseIO_(
               state.effect,
               (cause) =>
                 I.succeedWith(() => {
@@ -585,7 +585,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   ): ChannelState<Env, unknown> | undefined {
     return new State.Effect(
       I.uninterruptibleMask(({ restore }) =>
-        I.matchCauseM_(
+        I.matchCauseIO_(
           restore(bracketOut.acquire),
           (cause) =>
             I.succeedWith(() => {
@@ -636,7 +636,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                     case State.ChannelStateTag.Effect: {
                       return pipe(
                         state.effect,
-                        I.matchCauseM(
+                        I.matchCauseIO(
                           (cause) => currentChannel.input.error(cause),
                           () => drainer
                         )
@@ -694,7 +694,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             case C.ChannelTag.Effect: {
               const pio = this.providedEnv ? I.give_(currentChannel.io, this.providedEnv as Env) : currentChannel.io
               result    = new State.Effect(
-                I.matchCauseM_(
+                I.matchCauseIO_(
                   pio,
                   (cause) => {
                     const res = this.doneHalt(cause)

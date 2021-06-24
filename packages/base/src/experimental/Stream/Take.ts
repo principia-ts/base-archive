@@ -53,13 +53,13 @@ export function fold<E, A, Z>(end: Z, error: (cause: C.Cause<E>) => Z, value: (c
  * Folds over the failure cause, success value and end-of-stream marker to
  * yield an effect.
  */
-export function foldM_<R, R1, R2, E, E1, E2, E3, A, Z>(
+export function foldIO_<R, R1, R2, E, E1, E2, E3, A, Z>(
   self: Take<E, A>,
   end: T.IO<R, E1, Z>,
   error: (cause: C.Cause<E>) => T.IO<R1, E2, Z>,
   value: (chunk: A.Chunk<A>) => T.IO<R2, E3, Z>
 ): T.IO<R & R1 & R2, E1 | E2 | E3, Z> {
-  return Ex.matchM_(self.exit, (_): T.IO<R & R1, E1 | E2, Z> => O.match_(C.flipCauseOption(_), () => end, error), value)
+  return Ex.matchIO_(self.exit, (_): T.IO<R & R1, E1 | E2, Z> => O.match_(C.flipCauseOption(_), () => end, error), value)
 }
 
 /**
@@ -68,12 +68,12 @@ export function foldM_<R, R1, R2, E, E1, E2, E3, A, Z>(
  * Folds over the failure cause, success value and end-of-stream marker to
  * yield an effect.
  */
-export function foldM<R, R1, R2, E, E1, E2, E3, A, Z>(
+export function foldIO<R, R1, R2, E, E1, E2, E3, A, Z>(
   end: T.IO<R, E1, Z>,
   error: (cause: C.Cause<E>) => T.IO<R1, E2, Z>,
   value: (chunk: A.Chunk<A>) => T.IO<R2, E3, Z>
 ) {
-  return (self: Take<E, A>) => foldM_(self, end, error, value)
+  return (self: Take<E, A>) => foldIO_(self, end, error, value)
 }
 
 /**
@@ -127,7 +127,7 @@ export function map<A, B>(f: (a: A) => B) {
  * Returns an effect that effectfully "peeks" at the success of this take.
  */
 export function tap_<R, E, E1, A>(self: Take<E, A>, f: (chunk: A.Chunk<A>) => T.IO<R, E1, any>): T.IO<R, E1, void> {
-  return T.asUnit(Ex.foreachM_(self.exit, f))
+  return T.asUnit(Ex.foreachIO_(self.exit, f))
 }
 
 /**
@@ -162,7 +162,7 @@ export function fail<E>(e: E): Take<E, never> {
  * Creates an effect from `Effect<R, E,A>` that does not fail, but succeeds with the `Take<E, A>`.
  * Error from stream when pulling is converted to `Take.halt`. Creates a singleton chunk.
  */
-export function fromEffect<R, E, A>(effect: T.IO<R, E, A>): T.URIO<R, Take<E, A>> {
+export function fromIO<R, E, A>(effect: T.IO<R, E, A>): T.URIO<R, Take<E, A>> {
   return T.matchCause_(effect, (cause) => halt(cause), single)
 }
 

@@ -26,7 +26,7 @@ import {
   flatten,
   fromPromiseDie,
   halt,
-  matchCauseM_,
+  matchCauseIO_,
   pure,
   SetInterrupt,
   succeed,
@@ -132,7 +132,7 @@ export function onInterrupt_<R, E, A, R1>(
   cleanup: (interruptors: ReadonlySet<FiberId>) => IO<R1, never, any>
 ): IO<R & R1, E, A> {
   return uninterruptibleMask(({ restore }) =>
-    matchCauseM_(
+    matchCauseIO_(
       restore(ma),
       (cause) =>
         C.interrupted(cause)
@@ -169,11 +169,11 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
   cleanup: () => IO<R2, E2, any>
 ): IO<R & R2, E | E2, A> {
   return uninterruptibleMask(({ restore }) =>
-    matchCauseM_(
+    matchCauseIO_(
       restore(self),
       (cause) =>
         C.interrupted(cause)
-          ? matchCauseM_(
+          ? matchCauseIO_(
               cleanup(),
               traceAs(cleanup, (_) => halt(_)),
               traceAs(cleanup, () => halt(cause))

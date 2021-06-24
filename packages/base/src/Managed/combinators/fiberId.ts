@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { fromEffect } from '../core'
+import { fromIO } from '../core'
 import * as I from '../internal/_io'
 
 /**
@@ -13,5 +13,5 @@ import * as I from '../internal/_io'
  */
 export function fiberId(): Managed<unknown, never, FiberId> {
   const trace = accessCallTrace()
-  return traceCall(fromEffect, trace)(I.fiberId())
+  return traceCall(fromIO, trace)(I.fiberId())
 }

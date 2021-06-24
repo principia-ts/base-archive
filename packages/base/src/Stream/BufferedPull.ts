@@ -32,7 +32,7 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E
     ifNotDone(
       pipe(
         self.upstream,
-        I.matchM(
+        I.matchIO(
           O.match(
             () =>
               pipe(

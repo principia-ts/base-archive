@@ -11,12 +11,12 @@ import * as L from '@principia/base/Layer'
 export abstract class TestLogger {
   abstract logLine(line: string): UIO<void>
   static get fromConsole(): Layer<Has<Console>, never, Has<TestLogger>> {
-    return L.fromEffect(TestLoggerTag)(
+    return L.fromIO(TestLoggerTag)(
       I.asksService(ConsoleTag)((console) => ({ logLine: (line) => console.putStrLn(line) }))
     )
   }
   static logLine(line: string): URIO<Has<TestLogger>, void> {
-    return I.asksServiceM(TestLoggerTag)((logger) => logger.logLine(line))
+    return I.asksServiceIO(TestLoggerTag)((logger) => logger.logLine(line))
   }
 }
 

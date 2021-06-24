@@ -10,7 +10,7 @@ import { parallel, sequential } from '../../ExecutionStrategy'
 import { identity } from '../../function'
 import * as R from '../../Record'
 import { tuple } from '../../tuple'
-import { map_, mapM_ } from '../core'
+import { map_, mapIO_ } from '../core'
 import * as I from '../internal/io'
 import { foreachPar_ } from './foreachPar'
 import { foreachParN_ } from './foreachParN'
@@ -33,7 +33,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
-  return mapM_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
+  return mapIO_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
     const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
     return I.bind_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>

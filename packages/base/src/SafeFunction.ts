@@ -1,4 +1,4 @@
-import { flow } from '@principia/base/function'
+import { flow } from './function'
 
 /**
  * A unary function that can compose in constant stack space with amortized

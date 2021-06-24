@@ -19,7 +19,7 @@ export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E,
   return asksServiceManaged(ClockTag)(
     (clock) =>
       new Managed(
-        I.asksM(
+        I.asksIO(
           traceFrom(trace, ([r, releaseMap]: readonly [R, RM.ReleaseMap]) =>
             pipe(
               ma.io,

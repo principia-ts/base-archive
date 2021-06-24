@@ -106,5 +106,5 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   bind_,
   flatten,
   catchAll_,
-  fail: fail
+  fail
 })

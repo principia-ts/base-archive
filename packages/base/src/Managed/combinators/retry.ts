@@ -21,7 +21,7 @@ export function retry_<R, E, A, R1, O>(
 ): Managed<R & R1 & Has<Clock>, E, A> {
   const trace = accessCallTrace()
   return new Managed(
-    I.asksM(
+    I.asksIO(
       traceFrom(trace, ([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
         pipe(
           ma.io,

@@ -339,7 +339,7 @@ export function takeAllUpTo(
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export function zipWithIO_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   that: Queue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => I.IO<R3, E3, D>
@@ -377,13 +377,13 @@ export function zipWithM_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B
  * For example, a dropping queue and a bounded queue composed together may apply `f`
  * to different elements.
  */
-export function zipWithM<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
+export function zipWithIO<RA1, RB1, EA1, EB1, A1 extends A, C, B, R3, E3, D, A>(
   that: Queue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => I.IO<R3, E3, D>
 ): <RA, RB, EA, EB>(
   queue: Queue<RA, RB, EA, EB, A, B>
 ) => Queue<RA & RA1, RB & RB1 & R3, EA1 | EA, EB1 | EB | E3, A1, D> {
-  return (queue) => zipWithM_(queue, that, f)
+  return (queue) => zipWithIO_(queue, that, f)
 }
 
 /**
@@ -394,7 +394,7 @@ export function zipWith_<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B,
   that: Queue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => D
 ): Queue<RA & RA1, RB & RB1, EA | EA1, EB | EB1, A1, D> {
-  return zipWithM_(queue, that, (b, c) => I.pure(f(b, c)))
+  return zipWithIO_(queue, that, (b, c) => I.pure(f(b, c)))
 }
 
 /**
@@ -404,7 +404,7 @@ export function zipWith<RA1, RB1, EA1, EB1, A1 extends A, C, B, D, A>(
   that: Queue<RA1, RB1, EA1, EB1, A1, C>,
   f: (b: B, c: C) => D
 ): <RA, RB, EA, EB>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA & RA1, RB & RB1, EA1 | EA, EB1 | EB, A1, D> {
-  return (queue) => zipWithM_(queue, that, (b, c) => I.pure(f(b, c)))
+  return (queue) => zipWithIO_(queue, that, (b, c) => I.pure(f(b, c)))
 }
 
 /**
@@ -439,7 +439,7 @@ export function zip<RA1, RB1, EA1, EB1, A1 extends A, C, B, A>(
  * specified effectual functions.
  */
 export function dimap_<RA, RB, EA, EB, A, B, C, D>(self: Queue<RA, RB, EA, EB, A, B>, f: (c: C) => A, g: (b: B) => D) {
-  return dimapM_(
+  return dimapIO_(
     self,
     (c: C) => I.pure(f(c)),
     (b) => I.pure(g(b))
@@ -455,7 +455,7 @@ export function dimap<A, B, C, D>(
   g: (b: B) => D
 ): <RA, RB, EA, EB>(self: Queue<RA, RB, EA, EB, A, B>) => Queue<RA, RB, EA, EB, C, D> {
   return (self) =>
-    dimapM_(
+    dimapIO_(
       self,
       (c: C) => I.pure(f(c)),
       (b) => I.pure(g(b))
@@ -466,7 +466,7 @@ export function dimap<A, B, C, D>(
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
+export function dimapIO_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
@@ -489,37 +489,37 @@ export function dimapM_<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D>(
  * Transforms elements enqueued into and dequeued from this queue with the
  * specified effectual functions.
  */
-export function dimapM<A, B, C, RC, EC, RD, ED, D>(
+export function dimapIO<A, B, C, RC, EC, RD, ED, D>(
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
 ): <RA, RB, EA, EB>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RC & RA, RD & RB, EC | EA, ED | EB, C, D> {
-  return (queue) => dimapM_(queue, f, g)
+  return (queue) => dimapIO_(queue, f, g)
 }
 
 /**
  * Transforms elements enqueued into this queue with an effectful function.
  */
-export function contramapM_<RA, RB, EA, EB, A, B, RC, EC, C>(
+export function contramapIO_<RA, RB, EA, EB, A, B, RC, EC, C>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): Queue<RA & RC, RB, EA | EC, EB, C, B> {
-  return dimapM_(queue, f, I.pure)
+  return dimapIO_(queue, f, I.pure)
 }
 
 /**
  * Transforms elements enqueued into this queue with an effectful function.
  */
-export function contramapM<C, RA2, EA2, A>(
+export function contramapIO<C, RA2, EA2, A>(
   f: (c: C) => I.IO<RA2, EA2, A>
 ): <RA, RB, EA, EB, B>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA2 & RA, RB, EA | EA2, EB, C, B> {
-  return (queue) => dimapM_(queue, f, I.pure)
+  return (queue) => dimapIO_(queue, f, I.pure)
 }
 
 export function contramap_<RA, RB, EA, EB, A, B, C>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (c: C) => A
 ): Queue<RA, RB, EA, EB, C, B> {
-  return contramapM_(queue, flow(f, I.pure))
+  return contramapIO_(queue, flow(f, I.pure))
 }
 
 /**
@@ -540,7 +540,7 @@ export function contramap<C, A>(
 /**
  * Like `filterInput`, but uses an effectful function to filter the elements.
  */
-export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
+export function filterInputIO_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (_: A1) => I.IO<R2, E2, boolean>
 ): Queue<RA & R2, RB, EA | E2, EB, A1, B> {
@@ -580,10 +580,10 @@ export function filterInputM_<RA, RB, EA, EB, B, A, A1 extends A, R2, E2>(
 /**
  * Like `filterInput`, but uses an effectful function to filter the elements.
  */
-export function filterInputM<A, A1 extends A, R2, E2>(
+export function filterInputIO<A, A1 extends A, R2, E2>(
   f: (_: A1) => I.IO<R2, E2, boolean>
 ): <RA, RB, EA, EB, B>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA & R2, RB, E2 | EA, EB, A1, B> {
-  return (queue) => filterInputM_(queue, f)
+  return (queue) => filterInputIO_(queue, f)
 }
 
 /**
@@ -594,7 +594,7 @@ export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (_: A1) => boolean
 ): Queue<RA, RB, EA, EB, A1, B> {
-  return filterInputM_(queue, (a) => I.pure(f(a)))
+  return filterInputIO_(queue, (a) => I.pure(f(a)))
 }
 
 /**
@@ -604,10 +604,10 @@ export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A>(
 export function filterInput<A, A1 extends A>(
   f: (_: A1) => boolean
 ): <RA, RB, EA, EB, B>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA, RB, EA, EB, A1, B> {
-  return (queue) => filterInputM_(queue, (a) => I.pure(f(a)))
+  return (queue) => filterInputIO_(queue, (a) => I.pure(f(a)))
 }
 
-export function filterOutputM_<RA, RB, EA, EB, A, B, RB1, EB1>(
+export function filterOutputIO_<RA, RB, EA, EB, A, B, RB1, EB1>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (b: B) => IO<RB1, EB1, boolean>
 ): Queue<RA, RB & RB1, EA, EB | EB1, A, B> {
@@ -641,10 +641,10 @@ export function filterOutputM_<RA, RB, EA, EB, A, B, RB1, EB1>(
   })()
 }
 
-export function filterOutputM<B, RB1, EB1>(
+export function filterOutputIO<B, RB1, EB1>(
   f: (b: B) => IO<RB1, EB1, boolean>
 ): <RA, RB, EA, EB, A>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA, RB & RB1, EA, EB | EB1, A, B> {
-  return (queue) => filterOutputM_(queue, f)
+  return (queue) => filterOutputIO_(queue, f)
 }
 
 /*
@@ -656,27 +656,27 @@ export function filterOutputM<B, RB1, EB1>(
 /**
  * Transforms elements dequeued from this queue with an effectful function.
  */
-export function mapM_<RA, RB, EA, EB, A, B, R2, E2, C>(
+export function mapIO_<RA, RB, EA, EB, A, B, R2, E2, C>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<R2, E2, C>
 ): Queue<RA, R2 & RB, EA, EB | E2, A, C> {
-  return dimapM_(queue, I.pure, f)
+  return dimapIO_(queue, I.pure, f)
 }
 
 /**
  * Transforms elements dequeued from this queue with an effectful function.
  */
-export function mapM<B, R2, E2, C>(
+export function mapIO<B, R2, E2, C>(
   f: (b: B) => I.IO<R2, E2, C>
 ): <RA, RB, EA, EB, A>(queue: Queue<RA, RB, EA, EB, A, B>) => Queue<RA, R2 & RB, EA, EB | E2, A, C> {
-  return (queue) => mapM_(queue, f)
+  return (queue) => mapIO_(queue, f)
 }
 
 export function map_<RA, RB, EA, EB, A, B, C>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): Queue<RA, RB, EA, EB, A, C> {
-  return mapM_(queue, flow(f, I.succeed))
+  return mapIO_(queue, flow(f, I.succeed))
 }
 
 export function map<B, C>(
@@ -767,7 +767,7 @@ function _unsafeQueue<A>(
         shutdownFlag.set(true)
 
         return I.uninterruptible(
-          I.whenM(shutdownHook.succeed(undefined))(
+          I.whenIO(shutdownHook.succeed(undefined))(
             I.bind_(I.foreachPar_(_unsafePollAll(takers), P.interruptAs(d.id)), () => strategy.shutdown)
           )
         )

@@ -76,7 +76,7 @@ export function foreach_<R, A, R1, B>(
       (b) =>
         new Sample(
           b,
-          S.mapM_(ma.shrink, (s) => foreach_(s, f))
+          S.mapIO_(ma.shrink, (s) => foreach_(s, f))
         )
     )
   )
@@ -237,7 +237,6 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
               }
             }
           }
-          return hole()
           // return ea._tag === Ex.ExitTag.Success
           //   ? eb._tag === Ex.ExitTag.Success
           //     ? Ex.succeed(

@@ -93,11 +93,11 @@ export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
 }
 
 export function fromEffect<R, A>(effect: IO<R, never, A>): Gen<R, A> {
-  return new Gen(S.fromEffect(I.map_(effect, Sa.noShrink)))
+  return new Gen(S.fromIO(I.map_(effect, Sa.noShrink)))
 }
 
 export function fromEffectSample<R, A>(effect: IO<R, never, Sample<R, A>>): Gen<R, A> {
-  return new Gen(S.fromEffect(effect))
+  return new Gen(S.fromIO(effect))
 }
 
 /*
@@ -186,7 +186,7 @@ export function map<A, B>(f: (a: A) => B): <R>(fa: Gen<R, A>) => Gen<R, B> {
 }
 
 export function mapM_<R, A, R1, B>(fa: Gen<R, A>, f: (a: A) => IO<R1, never, B>): Gen<R & R1, B> {
-  return new Gen(S.mapM_(fa.sample, Sa.foreach(f)))
+  return new Gen(S.mapIO_(fa.sample, Sa.foreach(f)))
 }
 
 export function mapM<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>) => Gen<R & R1, B> {

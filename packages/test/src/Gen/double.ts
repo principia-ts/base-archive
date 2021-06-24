@@ -25,8 +25,8 @@ import { Gen } from './core'
 export function arrayInt64(min: ArrayInt64, max: ArrayInt64): Gen<Has<Random>, ArrayInt64> {
   return pipe(
     computeArrayInt64GenerateRange(min, max, undefined, undefined),
-    S.fromEffect,
-    S.bind(({ min, max }) => S.repeatEffect(Random.nextArrayInt(min, max))),
+    S.fromIO,
+    S.bind(({ min, max }) => S.repeatIO(Random.nextArrayInt(min, max))),
     S.map((uncheckedValue) => {
       if (uncheckedValue.data.length === 1) {
         uncheckedValue.data.unshift(0)

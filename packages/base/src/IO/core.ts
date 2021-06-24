@@ -545,7 +545,7 @@ export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
  */
 export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return asksM(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(fail, succeed))))
+  return asksIO(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(fail, succeed))))
 }
 
 /**
@@ -555,7 +555,7 @@ export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
  */
 export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return asksM(
+  return asksIO(
     traceAs(trace, (_: R) =>
       async<unknown, E, A>((k) => {
         runAsyncEnv(effect, _, (ex) => {
@@ -762,7 +762,7 @@ export function crossWith<A, R1, E1, B, C>(
  * @trace 2
  */
 export function bimap_<R, E, A, E1, B>(pab: IO<R, E, A>, f: (e: E) => E1, g: (a: A) => B): IO<R, E1, B> {
-  return matchM_(pab, traceAs(f, flow(f, fail)), traceAs(g, flow(g, succeed)))
+  return matchIO_(pab, traceAs(f, flow(f, fail)), traceAs(g, flow(g, succeed)))
 }
 
 /**
@@ -793,7 +793,7 @@ export function bimap<E, E1, A, B>(f: (e: E) => E1, g: (a: A) => B): <R>(pab: IO
  * @trace 1
  */
 export function mapError_<R, E, A, E1>(fea: IO<R, E, A>, f: (e: E) => E1): IO<R, E1, A> {
-  return matchCauseM_(fea, traceAs(f, flow(C.map(f), halt)), succeed)
+  return matchCauseIO_(fea, traceAs(f, flow(C.map(f), halt)), succeed)
 }
 
 /**
@@ -849,12 +849,12 @@ export function memento<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> 
  */
 
 /**
- * A more powerful version of `matchM_` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `matchIO_` that allows recovering from any kind of failure except interruptions.
  *
  * @trace 1
  * @trace 2
  */
-export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: IO<R, E, A>,
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
@@ -863,13 +863,13 @@ export function matchCauseM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 /**
- * A more powerful version of `matchM` that allows recovering from any kind of failure except interruptions.
+ * A more powerful version of `matchIO` that allows recovering from any kind of failure except interruptions.
  *
- * @dataFirst matchCauseM_
+ * @dataFirst matchCauseIO_
  * @trace 0
  * @trace 1
  */
-export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseIO<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
@@ -880,12 +880,12 @@ export function matchCauseM<E, A, R1, E1, A1, R2, E2, A2>(
  * @trace 1
  * @trace 2
  */
-export function matchM_<R, R1, R2, E, E1, E2, A, A1, A2>(
+export function matchIO_<R, R1, R2, E, E1, E2, A, A1, A2>(
   ma: IO<R, E, A>,
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt)),
     onSuccess
@@ -893,15 +893,15 @@ export function matchM_<R, R1, R2, E, E1, E2, A, A1, A2>(
 }
 
 /**
- * @dataFirst matchM_
+ * @dataFirst matchIO_
  * @trace 0
  * @trace 1
  */
-export function matchM<R1, R2, E, E1, E2, A, A1, A2>(
+export function matchIO<R1, R2, E, E1, E2, A, A1, A2>(
   onFailure: (e: E) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => matchM_(ma, onFailure, onSuccess)
+  return (ma) => matchIO_(ma, onFailure, onSuccess)
 }
 
 /**
@@ -917,7 +917,7 @@ export function match_<R, E, A, B, C>(
   onFailure: (e: E) => B,
   onSuccess: (a: A) => C
 ): IO<R, never, B | C> {
-  return matchM_(fa, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, succeed)))
+  return matchIO_(fa, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, succeed)))
 }
 
 /**
@@ -947,7 +947,7 @@ export function matchCause_<R, E, A, A1, A2>(
   onFailure: (cause: Cause<E>) => A1,
   onSuccess: (a: A) => A2
 ): IO<R, never, A1 | A2> {
-  return matchCauseM_(ma, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, pure)))
+  return matchCauseIO_(ma, traceAs(onFailure, flow(onFailure, succeed)), traceAs(onSuccess, flow(onSuccess, pure)))
 }
 
 /**
@@ -970,12 +970,12 @@ export function matchCause<E, A, A1, A2>(
  * @trace 1
  * @trace 2
  */
-export function matchTraceM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchTraceIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: IO<R, E, A>,
   onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceAs(
       onFailure,
@@ -991,15 +991,15 @@ export function matchTraceM_<R, E, A, R1, E1, A1, R2, E2, A2>(
 /**
  * A version of `foldM` that gives you the (optional) trace of the error.
  *
- * @dataFirst matchTraceM_
+ * @dataFirst matchTraceIO_
  * @trace 0
  * @trace 1
  */
-export function matchTraceM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchTraceIO<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => matchTraceM_(ma, onFailure, onSuccess)
+  return (ma) => matchTraceIO_(ma, onFailure, onSuccess)
 }
 
 /*
@@ -1088,7 +1088,7 @@ export function bitap_<R, E, A, R1, E1, R2, E2>(
   onFailure: (e: E) => IO<R1, E1, any>,
   onSuccess: (a: A) => IO<R2, E2, any>
 ): IO<R & R1 & R2, E | E1 | E2, A> {
-  return matchCauseM_(
+  return matchCauseIO_(
     fa,
     (c) =>
       E.match_(
@@ -1170,7 +1170,7 @@ export function tap<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(fa: IO<R, 
  * @trace 1
  */
 export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, E1, any>) {
-  return matchCauseM_(
+  return matchCauseIO_(
     fa,
     (c) =>
       E.match_(
@@ -1218,7 +1218,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  *
  * @trace 0
  */
-export function asksM<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
+export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
   return new Read(f)
 }
 
@@ -1267,7 +1267,7 @@ export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
  * @trace 1
  */
 export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
-  return asksM(traceAs(f, (r0: R0) => giveAll_(ma, f(r0))))
+  return asksIO(traceAs(f, (r0: R0) => giveAll_(ma, f(r0))))
 }
 
 /**
@@ -1406,7 +1406,7 @@ export function letS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: K
  * @trace 1
  */
 export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
-  return pipe(ma, sandbox, matchM(traceAs(f, flow(C.squash(f), fail)), pure))
+  return pipe(ma, sandbox, matchIO(traceAs(f, flow(C.squash(f), fail)), pure))
 }
 
 /**
@@ -1559,7 +1559,7 @@ export function catchTag<K extends E['_tag'] & string, E extends { _tag: string 
  * @trace 1
  */
 export function catchAll_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (e: E) => IO<R1, E1, A1>): IO<R & R1, E1, A | A1> {
-  return matchM_(ma, f, (x) => succeed(x))
+  return matchIO_(ma, f, (x) => succeed(x))
 }
 
 /**
@@ -1587,7 +1587,7 @@ export function catchAll<E, R1, E1, A1>(
  * @trace 1
  */
 export function catchAllCause_<R, E, A, R1, E1, A1>(ma: IO<R, E, A>, f: (_: Cause<E>) => IO<R1, E1, A1>) {
-  return matchCauseM_(ma, f, pure)
+  return matchCauseIO_(ma, f, pure)
 }
 
 /**
@@ -1615,7 +1615,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   f: (e: E) => O.Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceAs(
       f,
@@ -1657,7 +1657,7 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
   f: (_: Cause<E>) => O.Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceAs(
       f,
@@ -1729,7 +1729,7 @@ export function catchSomeDefect<R1, E1, A1>(
  */
 export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
   const trace = accessCallTrace()
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceFrom(trace, flow(succeed)),
     traceFrom(trace, () => succeed(C.empty))
@@ -1741,7 +1741,7 @@ export function cause<R, E, A>(ma: IO<R, E, A>): IO<R, never, Cause<E>> {
  */
 export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(ma, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
+  return matchCauseIO_(ma, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -1762,7 +1762,7 @@ export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, 
  * @trace 2
  */
 export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: A) => Option<A1>): IO<R, E | E1, A1> {
-  return collectM_(ma, f, traceAs(pf, flow(pf, O.map(succeed))))
+  return collectIO_(ma, f, traceAs(pf, flow(pf, O.map(succeed))))
 }
 
 /**
@@ -1797,7 +1797,7 @@ export function collectAllUnit<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, voi
  * @trace 1
  * @trace 2
  */
-export function collectM_<R, E, A, R1, E1, A1, E2>(
+export function collectIO_<R, E, A, R1, E1, A1, E2>(
   ma: IO<R, E, A>,
   f: () => E2,
   pf: (a: A) => Option<IO<R1, E1, A1>>
@@ -1816,15 +1816,15 @@ export function collectM_<R, E, A, R1, E1, A1, E2>(
 }
 
 /**
- * @dataFirst collectM_
+ * @dataFirst collectIO_
  * @trace 0
  * @trace 1
  */
-export function collectM<A, R1, E1, A1, E2>(
+export function collectIO<A, R1, E1, A1, E2>(
   f: () => E2,
   pf: (a: A) => Option<IO<R1, E1, A1>>
 ): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E2 | E, A1> {
-  return (ma) => collectM_(ma, f, pf)
+  return (ma) => collectIO_(ma, f, pf)
 }
 
 /**
@@ -1864,15 +1864,15 @@ export function composer<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) =>
   return (ra) => traceCall(composer_, trace)(ra, ab)
 }
 
-export function condM_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
+export function condIO_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
   return b ? onTrue : bind_(onFalse, fail)
 }
 
 /**
- * @dataFirst condM_
+ * @dataFirst condIO_
  */
-export function condM<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (b: boolean) => IO<R & R1, E, A> {
-  return (b) => condM_(b, onTrue, onFalse)
+export function condIO<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (b: boolean) => IO<R & R1, E, A> {
+  return (b) => condIO_(b, onTrue, onFalse)
 }
 
 /**
@@ -1914,7 +1914,7 @@ export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
  */
 export function errorAsCause<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return matchM_(ma, traceFrom(trace, flow(halt)), traceFrom(trace, flow(succeed)))
+  return matchIO_(ma, traceFrom(trace, flow(halt)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -1932,7 +1932,7 @@ export function eventually<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
  * @trace 1
  */
 export function extend_<R, E, A, B>(wa: IO<R, E, A>, f: (wa: IO<R, E, A>) => B): IO<R, E, B> {
-  return matchM_(
+  return matchIO_(
     wa,
     (e) => fail(e),
     traceAs(f, (_) => succeed(f(wa)))
@@ -2491,7 +2491,7 @@ export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, 
  */
 export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceFrom(trace, flow(C.map(O.some), halt)),
     traceFrom(
@@ -2534,7 +2534,7 @@ export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>
  *
  * @trace call
  */
-export function getOrElseM_<R, E, A, R1, E1, B>(
+export function getOrElseIO_<R, E, A, R1, E1, B>(
   ma: IO<R, E, Option<A>>,
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
@@ -2551,11 +2551,11 @@ export function getOrElseM_<R, E, A, R1, E1, B>(
  * @dataFirst getOrElseM_
  * @trace call
  */
-export function getOrElseM<R1, E1, B>(
+export function getOrElseIO<R1, E1, B>(
   orElse: IO<R1, E1, B>
 ): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R & R1, E1 | E, B | A> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(getOrElseM_, trace)(ma, orElse)
+  return (ma) => traceCall(getOrElseIO_, trace)(ma, orElse)
 }
 
 /**
@@ -2620,7 +2620,7 @@ export function getOrFailUnit<A>(v: () => Option<A>): FIO<void, A> {
  * @trace 1
  * @trace 2
  */
-export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
+export function ifIO_<R, E, R1, E1, A1, R2, E2, A2>(
   mb: IO<R, E, boolean>,
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
@@ -2647,15 +2647,15 @@ export function ifM_<R, E, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst ifM_
+ * @dataFirst ifIO_
  * @trace 0
  * @trace 1
  */
-export function ifM<R1, E1, A1, R2, E2, A2>(
+export function ifIO<R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): <R, E>(b: IO<R, E, boolean>) => IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return (b) => ifM_(b, onTrue, onFalse)
+  return (b) => ifIO_(b, onTrue, onFalse)
 }
 
 /**
@@ -2667,7 +2667,7 @@ export function if_<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return ifM_(succeedWith(b), onTrue, onFalse)
+  return ifIO_(succeedWith(b), onTrue, onFalse)
 }
 
 /**
@@ -2762,7 +2762,7 @@ export function iterate<R, E, A>(cont: (b: A) => boolean, body: (b: A) => IO<R, 
  */
 export function join_<R, E, A, R1, E1, A1>(io: IO<R, E, A>, that: IO<R1, E1, A1>): IO<E.Either<R, R1>, E | E1, A | A1> {
   const trace = accessCallTrace()
-  return asksM(
+  return asksIO(
     traceFrom(
       trace,
       (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, A | A1> =>
@@ -2798,7 +2798,7 @@ export function joinEither_<R, E, A, R1, E1, A1>(
   mb: IO<R1, E1, A1>
 ): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
   const trace = accessCallTrace()
-  return asksM(
+  return asksIO(
     traceFrom(
       trace,
       (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
@@ -2938,7 +2938,7 @@ export function mapEffectCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) =
  * @trace 1
  */
 export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): IO<R, E1, A> {
-  return matchCauseM_(ma, traceAs(f, flow(f, halt)), pure)
+  return matchCauseIO_(ma, traceAs(f, flow(f, halt)), pure)
 }
 
 /**
@@ -2961,7 +2961,7 @@ export function mapErrorCause<E, E1>(f: (cause: Cause<E>) => Cause<E1>) {
  */
 export function merge<R, E, A>(io: IO<R, E, A>): IO<R, never, A | E> {
   const trace = accessCallTrace()
-  return matchM_(io, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(succeed)))
+  return matchIO_(io, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -3018,7 +3018,7 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
  */
 export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
   const trace = accessCallTrace()
-  return matchM_(
+  return matchIO_(
     ma,
     traceFrom(
       trace,
@@ -3041,14 +3041,14 @@ export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
  */
 export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(ma, traceFrom(trace, flow(C.bind(C.die), halt)), succeed)
+  return matchCauseIO_(ma, traceFrom(trace, flow(C.bind(C.die), halt)), succeed)
 }
 
 /**
  * @trace 1
  */
 export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
-  return matchM_(ma, traceAs(f, flow(f, die)), succeed)
+  return matchIO_(ma, traceAs(f, flow(f, die)), succeed)
 }
 
 /**
@@ -3166,7 +3166,7 @@ export function orElseSucceed<A1>(a: () => A1): <R, E, A>(self: IO<R, E, A>) => 
  */
 export function parallelErrors<R, E, A>(io: IO<R, E, A>): IO<R, ReadonlyArray<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(
+  return matchCauseIO_(
     io,
     (cause) => {
       const f = C.failures(cause)
@@ -3232,7 +3232,7 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
  * included.
  */
 export function refailWithTrace<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return matchCauseM_(ma, (cause) => haltWithTrace((trace) => C.traced(cause, trace())), succeed)
+  return matchCauseIO_(ma, (cause) => haltWithTrace((trace) => C.traced(cause, trace())), succeed)
 }
 
 /**
@@ -3297,7 +3297,7 @@ export function refineOrDieWith<E, E1>(
  * @trace 1
  */
 export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>): IO<R, E | E1, A> {
-  return rejectM_(
+  return rejectIO_(
     fa,
     traceAs(pf, (a) => O.map_(pf(a), fail))
   )
@@ -3327,7 +3327,7 @@ export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>)
  *
  * @trace 1
  */
-export function rejectM_<R, E, A, R1, E1>(
+export function rejectIO_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
@@ -3348,10 +3348,10 @@ export function rejectM_<R, E, A, R1, E1>(
  * @dataFirst rejectM_
  * @trace 0
  */
-export function rejectM<R1, E1, A>(
+export function rejectIO<R1, E1, A>(
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): <R, E>(fa: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (fa) => rejectM_(fa, pf)
+  return (fa) => rejectIO_(fa, pf)
 }
 
 /**
@@ -3396,7 +3396,7 @@ export function repeatN(n: number): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
  * @trace 1
  */
 export function repeatUntil_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatUntilM_(ma, traceAs(f, flow(f, succeed)))
+  return repeatUntilIO_(ma, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3414,26 +3414,26 @@ export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) =>
  *
  * @trace 1
  */
-export function repeatUntilM_<R, E, A, R1, E1>(
+export function repeatUntilIO_<R, E, A, R1, E1>(
   ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
   return bind_(
     ma,
-    traceAs(f, (a) => bind_(f(a), (b) => (b ? pure(a) : repeatUntilM_(ma, f))))
+    traceAs(f, (a) => bind_(f(a), (b) => (b ? pure(a) : repeatUntilIO_(ma, f))))
   )
 }
 
 /**
  * Repeats this effect until its result satisfies the specified effectful predicate.
  *
- * @dataFirst repeatUntilM_
+ * @dataFirst repeatUntilIO_
  * @trace 0
  */
-export function repeatUntilM<A, R1, E1>(
+export function repeatUntilIO<A, R1, E1>(
   f: (a: A) => IO<R1, E1, boolean>
 ): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (ma) => repeatUntilM_(ma, f)
+  return (ma) => repeatUntilIO_(ma, f)
 }
 
 /**
@@ -3442,7 +3442,7 @@ export function repeatUntilM<A, R1, E1>(
  * @trace 1
  */
 export function repeatWhile_<R, E, A>(ma: IO<R, E, A>, f: (a: A) => boolean): IO<R, E, A> {
-  return repeatWhileM_(ma, traceAs(f, flow(f, succeed)))
+  return repeatWhileIO_(ma, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3460,26 +3460,26 @@ export function repeatWhile<A>(f: (a: A) => boolean): <R, E>(ma: IO<R, E, A>) =>
  *
  * @trace 1
  */
-export function repeatWhileM_<R, E, A, R1, E1>(
+export function repeatWhileIO_<R, E, A, R1, E1>(
   ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
   return bind_(
     ma,
-    traceAs(f, (a) => bind_(f(a), (b) => (b ? repeatWhileM_(ma, f) : succeed(a))))
+    traceAs(f, (a) => bind_(f(a), (b) => (b ? repeatWhileIO_(ma, f) : succeed(a))))
   )
 }
 
 /**
  * Repeats this effect while its error satisfies the specified effectful predicate.
  *
- * @dataFirst repeatWhileM_
+ * @dataFirst repeatWhileIO_
  * @trace 0
  */
-export function repeatWhileM<A, R1, E1>(
+export function repeatWhileIO<A, R1, E1>(
   f: (a: A) => IO<R1, E1, boolean>
 ): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
-  return (ma) => repeatWhileM_(ma, f)
+  return (ma) => repeatWhileIO_(ma, f)
 }
 
 export function replicate_<R, E, A>(ma: IO<R, E, A>, n: number): ReadonlyArray<IO<R, E, A>> {
@@ -3529,7 +3529,7 @@ export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
  * @trace 1
  */
 export function retryUntil_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean): IO<R, E, A> {
-  return retryUntilM_(fa, traceAs(f, flow(f, succeed)))
+  return retryUntilIO_(fa, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3547,26 +3547,26 @@ export function retryUntil<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => 
  *
  * @trace 1
  */
-export function retryUntilM_<R, E, A, R1, E1>(
+export function retryUntilIO_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   f: (e: E) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? fail(e) : retryUntilM_(fa, f))))
+    traceAs(f, (e) => bind_(f(e), (b) => (b ? fail(e) : retryUntilIO_(fa, f))))
   )
 }
 
 /**
  * Retries this effect until its error satisfies the specified effectful predicate.
  *
- * @dataFirst retryUntilM_
+ * @dataFirst retryUntilIO_
  * @trace 0
  */
-export function retryUntilM<E, R1, E1>(
+export function retryUntilIO<E, R1, E1>(
   f: (e: E) => IO<R1, E1, boolean>
 ): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
-  return (fa) => retryUntilM_(fa, f)
+  return (fa) => retryUntilIO_(fa, f)
 }
 
 /**
@@ -3575,7 +3575,7 @@ export function retryUntilM<E, R1, E1>(
  * @trace 1
  */
 export function retryWhile_<R, E, A>(fa: IO<R, E, A>, f: (e: E) => boolean) {
-  return retryWhileM_(fa, traceAs(f, flow(f, succeed)))
+  return retryWhileIO_(fa, traceAs(f, flow(f, succeed)))
 }
 
 /**
@@ -3593,26 +3593,26 @@ export function retryWhile<E>(f: (e: E) => boolean): <R, A>(fa: IO<R, E, A>) => 
  *
  * @trace 1
  */
-export function retryWhileM_<R, E, A, R1, E1>(
+export function retryWhileIO_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   f: (e: E) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? retryWhileM_(fa, f) : fail(e))))
+    traceAs(f, (e) => bind_(f(e), (b) => (b ? retryWhileIO_(fa, f) : fail(e))))
   )
 }
 
 /**
  * Retries this effect while its error satisfies the specified effectful predicate.
  *
- * @dataFirst retryWhileM_
+ * @dataFirst retryWhileIO_
  * @trace 0
  */
-export function retryWhileM<E, R1, E1>(
+export function retryWhileIO<E, R1, E1>(
   f: (e: E) => IO<R1, E1, boolean>
 ): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
-  return (fa) => retryWhileM_(fa, f)
+  return (fa) => retryWhileIO_(fa, f)
 }
 
 /**
@@ -3628,7 +3628,7 @@ export function tapCause_<R2, A2, R, E, E2>(
   ma: IO<R2, E2, A2>,
   f: (e: Cause<E2>) => IO<R, E, any>
 ): IO<R2 & R, E | E2, A2> {
-  return matchCauseM_(
+  return matchCauseIO_(
     ma,
     traceAs(f, (c) => bind_(f(c), () => halt(c))),
     succeed
@@ -3661,7 +3661,7 @@ export function tapCause<R, E, E1>(
  */
 export function sandbox<R, E, A>(fa: IO<R, E, A>): IO<R, Cause<E>, A> {
   const trace = accessCallTrace()
-  return matchCauseM_(fa, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
+  return matchCauseIO_(fa, traceFrom(trace, flow(fail)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -3727,7 +3727,7 @@ export function summarized<R1, E1, B, C>(
  */
 export function swap<R, E, A>(pab: IO<R, E, A>): IO<R, A, E> {
   const trace = accessCallTrace()
-  return matchM_(pab, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(fail)))
+  return matchIO_(pab, traceFrom(trace, flow(succeed)), traceFrom(trace, flow(fail)))
 }
 
 /**
@@ -3917,7 +3917,7 @@ export function unsandbox<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
  *
  * @trace call
  */
-export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>) {
+export function whenIO_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>) {
   const trace = accessCallTrace()
   return bind_(
     mb,
@@ -3934,16 +3934,16 @@ export function whenM_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>
  * @dataFirst whenM_
  * @trace call
  */
-export function whenM<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {
+export function whenIO<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(whenM_, trace)(ma, mb)
+  return (ma) => traceCall(whenIO_, trace)(ma, mb)
 }
 
 /**
  * @trace 1
  */
 export function when_<R, E, A>(ma: IO<R, E, A>, b: () => boolean) {
-  return whenM_(ma, succeedWith(b))
+  return whenIO_(ma, succeedWith(b))
 }
 
 /**
@@ -4000,16 +4000,16 @@ export function askServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS): IO<H
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesM<SS extends Record<string, Tag<any>>>(
+export function asksServicesIO<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(f: (a: ServicesStruct<SS>) => IO<R, E, B>) => IO<R & HasStruct<SS>, E, B> {
-  return (f) => asksM((r: HasStruct<SS>) => f(R.map_(s, (v) => v.read(r as Has<any>)) as any))
+  return (f) => asksIO((r: HasStruct<SS>) => f(R.map_(s, (v) => v.read(r as Has<any>)) as any))
 }
 
-export function asksServicesTM<SS extends ReadonlyArray<Tag<any>>>(
+export function asksServicesTIO<SS extends ReadonlyArray<Tag<any>>>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(f: (...a: ServicesTuple<SS>) => IO<R, E, B>) => IO<R & HasTuple<SS>, E, B> {
-  return (f) => asksM((r: HasTuple<SS>) => f(...(A.map_(s, (v) => v.read(r as Has<any>)) as any)))
+  return (f) => asksIO((r: HasTuple<SS>) => f(...(A.map_(s, (v) => v.read(r as Has<any>)) as any)))
 }
 
 /**
@@ -4030,22 +4030,22 @@ export function asksServicesT<SS extends ReadonlyArray<Tag<any>>>(
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => IO<R, E, B>) => IO<R & Has<T>, E, B> {
-  return (f) => asksM((r: Has<T>) => f(r[s.key as any]))
+export function asksServiceIO<T>(s: Tag<T>): <R, E, B>(f: (a: T) => IO<R, E, B>) => IO<R & Has<T>, E, B> {
+  return (f) => asksIO((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => IO<Has<T>, never, B> {
-  return (f) => asksServiceM(s)((a) => pure(f(a)))
+  return (f) => asksServiceIO(s)((a) => pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
-  return asksServiceM(s)((a) => pure(a))
+  return asksServiceIO(s)((a) => pure(a))
 }
 
 /**
@@ -4054,7 +4054,7 @@ export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
 export function giveServicesS<SS extends Record<string, Tag<any>>>(s: SS) {
   return (services: ServicesStruct<SS>) =>
     <R, E, A>(io: IO<R & HasStruct<SS>, E, A>): IO<R, E, A> =>
-      asksM((r: R) =>
+      asksIO((r: R) =>
         giveAll_(
           io,
           Object.assign(
@@ -4069,10 +4069,10 @@ export function giveServicesS<SS extends Record<string, Tag<any>>>(s: SS) {
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesSM<SS extends Record<string, Tag<any>>>(s: SS) {
+export function giveServicesSIO<SS extends Record<string, Tag<any>>>(s: SS) {
   return <R, E>(services: IO<R, E, ServicesStruct<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasStruct<SS>, E1, A>): IO<R & R1, E | E1, A> =>
-      asksM((r: R & R1) =>
+      asksIO((r: R & R1) =>
         bind_(services, (svcs) =>
           giveAll_(
             io,
@@ -4092,7 +4092,7 @@ export function giveServicesSM<SS extends Record<string, Tag<any>>>(s: SS) {
 export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
   return (...services: ServicesTuple<SS>) =>
     <R, E, A>(io: IO<R & HasTuple<SS>, E, A>): IO<R, E, A> =>
-      asksM((r: R) =>
+      asksIO((r: R) =>
         giveAll_(
           io,
           Object.assign(
@@ -4107,10 +4107,10 @@ export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesTM<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
+export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
   return <R, E>(services: IO<R, E, ServicesTuple<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasTuple<SS>, E1, A>): IO<R & R1, E | E1, A> =>
-      asksM((r: R & R1) =>
+      asksIO((r: R & R1) =>
         bind_(services, (svcs) =>
           giveAll_(
             io,
@@ -4128,25 +4128,25 @@ export function giveServicesTM<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
  * Provides the IO with the required service
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R1, E1, A1> {
-  return (f) => (ma) => giveServiceM(_)(pure(f))(ma)
+  return (f) => (ma) => giveServiceIO(_)(pure(f))(ma)
 }
 
 /**
  * Effectfully provides the IO with the required service
  */
-export function giveServiceM<T>(
+export function giveServiceIO<T>(
   _: Tag<T>
 ): <R, E>(f: IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R & R1, E | E1, A1> {
   return <R, E>(f: IO<R, E, T>) =>
     <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
-      asksM((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+      asksIO((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Replaces the service in the environment
  */
 export function updateService_<R1, E1, A1, T>(ma: IO<R1, E1, A1>, _: Tag<T>, f: (_: T) => T): IO<R1 & Has<T>, E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
+  return asksServiceIO(_)((t) => giveServiceIO(_)(pure(f(t)))(ma))
 }
 
 /**
@@ -4156,28 +4156,28 @@ export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
+  return (ma) => asksServiceIO(_)((t) => giveServiceIO(_)(pure(f(t)))(ma))
 }
 
 /**
  * Effectfully replaces the service in the environment
  */
-export function updateServiceM_<R, E, T, R1, E1, A1>(
+export function updateServiceIO_<R, E, T, R1, E1, A1>(
   ma: IO<R1, E1, A1>,
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
 ): IO<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return asksServiceIO(_)((t) => giveServiceIO(_)(f(t))(ma))
 }
 
 /**
  * Effectfully replaces the service in the environment
  */
-export function updateServiceM<R, E, T>(
+export function updateServiceIO<R, E, T>(
   _: Tag<T>,
   f: (_: T) => IO<R, E, T>
 ): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return (ma) => asksServiceIO(_)((t) => giveServiceIO(_)(f(t))(ma))
 }
 
 /**
@@ -4186,7 +4186,7 @@ export function updateServiceM<R, E, T>(
  * Especially useful for creating "accessor" methods on Services' companion objects.
  */
 export function serviceWith<T>(_: Tag<T>): <R, E, A>(f: (service: T) => IO<R & Has<T>, E, A>) => IO<R & Has<T>, E, A> {
-  return (f) => asksServiceM(_)(f)
+  return (f) => asksServiceIO(_)(f)
 }
 
 /*
@@ -4355,11 +4355,11 @@ export function deriveLifted<T>(
     const mut_ret = {} as any
 
     for (const k of functions) {
-      mut_ret[k] = (...args: any[]) => asksServiceM(H)((h) => h[k](...args))
+      mut_ret[k] = (...args: any[]) => asksServiceIO(H)((h) => h[k](...args))
     }
 
     for (const k of constants) {
-      mut_ret[k] = asksServiceM(H)((h) => h[k])
+      mut_ret[k] = asksServiceIO(H)((h) => h[k])
     }
 
     for (const k of values) {
@@ -4370,27 +4370,27 @@ export function deriveLifted<T>(
   }
 }
 
-export type DerivedAccessM<T, Gens extends keyof T> = {
+export type DerivedAsksIO<T, Gens extends keyof T> = {
   [k in Gens]: <R_, E_, A_>(f: (_: T[k]) => IO<R_, E_, A_>) => IO<R_ & Has<T>, E_, A_>
 }
 
-export function deriveAsksM<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAccessM<T, Gens> {
+export function deriveAsksIO<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAsksIO<T, Gens> {
   return (generics) => {
     const mut_ret = {} as any
 
     for (const k of generics) {
-      mut_ret[k] = (f: any) => asksServiceM(H)((h) => f(h[k]))
+      mut_ret[k] = (f: any) => asksServiceIO(H)((h) => f(h[k]))
     }
 
     return mut_ret as any
   }
 }
 
-export type DerivedAccess<T, Gens extends keyof T> = {
+export type DerivedAsks<T, Gens extends keyof T> = {
   [k in Gens]: <A_>(f: (_: T[k]) => A_) => IO<Has<T>, never, A_>
 }
 
-export function deriveAsks<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAccess<T, Gens> {
+export function deriveAsks<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAsks<T, Gens> {
   return (generics) => {
     const mut_ret = {} as any
 

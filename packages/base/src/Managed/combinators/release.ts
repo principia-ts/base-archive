@@ -4,7 +4,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { fromEffect } from '../core'
+import { fromIO } from '../core'
 import { useNow } from './use'
 
 /**
@@ -17,5 +17,5 @@ import { useNow } from './use'
  */
 export function release<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, A> {
   const trace = accessCallTrace()
-  return traceCall(fromEffect, trace)(useNow(ma))
+  return traceCall(fromIO, trace)(useNow(ma))
 }

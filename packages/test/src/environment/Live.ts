@@ -25,7 +25,7 @@ export abstract class Live {
   )
 
   static live<E, A>(io: IO<IOEnv, E, A>): IO<Has<Live>, E, A> {
-    return I.asksServiceM(LiveTag)((live) => live.provide(io))
+    return I.asksServiceIO(LiveTag)((live) => live.provide(io))
   }
 }
 

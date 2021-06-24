@@ -13,7 +13,7 @@ import * as Ex from '../../Exit'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import { flow, pipe } from '../../function'
 import * as It from '../../Iterable'
-import { fromEffect, Managed } from '../../Managed/core'
+import { fromIO, Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
 import * as O from '../../Option'
 import * as P from '../../Promise'
@@ -83,7 +83,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         ensuring(
           pipe(
             result.succeed(undefined),
-            I.whenM(
+            I.whenIO(
               Ref.modify_(status, ([started, done, failing]) => [
                 (failing ? started : size) === done + 1,
                 [started, done + 1, failing] as [number, number, boolean]
@@ -91,7 +91,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             )
           )
         ),
-        I.whenM(startEffect),
+        I.whenIO(startEffect),
         uninterruptible
       )
 
@@ -106,7 +106,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
           I.bind(joinAllFibers)
         )
       ),
-      fromEffect,
+      fromIO,
       forkManaged
     )
 
@@ -115,7 +115,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         pipe(
           result.fail(undefined),
           I.apr(I.bind_(causes.get, I.halt)),
-          I.whenM(
+          I.whenIO(
             pipe(
               fibers,
               I.foreach((f) => f.await),

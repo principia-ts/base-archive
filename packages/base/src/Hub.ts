@@ -264,7 +264,7 @@ function _unsafeMake<A>(
           shutdownFlag.set(true)
           return pipe(
             M.releaseAll_(releaseMap, Ex.interrupt(fiberId), parallel)['*>'](strategy.shutdown),
-            I.whenM(shutdownHook.succeed(undefined))
+            I.whenIO(shutdownHook.succeed(undefined))
           )
         })
       ),
@@ -398,7 +398,7 @@ function unsafeSubscription<A>(
             I.foreachPar_(_unsafePollAllQueue(pollers), P.interruptAs(fiberId))['*>'](
               I.succeedWith(() => subscription.unsubscribe())
             ),
-            I.whenM(shutdownHook.succeed(undefined))
+            I.whenIO(shutdownHook.succeed(undefined))
           )
         })
       )
@@ -579,7 +579,7 @@ export function dimapM_<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D>(
     isShutdown    = source.isShutdown
     shutdown      = source.shutdown
     size          = source.size
-    subscribe     = M.map_(source.subscribe, Q.mapM(g))
+    subscribe     = M.map_(source.subscribe, Q.mapIO(g))
     publish       = (c: C) => I.bind_(f(c), (a) => source.publish(a))
     publishAll    = (cs: Iterable<C>) => I.bind_(I.foreach_(cs, f), (as) => source.publishAll(as))
   })()
@@ -688,7 +688,7 @@ export function filterOutputM_<RA, RB, RB1, EA, EB, EB1, A, B>(
     isShutdown    = source.isShutdown
     shutdown      = source.shutdown
     size          = source.size
-    subscribe     = M.map_(source.subscribe, Q.filterOutputM(f))
+    subscribe     = M.map_(source.subscribe, Q.filterOutputIO(f))
     publish       = (a: A) => source.publish(a)
     publishAll    = (as: Iterable<A>) => source.publishAll(as)
   })()

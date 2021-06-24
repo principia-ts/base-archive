@@ -437,7 +437,7 @@ export function concatMap<OutElem, OutElem2, OutDone, Env2, InErr2, InElem2, InD
 /**
  * Fold the channel exposing success and full error cause
  */
-export function foldCauseM_<
+export function matchCauseIO_<
   Env,
   Env1,
   Env2,
@@ -501,9 +501,9 @@ export function foldCauseM_<
 /**
  * Fold the channel exposing success and full error cause
  *
- * @dataFirst foldCauseM_
+ * @dataFirst matchCauseIO_
  */
-export function foldCauseM<
+export function matchCauseIO<
   Env1,
   Env2,
   InErr1,
@@ -534,7 +534,7 @@ export function foldCauseM<
   OutElem | OutElem1 | OutElem2,
   OutDone2 | OutDone3
 > {
-  return (self) => foldCauseM_(self, onErr, onSucc)
+  return (self) => matchCauseIO_(self, onErr, onSucc)
 }
 
 /**
@@ -593,7 +593,7 @@ export function giveAll_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 }
 
 export function ask<Env>(): Channel<Env, unknown, unknown, unknown, never, never, Env> {
-  return fromEffect(I.ask<Env>())
+  return fromIO(I.ask<Env>())
 }
 
 /**
@@ -643,7 +643,7 @@ export function drain<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 /**
  * Use an effect to end a channel
  */
-export function fromEffect<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknown, unknown, E, never, A> {
+export function fromIO<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknown, unknown, E, never, A> {
   return new Effect(io)
 }
 
@@ -658,7 +658,7 @@ export function managedOut<R, E, A>(managed: M.Managed<R, E, A>): Channel<R, unk
         managed.io,
         I.gives((r: R) => tuple(r, rm)),
         I.map(([, a]) => a),
-        fromEffect,
+        fromIO,
         bind(write)
       )
   )
@@ -710,7 +710,7 @@ export function flatten<
 export function unwrap<R, E, Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: IO<R, E, Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>>
 ): Channel<R & Env, InErr, InElem, InDone, E | OutErr, OutElem, OutDone> {
-  return flatten(fromEffect(self))
+  return flatten(fromIO(self))
 }
 
 /**
@@ -968,50 +968,50 @@ export function contramapIn<InElem0, InElem>(f: (a: InElem0) => InElem) {
   ) => contramapIn_(self, f)
 }
 
-function contramapMReader<Env1, InErr, InElem, InDone0, InDone>(
+function contramapIOReader<Env1, InErr, InElem, InDone0, InDone>(
   f: (i: InDone0) => IO<Env1, InErr, InDone>
 ): Channel<Env1, InErr, InElem, InDone0, InErr, InElem, InDone> {
   return readWith(
-    (_in) => zipr_(write(_in), contramapMReader(f)),
+    (_in) => zipr_(write(_in), contramapIOReader(f)),
     (err) => fail(err),
-    (done0) => fromEffect(f(done0))
+    (done0) => fromIO(f(done0))
   )
 }
 
-export function contramapM_<Env, Env1, InErr, InElem, InDone0, InDone, OutErr, OutElem, OutDone>(
+export function contramapIO_<Env, Env1, InErr, InElem, InDone0, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (i: InDone0) => IO<Env1, InErr, InDone>
 ): Channel<Env1 & Env, InErr, InElem, InDone0, OutErr, OutElem, OutDone> {
-  return pipeTo_(contramapMReader(f), self)
+  return pipeTo_(contramapIOReader(f), self)
 }
 
 /**
- * @dataFirst contramapM_
+ * @dataFirst contramapIO_
  */
-export function contramapM<Env1, InErr, InDone0, InDone>(f: (i: InDone0) => IO<Env1, InErr, InDone>) {
+export function contramapIO<Env1, InErr, InDone0, InDone>(f: (i: InDone0) => IO<Env1, InErr, InDone>) {
   return <Env, InElem, OutErr, OutElem, OutDone>(self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>) =>
-    contramapM_(self, f)
+    contramapIO_(self, f)
 }
 
-function contramapInMReader<Env1, InErr, InElem0, InElem, InDone>(
+function contramapInIOReader<Env1, InErr, InElem0, InElem, InDone>(
   f: (a: InElem0) => IO<Env1, InErr, InElem>
 ): Channel<Env1, InErr, InElem0, InDone, InErr, InElem, InDone> {
-  return readWith((_in) => fromEffect(f(_in))['>>='](write)['*>'](contramapInMReader(f)), fail, end)
+  return readWith((_in) => fromIO(f(_in))['>>='](write)['*>'](contramapInIOReader(f)), fail, end)
 }
 
-export function contramapInM_<Env, Env1, InErr, InElem0, InElem, InDone, OutErr, OutElem, OutDone>(
+export function contramapInIO_<Env, Env1, InErr, InElem0, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (a: InElem0) => IO<Env1, InErr, InElem>
 ): Channel<Env1 & Env, InErr, InElem0, InDone, OutErr, OutElem, OutDone> {
-  return pipeTo_(contramapInMReader(f), self)
+  return pipeTo_(contramapInIOReader(f), self)
 }
 
 /**
- * @dataFirst contramapInM_
+ * @dataFirst contramapInIO_
  */
-export function contramapInM<Env1, InErr, InElem0, InElem>(f: (a: InElem0) => IO<Env1, InErr, InElem>) {
+export function contramapInIO<Env1, InErr, InElem0, InElem>(f: (a: InElem0) => IO<Env1, InErr, InElem>) {
   return <Env, InDone, OutErr, OutElem, OutDone>(self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>) =>
-    contramapInM_(self, f)
+    contramapInIO_(self, f)
 }
 
 function doneCollectReader<Env, OutErr, OutElem, OutDone>(
@@ -1019,7 +1019,7 @@ function doneCollectReader<Env, OutErr, OutElem, OutDone>(
 ): Channel<Env, OutErr, OutElem, OutDone, OutErr, never, OutDone> {
   return readWith(
     (out) =>
-      fromEffect(
+      fromIO(
         I.succeedWith(() => {
           builder.append(out)
         })
@@ -1044,7 +1044,7 @@ export function doneCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
     I.succeedWith(() => {
       const builder = A.builder<OutElem>()
 
-      return mapM_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeed(tuple(builder.result(), z)))
+      return mapIO_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeed(tuple(builder.result(), z)))
     })
   )
 }
@@ -1062,7 +1062,7 @@ export function interruptWhen_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1
 ): Channel<Env1 & Env, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone | OutDone1> {
   return mergeWith_(
     self,
-    fromEffect(io),
+    fromIO(io),
     (selfDone) => MD.done(I.done(selfDone)),
     (ioDone) => MD.done(I.done(ioDone))
   )
@@ -1138,7 +1138,7 @@ export function ensuring<Env1, Z>(finalizer: URIO<Env1, Z>) {
   ) => ensuring_(self, finalizer)
 }
 
-export function foldM_<
+export function matchIO_<
   Env,
   Env1,
   Env2,
@@ -1173,13 +1173,13 @@ export function foldM_<
   OutElem | OutElem2 | OutElem1,
   OutDone2 | OutDone1
 > {
-  return foldCauseM_(self, flow(Ca.failureOrCause, E.match(onError, halt)), onSuccess)
+  return matchCauseIO_(self, flow(Ca.failureOrCause, E.match(onError, halt)), onSuccess)
 }
 
 /**
- * @dataFirst foldM_
+ * @dataFirst matchIO_
  */
-export function foldM<
+export function matchIO<
   Env1,
   Env2,
   InErr1,
@@ -1210,7 +1210,7 @@ export function foldM<
   OutElem1 | OutElem2 | OutElem,
   OutDone1 | OutDone2
 > {
-  return (self) => foldM_(self, onFailure, onSuccess)
+  return (self) => matchIO_(self, onFailure, onSuccess)
 }
 
 /**
@@ -1343,7 +1343,7 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      return Ex.matchM_(done, flow(Ca.map(E.left), I.halt), flow(E.right, I.fail))
+      return Ex.matchIO_(done, flow(Ca.map(E.left), I.halt), flow(E.right, I.fail))
     }
   }
 }
@@ -1353,11 +1353,11 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
  * returned channel is created by applying the specified effectful function to the terminal value
  * of this channel.
  */
-export function mapM_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, OutDone1>(
+export function mapIO_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, OutDone1>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (o: OutDone) => IO<Env1, OutErr1, OutDone1>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone1> {
-  return bind_(self, flow(f, fromEffect))
+  return bind_(self, flow(f, fromIO))
 }
 
 /**
@@ -1367,10 +1367,10 @@ export function mapM_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem
  *
  * @dataFirst mapM_
  */
-export function mapM<Env1, OutErr1, OutDone, OutDone1>(f: (o: OutDone) => IO<Env1, OutErr1, OutDone1>) {
+export function mapIO<Env1, OutErr1, OutDone, OutDone1>(f: (o: OutDone) => IO<Env1, OutErr1, OutDone1>) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => mapM_(self, f)
+  ) => mapIO_(self, f)
 }
 
 export type MergeStrategy = 'BackPressure' | 'BufferSliding'
@@ -1443,7 +1443,7 @@ export function mergeAllWith_<
         yield* _(
           pipe(
             pull,
-            I.matchCauseM(
+            I.matchCauseIO(
               flow(
                 Ca.flipCauseEither,
                 E.match(
@@ -1748,14 +1748,14 @@ export function mergeWith_<
 
               switch (result._tag) {
                 case MD.MergeDecisionTag.Done: {
-                  return pipe(F.interrupt(fiber)['*>'](result.io), fromEffect, I.succeed)
+                  return pipe(F.interrupt(fiber)['*>'](result.io), fromIO, I.succeed)
                 }
                 case MD.MergeDecisionTag.Await: {
                   return pipe(
                     fiber.await,
                     I.map(
                       Ex.match(
-                        flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), result.f, fromEffect),
+                        flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), result.f, fromIO),
                         flow(write, zipr(go(single(result.f))))
                       )
                     )
@@ -1798,7 +1798,7 @@ export function mergeWith_<
               I.result(pullR),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromEffect),
+                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromIO),
                   flow(write, zipr(go(new MS.LeftDone(state.f))))
                 )
               ),
@@ -1810,7 +1810,7 @@ export function mergeWith_<
               I.result(pullL),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromEffect),
+                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromIO),
                   flow(write, zipr(go(new MS.RightDone(state.f))))
                 )
               ),
@@ -1826,7 +1826,7 @@ export function mergeWith_<
           (a, b): MergeState =>
             new MS.BothRunning<unknown, OutErr, OutErr1, unknown, OutElem | OutElem1, OutDone, OutDone1, unknown>(a, b)
         ),
-        fromEffect,
+        fromIO,
         bind(go),
         embedInput(input)
       )
@@ -1906,28 +1906,28 @@ export function mapOut<OutElem, OutElem2>(
   return (self) => mapOut_(self, f)
 }
 
-const mapOutMReader = <Env, Env1, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
+const mapOutIOReader = <Env, Env1, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
   f: (o: OutElem) => IO<Env1, OutErr1, OutElem1>
 ): Channel<Env & Env1, OutErr, OutElem, OutDone, OutErr | OutErr1, OutElem1, OutDone> =>
-  readWith((out) => fromEffect(f(out))['>>='](write)['*>'](mapOutMReader(f)), fail, end)
+  readWith((out) => fromIO(f(out))['>>='](write)['*>'](mapOutIOReader(f)), fail, end)
 
-export function mapOutM_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
+export function mapOutIO_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (o: OutElem) => IO<Env1, OutErr1, OutElem1>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
-  return pipeTo_(self, mapOutMReader(f))
+  return pipeTo_(self, mapOutIOReader(f))
 }
 
 /**
- * @dataFirst mapOutM_
+ * @dataFirst mapOutIO_
  */
-export function mapOutM<Env1, OutErr1, OutElem, OutElem1>(f: (o: OutElem) => IO<Env1, OutErr1, OutElem1>) {
+export function mapOutIO<Env1, OutErr1, OutElem, OutElem1>(f: (o: OutElem) => IO<Env1, OutErr1, OutElem1>) {
   return <Env, InErr, InElem, InDone, OutErr, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => mapOutM_(self, f)
+  ) => mapOutIO_(self, f)
 }
 
-export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1>(
+export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   n: number,
   f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
@@ -1945,7 +1945,7 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
         yield* _(
           pipe(
             pull,
-            I.matchCauseM(
+            I.matchCauseIO(
               flow(
                 Ca.flipCauseEither,
                 E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
@@ -1996,16 +1996,16 @@ export function mapOutMPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
   )
 }
 
-export function mapOutMPar<OutElem, Env1, OutErr1, OutElem1>(
+export function mapOutIOPar<OutElem, Env1, OutErr1, OutElem1>(
   n: number,
   f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
 ): <Env, InErr, InElem, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
-  return (self) => mapOutMPar_(self, n, f)
+  return (self) => mapOutIOPar_(self, n, f)
 }
 
-export const never: Channel<unknown, unknown, unknown, unknown, never, never, never> = fromEffect(I.never)
+export const never: Channel<unknown, unknown, unknown, unknown, never, never, never> = fromIO(I.never)
 
 export function orDie_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, E>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
@@ -2054,7 +2054,7 @@ export function repeated<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, unknown, InDone, OutErr, never, OutDone>
 ): M.Managed<Env, OutErr, OutDone> {
-  return M.mapM_(
+  return M.mapIO_(
     M.bracketExit_(
       I.succeedWith(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
@@ -2274,10 +2274,10 @@ export function bracketExit_<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDo
   release: (a: Acquired, exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDone> {
   return pipe(
-    fromEffect(Ref.make<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
+    fromIO(Ref.make<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
     bind((ref) =>
       pipe(
-        fromEffect(I.uninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
+        fromIO(I.uninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
         bind(use),
         ensuringWith((ex) => I.bind_(ref.get, (_) => _(ex)))
       )
@@ -2371,7 +2371,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
     RM.make,
     (releaseMap) => {
       return pipe(
-        fromEffect<Env, OutErr, A>(
+        fromIO<Env, OutErr, A>(
           pipe(
             m.io,
             I.gives((_: Env) => tuple(_, releaseMap)),
@@ -2433,7 +2433,7 @@ export function fromQueue<Err, Elem, Done>(
   queue: Q.Dequeue<Ex.Exit<E.Either<Err, Done>, Elem>>
 ): Channel<unknown, unknown, unknown, unknown, Err, Elem, Done> {
   return bind_(
-    fromEffect(Q.take(queue)),
+    fromIO(Q.take(queue)),
     Ex.match(
       (cause) =>
         E.match_(
@@ -2454,9 +2454,9 @@ export function toQueue<Err, Done, Elem>(
   queue: Q.Enqueue<Ex.Exit<E.Either<Err, Done>, Elem>>
 ): Channel<unknown, Err, Elem, Done, never, never, any> {
   return readWithCause(
-    (in_: Elem) => zipr_(fromEffect(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
-    (cause: Ca.Cause<Err>) => fromEffect(Q.offer_(queue, Ex.halt(Ca.map_(cause, (_) => E.left(_))))),
-    (done: Done) => fromEffect(Q.offer_(queue, Ex.fail(E.right(done))))
+    (in_: Elem) => zipr_(fromIO(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
+    (cause: Ca.Cause<Err>) => fromIO(Q.offer_(queue, Ex.halt(Ca.map_(cause, (_) => E.left(_))))),
+    (done: Done) => fromIO(Q.offer_(queue, Ex.fail(E.right(done))))
   )
 }
 

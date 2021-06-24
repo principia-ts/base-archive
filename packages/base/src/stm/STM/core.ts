@@ -82,7 +82,7 @@ export const retry: STM<unknown, never, never> = new Effect(() => {
  * retry.
  */
 export function match_<R, E, A, B, C>(stm: STM<R, E, A>, g: (e: E) => C, f: (a: A) => B): STM<R, never, B | C> {
-  return matchM_(
+  return matchSTM_(
     stm,
     (e) => succeed(g(e)),
     (a) => succeed(f(a))
@@ -103,23 +103,23 @@ export function match<E, A, B, C>(g: (e: E) => C, f: (a: A) => B): <R>(stm: STM<
  * Effectfully folds over the `STM` effect, handling both failure and
  * success.
  */
-export const matchM_: <R, E, A, R1, E1, B, R2, E2, C>(
+export const matchSTM_: <R, E, A, R1, E1, B, R2, E2, C>(
   self: STM<R, E, A>,
   g: (e: E) => STM<R2, E2, C>,
   f: (a: A) => STM<R1, E1, B>
-) => STM<R1 & R2 & R, E1 | E2, B | C> = _.matchM_
+) => STM<R1 & R2 & R, E1 | E2, B | C> = _.matchSTM_
 
 /**
  * Effectfully folds over the `STM` effect, handling both failure and
  * success.
  *
- * @dataFirst matchM_
+ * @dataFirst matchSTM_
  */
-export function matchM<E, A, R1, E1, B, R2, E2, C>(
+export function matchSTM<E, A, R1, E1, B, R2, E2, C>(
   g: (e: E) => STM<R2, E2, C>,
   f: (a: A) => STM<R1, E1, B>
 ): <R>(self: STM<R, E, A>) => STM<R1 & R2 & R, E1 | E2, B | C> {
-  return (self) => matchM_(self, g, f)
+  return (self) => matchSTM_(self, g, f)
 }
 
 /*
@@ -187,7 +187,7 @@ export function asks<R, A>(f: (r: R) => A): STM<R, never, A> {
 /**
  * Accesses the environment of the transaction to perform a transaction.
  */
-export function asksM<R0, R, E, A>(f: (r: R0) => STM<R, E, A>) {
+export function asksSTM<R0, R, E, A>(f: (r: R0) => STM<R, E, A>) {
   return bind_(ask<R0>(), f)
 }
 
@@ -423,7 +423,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(self: STM<R, E, A>) => STM<R, 
  * Maps from one error type to another.
  */
 export function mapError_<R, E, A, E1>(stm: STM<R, E, A>, f: (a: E) => E1): STM<R, E1, A> {
-  return matchM_(stm, (e) => fail(f(e)), succeed)
+  return matchSTM_(stm, (e) => fail(f(e)), succeed)
 }
 
 /**
@@ -440,7 +440,7 @@ export function mapError<E, E1>(f: (a: E) => E1): <R, A>(stm: STM<R, E, A>) => S
  * the specified pair of functions, `f` and `g`.
  */
 export function bimap_<R, E, A, E1, B>(stm: STM<R, E, A>, g: (e: E) => E1, f: (a: A) => B): STM<R, E1, B> {
-  return matchM_(
+  return matchSTM_(
     stm,
     (e) => fail(g(e)),
     (a) => succeed(f(a))
@@ -497,7 +497,7 @@ export function asSomeError<R, E, A>(stm: STM<R, E, A>): STM<R, O.Option<E>, A> 
  * Simultaneously filters and flatMaps the value produced by this effect.
  * Continues on the effect returned from pf.
  */
-export function continueOrRetryM_<R, E, A, R2, E2, A2>(
+export function continueOrRetrySTM_<R, E, A, R2, E2, A2>(
   fa: STM<R, E, A>,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ): STM<R2 & R, E | E2, A2> {
@@ -508,12 +508,12 @@ export function continueOrRetryM_<R, E, A, R2, E2, A2>(
  * Simultaneously filters and flatMaps the value produced by this effect.
  * Continues on the effect returned from pf.
  *
- * @dataFirst continueOrRetryM_
+ * @dataFirst continueOrRetrySTM_
  */
-export function continueOrRetryM<A, R2, E2, A2>(
+export function continueOrRetrySTM<A, R2, E2, A2>(
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ): <R, E>(fa: STM<R, E, A>) => STM<R2 & R, E | E2, A2> {
-  return (fa) => continueOrRetryM_(fa, pf)
+  return (fa) => continueOrRetrySTM_(fa, pf)
 }
 
 /**
@@ -521,7 +521,7 @@ export function continueOrRetryM<A, R2, E2, A2>(
  * succeed with the returned value.
  */
 export function continueOrRetry_<R, E, A, A2>(fa: STM<R, E, A>, pf: (a: A) => O.Option<A2>) {
-  return continueOrRetryM_(fa, (x) => O.map_(pf(x), succeed))
+  return continueOrRetrySTM_(fa, (x) => O.map_(pf(x), succeed))
 }
 
 /**
@@ -538,7 +538,7 @@ export function continueOrRetry<A, A2>(pf: (a: A) => O.Option<A2>) {
  * Fail with `e` if the supplied `PartialFunction` does not match, otherwise
  * continue with the returned value.
  */
-export function continueOrFailM_<R, E, E1, A, R2, E2, A2>(
+export function continueOrFailSTM_<R, E, E1, A, R2, E2, A2>(
   fa: STM<R, E, A>,
   e: E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
@@ -550,10 +550,10 @@ export function continueOrFailM_<R, E, E1, A, R2, E2, A2>(
  * Fail with `e` if the supplied `PartialFunction` does not match, otherwise
  * continue with the returned value.
  *
- * @dataFirst continueOrFailM_
+ * @dataFirst continueOrFailSTM_
  */
-export function continueOrFailM<E1, A, R2, E2, A2>(e: E1, pf: (a: A) => O.Option<STM<R2, E2, A2>>) {
-  return <R, E>(fa: STM<R, E, A>) => continueOrFailM_(fa, e, pf)
+export function continueOrFailSTM<E1, A, R2, E2, A2>(e: E1, pf: (a: A) => O.Option<STM<R2, E2, A2>>) {
+  return <R, E>(fa: STM<R, E, A>) => continueOrFailSTM_(fa, e, pf)
 }
 
 /**
@@ -561,7 +561,7 @@ export function continueOrFailM<E1, A, R2, E2, A2>(e: E1, pf: (a: A) => O.Option
  * succeed with the returned value.
  */
 export function continueOrFail_<R, E, E1, A, A2>(fa: STM<R, E, A>, e: E1, pf: (a: A) => O.Option<A2>) {
-  return continueOrFailM_(fa, e, (x) => O.map_(pf(x), succeed))
+  return continueOrFailSTM_(fa, e, (x) => O.map_(pf(x), succeed))
 }
 
 /**
@@ -578,7 +578,7 @@ export function continueOrFail<E1, A, A2>(e: E1, pf: (a: A) => O.Option<A2>) {
  * Fail with `e` if the supplied `PartialFunction` does not match, otherwise
  * continue with the returned value.
  */
-export function continueOrFailWithM_<R, E, E1, A, R2, E2, A2>(
+export function continueOrFailWithSTM_<R, E, E1, A, R2, E2, A2>(
   fa: STM<R, E, A>,
   e: () => E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
@@ -590,10 +590,10 @@ export function continueOrFailWithM_<R, E, E1, A, R2, E2, A2>(
  * Fail with `e` if the supplied `PartialFunction` does not match, otherwise
  * continue with the returned value.
  *
- * @dataFirst continueOrFailWithM_
+ * @dataFirst continueOrFailWithSTM_
  */
-export function continueOrFailWithM<E1, A, R2, E2, A2>(e: () => E1, pf: (a: A) => O.Option<STM<R2, E2, A2>>) {
-  return <R, E>(fa: STM<R, E, A>) => continueOrFailWithM_(fa, e, pf)
+export function continueOrFailWithSTM<E1, A, R2, E2, A2>(e: () => E1, pf: (a: A) => O.Option<STM<R2, E2, A2>>) {
+  return <R, E>(fa: STM<R, E, A>) => continueOrFailWithSTM_(fa, e, pf)
 }
 
 /**
@@ -601,7 +601,7 @@ export function continueOrFailWithM<E1, A, R2, E2, A2>(e: () => E1, pf: (a: A) =
  * succeed with the returned value.
  */
 export function continueOrFailWith_<R, E, E1, A, A2>(fa: STM<R, E, A>, e: () => E1, pf: (a: A) => O.Option<A2>) {
-  return continueOrFailWithM_(fa, e, (x) => O.map_(pf(x), succeed))
+  return continueOrFailWithSTM_(fa, e, (x) => O.map_(pf(x), succeed))
 }
 
 /**
@@ -618,17 +618,17 @@ export function continueOrFailWith<E1, A, A2>(e: () => E1, pf: (a: A) => O.Optio
  * Creates a composite effect that represents this effect followed by another
  * one that may depend on the error produced by this one.
  *
- * @dataFirst chainError_
+ * @dataFirst bindError_
  */
-export function chainError<E, R2, E2>(f: (e: E) => STM<R2, never, E2>) {
-  return <R, A>(stm: STM<R, E, A>) => chainError_(stm, f)
+export function bindError<E, R2, E2>(f: (e: E) => STM<R2, never, E2>) {
+  return <R, A>(stm: STM<R, E, A>) => bindError_(stm, f)
 }
 
 /**
  * Creates a composite effect that represents this effect followed by another
  * one that may depend on the error produced by this one.
  */
-export function chainError_<R, E, A, R2, E2>(stm: STM<R, E, A>, f: (e: E) => STM<R2, never, E2>) {
+export function bindError_<R, E, A, R2, E2>(stm: STM<R, E, A>, f: (e: E) => STM<R2, never, E2>) {
   return swapWith_(stm, (x) => bind_(x, f))
 }
 
@@ -666,7 +666,7 @@ export function compose<R, R1, E1>(that: STM<R1, E1, R>) {
  * Commits this transaction atomically.
  */
 export function commit<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
-  return T.asksM((r: R) =>
+  return T.asksIO((r: R) =>
     T.deferWith((_, fiberId) => {
       const v = tryCommit(fiberId, stm, r)
 
@@ -746,7 +746,7 @@ export function ensuring<R1, B>(finalizer: STM<R1, never, B>): <R, E, A>(self: S
  * Returns an effect that ignores errors and runs repeatedly until it eventually succeeds.
  */
 export function eventually<R, E, A>(stm: STM<R, E, A>): STM<R, never, A> {
-  return matchM_(stm, () => eventually(stm), succeed)
+  return matchSTM_(stm, () => eventually(stm), succeed)
 }
 
 /**
@@ -881,7 +881,7 @@ export function filterOrDieMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, 
  * use all methods on the error channel, possibly before flipping back.
  */
 export function swap<R, E, A>(stm: STM<R, E, A>) {
-  return matchM_(stm, succeed, fail)
+  return matchSTM_(stm, succeed, fail)
 }
 
 /**
@@ -984,7 +984,7 @@ export function fromEither<E, A>(e: E.Either<E, A>): STM<unknown, E, A> {
  * Unwraps the optional success of this effect, but can fail with an None value.
  */
 export function get<R, E, A>(stm: STM<R, E, O.Option<A>>): STM<R, O.Option<E>, A> {
-  return matchM_(
+  return matchSTM_(
     stm,
     (x) => fail(O.some(x)),
     O.match(() => fail(O.none()), succeed)
@@ -996,7 +996,7 @@ export function get<R, E, A>(stm: STM<R, E, O.Option<A>>): STM<R, O.Option<E>, A
  * non-empty or fails with the error `None` if the list is empty.
  */
 export function head<R, E, A>(stm: STM<R, E, Iterable<A>>): STM<R, O.Option<E>, A> {
-  return matchM_(
+  return matchSTM_(
     stm,
     (x) => fail(O.some(x)),
     (x) => {
@@ -1040,7 +1040,7 @@ export function isSuccess<R, E, A>(stm: STM<R, E, A>) {
  * Returns a successful effect if the value is `Left`, or fails with the error `None`.
  */
 export function left<R, E, B, C>(stm: STM<R, E, E.Either<B, C>>): STM<R, O.Option<E>, B> {
-  return matchM_(
+  return matchSTM_(
     stm,
     (e) => fail(O.some(e)),
     E.match(succeed, () => fail(O.none()))
@@ -1091,7 +1091,7 @@ export function join_<R, E, A, R1, E1, A1>(
   stm: STM<R, E, A>,
   that: STM<R1, E1, A1>
 ): STM<E.Either<R, R1>, E | E1, A | A1> {
-  return asksM(
+  return asksSTM(
     (_: E.Either<R, R1>): STM<unknown, E | E1, A | A1> =>
       E.match_(
         _,
@@ -1108,7 +1108,7 @@ export function joinEither_<R, E, A, R1, E1, A1>(
   stm: STM<R, E, A>,
   that: STM<R1, E1, A1>
 ): STM<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
-  return asksM(
+  return asksSTM(
     (_: E.Either<R, R1>): STM<unknown, E | E1, E.Either<A, A1>> =>
       E.match_(
         _,

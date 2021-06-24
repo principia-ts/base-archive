@@ -38,7 +38,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
       pipe(
         RelMap.addIfOpen(rm, (_) => I.unit()),
         I.bind(O.match(() => I.interrupt, I.succeed)),
-        M.fromEffect
+        M.fromIO
       )
     )
     return (newResource: Managed<R, E, A>) =>

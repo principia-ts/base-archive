@@ -7,18 +7,18 @@ import * as I from '../internal/io'
 /**
  * Effectfully maps over the value the fiber computes.
  */
-export function mapM_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>): Fiber<E | E1, B> {
+export function mapIO_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>): Fiber<E | E1, B> {
   return {
     _tag: 'SyntheticFiber',
-    await: I.bind_(fiber.await, Ex.foreachM(f)),
+    await: I.bind_(fiber.await, Ex.foreachIO(f)),
     getRef: (ref) => fiber.getRef(ref),
     inheritRefs: fiber.inheritRefs,
-    interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachM(f)),
+    interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachIO(f)),
     poll: I.bind_(
       fiber.poll,
       O.match(
         () => I.pure(O.none()),
-        (a) => I.map_(Ex.foreachM_(a, f), O.some)
+        (a) => I.map_(Ex.foreachIO_(a, f), O.some)
       )
     )
   }
@@ -27,15 +27,15 @@ export function mapM_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>
 /**
  * Effectfully maps over the value the fiber computes.
  */
-export function mapM<A, E1, B>(f: (a: A) => I.FIO<E1, B>): <E>(fiber: Fiber<E, A>) => Fiber<E1 | E, B> {
-  return (fiber) => mapM_(fiber, f)
+export function mapIO<A, E1, B>(f: (a: A) => I.FIO<E1, B>): <E>(fiber: Fiber<E, A>) => Fiber<E1 | E, B> {
+  return (fiber) => mapIO_(fiber, f)
 }
 
 /**
  * Maps over the value the fiber computes.
  */
 export function map_<E, A, B>(fa: Fiber<E, A>, f: (a: A) => B): Fiber<E, B> {
-  return mapM_(fa, (a) => I.pure(f(a)))
+  return mapIO_(fa, (a) => I.pure(f(a)))
 }
 
 /**

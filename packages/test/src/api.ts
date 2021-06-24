@@ -1,4 +1,4 @@
-import type { Assertion, AssertionM, AssertResult } from './Assertion'
+import type { Assertion, AssertionIO, AssertResult } from './Assertion'
 import type { TestEnvironment } from './environment/TestEnvironment'
 import type { ExecutedSpec } from './ExecutedSpec'
 import type { Gen } from './Gen/core'
@@ -54,7 +54,7 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
 export function traverseResult<A>(
   value: A,
   assertResult: AssertResult<A>,
-  assertion: AssertionM<A>,
+  assertion: AssertionIO<A>,
   showA?: Show<A>
 ): TestResult {
   return BA.bind_(assertResult, (fragment) =>
@@ -75,7 +75,7 @@ export function assert<A>(
 
 export const assertCompletes = assert(true, isTrue)
 
-export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionM<A>, showA?: Show<A>): IO<R, E, TestResult> {
+export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionIO<A>, showA?: Show<A>): IO<R, E, TestResult> {
   return I.gen(function* (_) {
     const value        = yield* _(io)
     const assertResult = yield* _(assertion.runM(value))
@@ -103,7 +103,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
 export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
   return Spec.test(
     label,
-    I.matchCauseM_(
+    I.matchCauseIO_(
       I.defer(assertion),
       flow(TF.halt, I.fail),
       flow(
@@ -149,7 +149,7 @@ function checkStream<R, A, R1, E>(
         pipe(
           stream,
           S.zipWithIndex,
-          S.mapM(([initial, index]) =>
+          S.mapIO(([initial, index]) =>
             pipe(
               initial,
               Sa.foreach((input) =>

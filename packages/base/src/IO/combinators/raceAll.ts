@@ -25,7 +25,7 @@ const arbiter =
     fails: Ref.URef<number>
   ) =>
   (res: Exit<E, A>): UIO<void> =>
-    Ex.matchM_(
+    Ex.matchIO_(
       res,
       (e) =>
         pipe(

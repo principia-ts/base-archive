@@ -49,7 +49,7 @@ export function fromManagedPush<R, E, I, L, Z>(
 /**
  * Creates a single-value sink produced from an effect
  */
-export function fromEffect<R, E, I, Z>(io: I.IO<R, E, Z>): Sink<R, E, I, I, Z> {
+export function fromIO<R, E, I, Z>(io: I.IO<R, E, Z>): Sink<R, E, I, I, Z> {
   return fromPush<R, E, I, I, Z>((in_) => {
     const leftover = O.match_(in_, () => C.empty<I>(), identity)
     return I.asUnit(
@@ -100,7 +100,7 @@ export function foreach<I, R1, E1>(f: (i: I) => I.IO<R1, E1, any>): Sink<R1, E1,
     } else {
       return pipe(
         f(chunk[idx]),
-        I.matchM(
+        I.matchIO(
           (e) => Push.fail(e, C.drop_(chunk, idx + 1)),
           () => go(chunk, idx + 1, len)
         )
@@ -141,7 +141,7 @@ export function foreachWhile<R, E, I>(f: (i: I) => I.IO<R, E, boolean>): Sink<R,
     if (idx === len) {
       return Push.more
     } else {
-      return I.matchM_(
+      return I.matchIO_(
         f(chunk[idx]),
         (e) => Push.fail(e, C.drop_(chunk, idx + 1)),
         (b) => {
@@ -186,7 +186,7 @@ export function head<I>(): Sink<unknown, never, I, I, O.Option<I>> {
 export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
   return new Sink(
     M.map_(
-      M.fromEffect(Ref.make<O.Option<I>>(O.none())),
+      M.fromIO(Ref.make<O.Option<I>>(O.none())),
       (state) => (is: O.Option<Chunk<I>>) =>
         pipe(
           state.get,
@@ -214,7 +214,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
 export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
   return new Sink(
     M.map_(
-      M.fromEffect(Ref.make<Chunk<I>>(C.empty())),
+      M.fromIO(Ref.make<Chunk<I>>(C.empty())),
       (state) => (is: O.Option<Chunk<I>>) =>
         pipe(
           state.get,
@@ -280,7 +280,7 @@ export function foldChunksWhileM<R, E, I, Z>(
  * A sink that effectfully folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldChunksM<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>): Sink<R, E, I, never, Z> {
+export function foldChunksIO<R, E, I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => I.IO<R, E, Z>): Sink<R, E, I, never, Z> {
   return dropLeftover(foldChunksWhileM(z, (_) => true, f))
 }
 
@@ -310,7 +310,7 @@ export function foldChunks<I, Z>(z: Z, f: (z: Z, i: Chunk<I>) => Z): Sink<unknow
  *
  * NOTE: This sink may terminate in the middle of a chunk and discard the rest of it.
  */
-export function foldWhileM<R, E, I, Z>(
+export function foldWhileIO<R, E, I, Z>(
   z: Z,
   cont: (z: Z) => boolean,
   f: (z: Z, i: I) => I.IO<R, E, Z>
@@ -326,7 +326,7 @@ export function foldWhileM<R, E, I, Z>(
     } else {
       return pipe(
         f(z, chunk[i]),
-        I.matchM(
+        I.matchIO(
           (e) => I.fail([e, C.drop_(chunk, i + 1)]),
           (s) => {
             if (cont(s)) {
@@ -357,7 +357,7 @@ export function foldWhileM<R, E, I, Z>(
                 I.bind((s) =>
                   pipe(
                     foldChunk(s, is, 0, is.length),
-                    I.matchM(
+                    I.matchIO(
                       (err) => Push.fail(err[0], err[1]),
                       ([st, l]) =>
                         O.match_(
@@ -623,7 +623,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                   R & R1,
                   readonly [E.Either<E | E1, Z2>, Chunk<L | L1>],
                   O.Option<readonly [Z, Chunk<L>]>
-                > = I.matchM_(
+                > = I.matchIO_(
                   p1(in_),
                   ([e, l]) =>
                     E.match_(
@@ -652,7 +652,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                   R & R1,
                   readonly [E.Either<E | E1, never>, Chunk<L | L1>],
                   O.Option<readonly [Z1, Chunk<L1>]>
-                > = I.matchM_(
+                > = I.matchIO_(
                   p2(in_),
                   ([e, l]) =>
                     E.match_(
@@ -814,18 +814,18 @@ export function contramap<I, I2>(f: (i2: I2) => I) {
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapM_<R, R1, E, E1, I, I2, L, Z>(
+export function contramapIO_<R, R1, E, E1, I, I2, L, Z>(
   fa: Sink<R, E, I, L, Z>,
   f: (i2: I2) => I.IO<R1, E1, I>
 ): Sink<R & R1, E | E1, I2, L, Z> {
-  return contramapChunksM_(fa, C.mapM(f))
+  return contramapChunksIO_(fa, C.mapIO(f))
 }
 
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapM<R1, E1, I, I2>(f: (i2: I2) => I.IO<R1, E1, I>) {
-  return <R, E, L, Z>(fa: Sink<R, E, I, L, Z>) => contramapM_(fa, f)
+export function contramapIO<R1, E1, I, I2>(f: (i2: I2) => I.IO<R1, E1, I>) {
+  return <R, E, L, Z>(fa: Sink<R, E, I, L, Z>) => contramapIO_(fa, f)
 }
 
 /**
@@ -851,7 +851,7 @@ export function contramapChunks<I, I2>(f: (a: Chunk<I2>) => Chunk<I>) {
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksM_<R, R1, E, E1, I, I2, L, Z>(
+export function contramapChunksIO_<R, R1, E, E1, I, I2, L, Z>(
   fa: Sink<R, E, I, L, Z>,
   f: (a: Chunk<I2>) => I.IO<R1, E1, Chunk<I>>
 ): Sink<R & R1, E | E1, I2, L, Z> {
@@ -876,8 +876,8 @@ export function contramapChunksM_<R, R1, E, E1, I, I2, L, Z>(
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksM<R1, E1, I, I2>(f: (a: Chunk<I2>) => I.IO<R1, E1, Chunk<I>>) {
-  return <R, E, L, Z>(self: Sink<R, E, I, L, Z>) => contramapChunksM_(self, f)
+export function contramapChunksIO<R1, E1, I, I2>(f: (a: Chunk<I2>) => I.IO<R1, E1, Chunk<I>>) {
+  return <R, E, L, Z>(self: Sink<R, E, I, L, Z>) => contramapChunksIO_(self, f)
 }
 
 /**
@@ -901,19 +901,19 @@ export function dimap<I, I2, Z, Z2>(f: (i2: I2) => I, g: (z: Z) => Z2) {
 /**
  * Effectfully transforms both inputs and result of this sink using the provided functions.
  */
-export function dimapM_<R, R1, E, E1, I, I2, L, Z, Z2>(
+export function dimapIO_<R, R1, E, E1, I, I2, L, Z, Z2>(
   fa: Sink<R, E, I, L, Z>,
   f: (i2: I2) => I.IO<R1, E1, I>,
   g: (z: Z) => I.IO<R1, E1, Z2>
 ): Sink<R & R1, E | E1, I2, L, Z2> {
-  return mapM_(contramapM_(fa, f), g)
+  return mapIO_(contramapIO_(fa, f), g)
 }
 
 /**
  * Effectfully transforms both inputs and result of this sink using the provided functions.
  */
-export function dimapM<R1, E1, I, I2, Z, Z2>(f: (i2: I2) => I.IO<R1, E1, I>, g: (z: Z) => I.IO<R1, E1, Z2>) {
-  return <R, E, L>(self: Sink<R, E, I, L, Z>) => dimapM_(self, f, g)
+export function dimapIO<R1, E1, I, I2, Z, Z2>(f: (i2: I2) => I.IO<R1, E1, I>, g: (z: Z) => I.IO<R1, E1, Z2>) {
+  return <R, E, L>(self: Sink<R, E, I, L, Z>) => dimapIO_(self, f, g)
 }
 
 /**
@@ -938,23 +938,23 @@ export function dimapChunks<I, I2, Z, Z2>(f: (i2: Chunk<I2>) => Chunk<I>, g: (z:
  * Effectfully transforms both input chunks and result of this sink using the provided functions.
  * `f` and `g` must preserve chunking-invariance
  */
-export function dimapChunksM_<R, R1, E, E1, I, I2, L, Z, Z2>(
+export function dimapChunksIO_<R, R1, E, E1, I, I2, L, Z, Z2>(
   fa: Sink<R, E, I, L, Z>,
   f: (i2: Chunk<I2>) => I.IO<R1, E1, Chunk<I>>,
   g: (z: Z) => I.IO<R1, E1, Z2>
 ): Sink<R & R1, E | E1, I2, L, Z2> {
-  return mapM_(contramapChunksM_(fa, f), g)
+  return mapIO_(contramapChunksIO_(fa, f), g)
 }
 
 /**
  * Effectfully transforms both input chunks and result of this sink using the provided functions.
  * `f` and `g` must preserve chunking-invariance
  */
-export function dimapChunksM<R1, E1, I, I2, Z, Z2>(
+export function dimapChunksIO<R1, E1, I, I2, Z, Z2>(
   f: (i2: Chunk<I2>) => I.IO<R1, E1, Chunk<I>>,
   g: (z: Z) => I.IO<R1, E1, Z2>
 ) {
-  return <R, E, L>(fa: Sink<R, E, I, L, Z>) => dimapChunksM_(fa, f, g)
+  return <R, E, L>(fa: Sink<R, E, I, L, Z>) => dimapChunksIO_(fa, f, g)
 }
 
 /*
@@ -963,7 +963,7 @@ export function dimapChunksM<R1, E1, I, I2, Z, Z2>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function matchM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
+export function matchSink_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
   sz: Sink<R, E, I, L, Z>,
   onFailure: (e: E) => Sink<R1, E1, I1, L1, Z1>,
   onSuccess: (z: Z) => Sink<R2, E2, I2, L2, Z2>
@@ -1017,11 +1017,11 @@ export function matchM_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
   )
 }
 
-export function matchM<E, I, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
+export function matchSink<E, I, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2>(
   onFailure: (e: E) => Sink<R1, E1, I1, L1, Z1>,
   onSuccess: (z: Z) => Sink<R2, E2, I2, L2, Z2>
 ): <R, L>(sz: Sink<R, E, I, L, Z>) => Sink<R & R1 & R2, E1 | E2, I & I1 & I2, L1 | L2, Z1 | Z2> {
-  return (sz) => matchM_(sz, onFailure, onSuccess)
+  return (sz) => matchSink_(sz, onFailure, onSuccess)
 }
 
 /*
@@ -1048,7 +1048,7 @@ export function map<Z, Z2>(f: (z: Z) => Z2): <R, E, I, L>(sz: Sink<R, E, I, L, Z
 /**
  * Effectfully transforms this sink's result.
  */
-export function mapM_<R, R1, E, E1, I, L, Z, Z2>(
+export function mapIO_<R, R1, E, E1, I, L, Z, Z2>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => I.IO<R1, E1, Z2>
 ): Sink<R & R1, E | E1, I, L, Z2> {
@@ -1060,7 +1060,7 @@ export function mapM_<R, R1, E, E1, I, L, Z, Z2>(
             e,
             (e) => Push.fail(e, left),
             (z) =>
-              I.matchM_(
+              I.matchIO_(
                 f(z),
                 (e: E | E1) => Push.fail(e, left),
                 (z2) => Push.emit(z2, left)
@@ -1074,8 +1074,8 @@ export function mapM_<R, R1, E, E1, I, L, Z, Z2>(
 /**
  * Effectfully transforms this sink's result.
  */
-export function mapM<R1, E1, Z, Z2>(f: (z: Z) => I.IO<R1, E1, Z2>) {
-  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => mapM_(self, f)
+export function mapIO<R1, E1, Z, Z2>(f: (z: Z) => I.IO<R1, E1, Z2>) {
+  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => mapIO_(self, f)
 }
 
 /*
@@ -1094,7 +1094,7 @@ export function bind_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return matchM_(self, (e) => fail(e)<I1>() as unknown as Sink<R & R1, E | E1, I & I1, L | L1, Z1>, f)
+  return matchSink_(self, (e) => fail(e)<I1>() as unknown as Sink<R & R1, E | E1, I & I1, L | L1, Z1>, f)
 }
 
 /**
@@ -1148,7 +1148,7 @@ export function gives<R0, R>(f: (r0: R0) => R) {
 /**
  * Accesses the environment of the sink in the context of a sink.
  */
-export function asksM<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
+export function asksSink<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
   return new Sink(M.bind_(M.ask<R>(), (env) => f(env).push))
 }
 
@@ -1302,7 +1302,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
             (res1, fib2) =>
               pipe(
                 res1,
-                Ex.matchM(
+                Ex.matchIO(
                   (f) =>
                     pipe(
                       F.interrupt(fib2),
@@ -1324,7 +1324,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
             (res2, fib1) =>
               pipe(
                 res2,
-                Ex.matchM(
+                Ex.matchIO(
                   (f) =>
                     pipe(
                       F.interrupt(fib1),
@@ -1404,7 +1404,7 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
   return new Transducer(
     M.map_(Push.restartable(self.push), ([push, restart]) => {
       const go = (input: O.Option<Chunk<I>>): I.IO<R, E, Chunk<Z>> =>
-        I.matchM_(
+        I.matchIO_(
           push(input),
           ([e, leftover]) =>
             E.match_(
@@ -1430,7 +1430,7 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
  * Creates a sink that produces values until one verifies
  * the predicate `f`.
  */
-export function untilOutputM_<R, R1, E, E1, I, L extends I, Z>(
+export function untilOutputIO_<R, R1, E, E1, I, L extends I, Z>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => I.IO<R1, E1, boolean>
 ): Sink<R & R1, E | E1, I, L, O.Option<Z>> {
@@ -1470,8 +1470,8 @@ export function untilOutputM_<R, R1, E, E1, I, L extends I, Z>(
  * Creates a sink that produces values until one verifies
  * the predicate `f`.
  */
-export function untilOutputM<R1, E1, Z>(f: (z: Z) => I.IO<R1, E1, boolean>) {
-  return <R, E, I, L extends I>(self: Sink<R, E, I, L, Z>) => untilOutputM_(self, f)
+export function untilOutputIO<R1, E1, Z>(f: (z: Z) => I.IO<R1, E1, boolean>) {
+  return <R, E, I, L extends I>(self: Sink<R, E, I, L, Z>) => untilOutputIO_(self, f)
 }
 
 /**

@@ -228,16 +228,16 @@ const mapMLoop =
       }
     })
 
-export function mapM_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, f: (o: O) => I.IO<R1, never, O1>) {
+export function mapIO_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, f: (o: O) => I.IO<R1, never, O1>) {
   return new Schedule(mapMLoop(sc.step, (o) => f(o)))
 }
 
-export function mapM<R1, O, O1>(f: (o: O) => I.IO<R1, never, O1>) {
-  return <R, I>(sc: Schedule<R, I, O>) => mapM_(sc, f)
+export function mapIO<R1, O, O1>(f: (o: O) => I.IO<R1, never, O1>) {
+  return <R, I>(sc: Schedule<R, I, O>) => mapIO_(sc, f)
 }
 
 export function map_<R, I, A, B>(fa: Schedule<R, I, A>, f: (a: A) => B): Schedule<R, I, B> {
-  return mapM_(fa, (o) => I.pure(f(o)))
+  return mapIO_(fa, (o) => I.pure(f(o)))
 }
 
 export function map<A, B>(f: (a: A) => B) {
@@ -345,25 +345,25 @@ export function asUnit<R, I, O, R1>(sc: Schedule<R, I, O>): Schedule<R & R1, I, 
 /**
  * Returns a new schedule with the effectfully calculated delay added to every update.
  */
-export function addDelayM_<R, I, O, R1>(
+export function addDelayIO_<R, I, O, R1>(
   sc: Schedule<R, I, O>,
   f: (o: O) => I.IO<R1, never, number>
 ): Schedule<R & R1, I, O> {
-  return modifyDelayM_(sc, (o, d) => I.map_(f(o), (i) => i + d))
+  return modifyDelayIO_(sc, (o, d) => I.map_(f(o), (i) => i + d))
 }
 
 /**
  * Returns a new schedule with the effectfully calculated delay added to every update.
  */
-export function addDelayM<R1, O>(f: (o: O) => I.IO<R1, never, number>) {
-  return <R, I>(sc: Schedule<R, I, O>): Schedule<R & R1, I, O> => addDelayM_(sc, f)
+export function addDelayIO<R1, O>(f: (o: O) => I.IO<R1, never, number>) {
+  return <R, I>(sc: Schedule<R, I, O>): Schedule<R & R1, I, O> => addDelayIO_(sc, f)
 }
 
 /**
  * Returns a new schedule with the given delay added to every update.
  */
 export function addDelay_<R, I, O>(sc: Schedule<R, I, O>, f: (o: O) => number) {
-  return addDelayM_(sc, (o) => I.pure(f(o)))
+  return addDelayIO_(sc, (o) => I.pure(f(o)))
 }
 
 /**
@@ -490,7 +490,7 @@ export function intersectWith<R1, I1, O1>(
   return (f) => (sc) => intersectWith_(sc, that, f)
 }
 
-const checkMLoop =
+const checkIOLoop =
   <R, I, O, R1>(
     self: StepFunction<R, I, O>,
     test: (i: I, o: O) => I.IO<R1, never, boolean>
@@ -503,7 +503,7 @@ const checkMLoop =
         }
         case 'Continue': {
           return I.map_(test(i, d.out), (b) =>
-            b ? makeContinue(d.out, d.interval, checkMLoop(d.next, test)) : makeDone(d.out)
+            b ? makeContinue(d.out, d.interval, checkIOLoop(d.next, test)) : makeDone(d.out)
           )
         }
       }
@@ -514,8 +514,8 @@ const checkMLoop =
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export function checkM_<R, I, O, R1>(sc: Schedule<R, I, O>, test: (i: I, o: O) => I.IO<R1, never, boolean>) {
-  return new Schedule(checkMLoop(sc.step, test))
+export function checkIO_<R, I, O, R1>(sc: Schedule<R, I, O>, test: (i: I, o: O) => I.IO<R1, never, boolean>) {
+  return new Schedule(checkIOLoop(sc.step, test))
 }
 
 /**
@@ -523,10 +523,10 @@ export function checkM_<R, I, O, R1>(sc: Schedule<R, I, O>, test: (i: I, o: O) =
  * function, and then determines whether or not to continue based on the return value of the
  * function.
  */
-export function checkM<R1, I, O>(
+export function checkIO<R1, I, O>(
   test: (i: I, o: O) => I.IO<R1, never, boolean>
 ): <R>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O> {
-  return (sc) => checkM_(sc, test)
+  return (sc) => checkIO_(sc, test)
 }
 
 /**
@@ -535,7 +535,7 @@ export function checkM<R1, I, O>(
  * function.
  */
 export function check_<R, I, O>(sc: Schedule<R, I, O>, test: (i: I, o: O) => boolean): Schedule<R, I, O> {
-  return checkM_(sc, (i, o) => I.pure(test(i, o)))
+  return checkIO_(sc, (i, o) => I.pure(test(i, o)))
 }
 
 /**
@@ -672,7 +672,7 @@ export function compose<O, R1, O1>(
  * of each interval produced by the this `Schedule`.
  */
 export function delayedM_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (d: number) => I.IO<R1, never, number>) {
-  return modifyDelayM_(sc, (_, d) => f(d))
+  return modifyDelayIO_(sc, (_, d) => f(d))
 }
 
 /**
@@ -813,7 +813,7 @@ export function fixed(interval: number): Schedule<unknown, unknown, number> {
   return new Schedule(loop(O.none(), 0))
 }
 
-const foldMLoop =
+const foldIOLoop =
   <R, I, O, R1, B>(
     sf: StepFunction<R, I, O>,
     b: B,
@@ -826,7 +826,7 @@ const foldMLoop =
           return I.pure(makeDone(b))
         }
         case 'Continue': {
-          return I.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldMLoop(d.next, b2, f)))
+          return I.map_(f(b, d.out), (b2) => makeContinue(b2, d.interval, foldIOLoop(d.next, b2, f)))
         }
       }
     })
@@ -834,29 +834,29 @@ const foldMLoop =
 /**
  * Returns a new `Schedule` that effectfully folds over the outputs of a `Schedule`.
  */
-export function foldM_<R, I, O, R1, B>(
+export function foldIO_<R, I, O, R1, B>(
   sc: Schedule<R, I, O>,
   b: B,
   f: (b: B, o: O) => I.IO<R1, never, B>
 ): Schedule<R & R1, I, B> {
-  return new Schedule(foldMLoop(sc.step, b, f))
+  return new Schedule(foldIOLoop(sc.step, b, f))
 }
 
 /**
  * Returns a new `Schedule` that effectfully folds over the outputs of a `Schedule`.
  */
-export function foldM<R1, O, B>(
+export function foldIO<R1, O, B>(
   b: B,
   f: (b: B, o: O) => I.IO<R1, never, B>
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, B> {
-  return (sc) => foldM_(sc, b, f)
+  return (sc) => foldIO_(sc, b, f)
 }
 
 /**
  * Returns a new `Schedule` that folds over the outputs of a `Schedule`.
  */
 export function fold_<R, I, O, B>(sc: Schedule<R, I, O>, b: B, f: (b: B, o: O) => B): Schedule<R, I, B> {
-  return foldM_(sc, b, (b, o) => I.pure(f(b, o)))
+  return foldIO_(sc, b, (b, o) => I.pure(f(b, o)))
 }
 
 /**
@@ -965,7 +965,7 @@ export function right<A>(): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R, Eith
   return (sc) => choose_(identity<A>(), sc)
 }
 
-const modifyDelayMLoop =
+const modifyDelayIOLoop =
   <R, I, O, R1>(
     sf: StepFunction<R, I, O>,
     f: (o: O, d: number) => I.IO<R1, never, number>
@@ -979,7 +979,7 @@ const modifyDelayMLoop =
         case 'Continue': {
           const delay = d.interval - now
 
-          return I.map_(f(d.out, delay), (duration) => makeContinue(d.out, now + duration, modifyDelayMLoop(d.next, f)))
+          return I.map_(f(d.out, delay), (duration) => makeContinue(d.out, now + duration, modifyDelayIOLoop(d.next, f)))
         }
       }
     })
@@ -988,19 +988,19 @@ const modifyDelayMLoop =
  * Returns a new schedule that modifies the delay using the specified
  * effectual function.
  */
-export function modifyDelayM_<R, I, O, R1>(
+export function modifyDelayIO_<R, I, O, R1>(
   sc: Schedule<R, I, O>,
   f: (o: O, d: number) => I.IO<R1, never, number>
 ): Schedule<R & R1, I, O> {
-  return new Schedule(modifyDelayMLoop(sc.step, f))
+  return new Schedule(modifyDelayIOLoop(sc.step, f))
 }
 
 /**
  * Returns a new schedule that modifies the delay using the specified
  * effectual function.
  */
-export function modifyDelayM<R1, O>(f: (o: O, d: number) => I.IO<R1, never, number>) {
-  return <R, I>(sc: Schedule<R, I, O>): Schedule<R & R1, I, O> => modifyDelayM_(sc, f)
+export function modifyDelayIO<R1, O>(f: (o: O, d: number) => I.IO<R1, never, number>) {
+  return <R, I>(sc: Schedule<R, I, O>): Schedule<R & R1, I, O> => modifyDelayIO_(sc, f)
 }
 
 /**
@@ -1008,7 +1008,7 @@ export function modifyDelayM<R1, O>(f: (o: O, d: number) => I.IO<R1, never, numb
  * function.
  */
 export function modifyDelay_<R, I, O>(sc: Schedule<R, I, O>, f: (o: O, d: number) => number): Schedule<R, I, O> {
-  return modifyDelayM_(sc, (o, d) => I.pure(f(o, d)))
+  return modifyDelayIO_(sc, (o, d) => I.pure(f(o, d)))
 }
 
 /**
@@ -1072,7 +1072,7 @@ export function recur(n: number): Schedule<unknown, unknown, number> {
   return whileOutput_(forever, (x) => x < n)
 }
 
-const reconsiderMLoop =
+const reconsiderIOLoop =
   <R, I, O, R1, O1>(
     self: StepFunction<R, I, O>,
     f: (_: Decision<R, I, O>) => I.IO<R1, never, E.Either<O1, readonly [O1, number]>>
@@ -1094,7 +1094,7 @@ const reconsiderMLoop =
             f(d),
             E.match(
               (o2) => makeDone(o2),
-              ([o2, int]) => makeContinue(o2, int, reconsiderMLoop(d.next, f))
+              ([o2, int]) => makeContinue(o2, int, reconsiderIOLoop(d.next, f))
             )
           )
         }
@@ -1105,21 +1105,21 @@ const reconsiderMLoop =
  * Returns a new schedule that effectfully reconsiders every decision made by this schedule,
  * possibly modifying the next interval and the output type in the process.
  */
-export function reconsiderM_<R, I, O, R1, O1>(
+export function reconsiderIO_<R, I, O, R1, O1>(
   sc: Schedule<R, I, O>,
   f: (d: Decision<R, I, O>) => I.IO<R1, never, Either<O1, readonly [O1, number]>>
 ): Schedule<R & R1, I, O1> {
-  return new Schedule(reconsiderMLoop(sc.step, f))
+  return new Schedule(reconsiderIOLoop(sc.step, f))
 }
 
 /**
  * Returns a new schedule that effectfully reconsiders every decision made by this schedule,
  * possibly modifying the next interval and the output type in the process.
  */
-export function reconsiderM<R, I, O, R1, O1>(
+export function reconsiderIO<R, I, O, R1, O1>(
   f: (d: Decision<R, I, O>) => I.IO<R1, never, Either<O1, readonly [O1, number]>>
 ): (sc: Schedule<R, I, O>) => Schedule<R & R1, I, O1> {
-  return (sc) => reconsiderM_(sc, f)
+  return (sc) => reconsiderIO_(sc, f)
 }
 
 /**
@@ -1130,7 +1130,7 @@ export function reconsider_<R, I, O, O1>(
   sc: Schedule<R, I, O>,
   f: (d: Decision<R, I, O>) => Either<O1, readonly [O1, number]>
 ): Schedule<R, I, O1> {
-  return reconsiderM_(sc, (d) => I.pure(f(d)))
+  return reconsiderIO_(sc, (d) => I.pure(f(d)))
 }
 
 /**
@@ -1146,8 +1146,8 @@ export function reconsider<R, I, O, O1>(
 /**
  * A schedule that recurs for as long as the effectful predicate evaluates to true.
  */
-export function recurWhileM<R, A>(f: (a: A) => I.IO<R, never, boolean>): Schedule<R, A, A> {
-  return whileInputM_(identity<A>(), f)
+export function recurWhileIO<R, A>(f: (a: A) => I.IO<R, never, boolean>): Schedule<R, A, A> {
+  return whileInputIO_(identity<A>(), f)
 }
 
 /**
@@ -1167,8 +1167,8 @@ export function recurWhileEqual<A>(a: A): Schedule<unknown, A, A> {
 /**
  * A schedule that recurs until the effectful predicate evaluates to true.
  */
-export function recurUntilM<R, A>(f: (a: A) => I.IO<R, never, boolean>): Schedule<R, A, A> {
-  return untilInputM_(identity<A>(), f)
+export function recurUntilIO<R, A>(f: (a: A) => I.IO<R, never, boolean>): Schedule<R, A, A> {
+  return untilInputIO_(identity<A>(), f)
 }
 
 /**
@@ -1398,23 +1398,23 @@ export function unfold<A>(f: (a: A) => A): (a: () => A) => Schedule<unknown, unk
   return (a) => unfold_(a, f)
 }
 
-const unfoldMLoop =
+const unfoldIOLoop =
   <R, A>(a: A, f: (a: A) => I.IO<R, never, A>): StepFunction<R, unknown, A> =>
   (now, _) =>
-    I.pure(makeContinue(a, now, (n, i) => I.bind_(f(a), (x) => unfoldMLoop(x, f)(n, i))))
+    I.pure(makeContinue(a, now, (n, i) => I.bind_(f(a), (x) => unfoldIOLoop(x, f)(n, i))))
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export function unfoldM_<R, A>(a: A, f: (a: A) => I.IO<R, never, A>): Schedule<R, unknown, A> {
-  return new Schedule(unfoldMLoop(a, f))
+export function unfoldIO_<R, A>(a: A, f: (a: A) => I.IO<R, never, A>): Schedule<R, unknown, A> {
+  return new Schedule(unfoldIOLoop(a, f))
 }
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.
  */
-export function unfoldM<R, A>(f: (a: A) => I.IO<R, never, A>): (a: A) => Schedule<R, unknown, A> {
-  return (a) => unfoldM_(a, f)
+export function unfoldIO<R, A>(f: (a: A) => I.IO<R, never, A>): (a: A) => Schedule<R, unknown, A> {
+  return (a) => unfoldIO_(a, f)
 }
 
 /**
@@ -1437,18 +1437,18 @@ export function untilInput<I>(f: (i: I) => boolean): <R, O>(sc: Schedule<R, I, O
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export function untilInputM_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => I.IO<R1, never, boolean>) {
-  return checkM_(sc, (i) => I.map_(f(i), (b) => !b))
+export function untilInputIO_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => I.IO<R1, never, boolean>) {
+  return checkIO_(sc, (i) => I.map_(f(i), (b) => !b))
 }
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export function untilInputM<R1, I>(
+export function untilInputIO<R1, I>(
   f: (i: I) => I.IO<R1, never, boolean>
 ): <R, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O> {
-  return (sc) => untilInputM_(sc, f)
+  return (sc) => untilInputIO_(sc, f)
 }
 
 /**
@@ -1471,18 +1471,18 @@ export function untilOutput<O>(f: (o: O) => boolean): <R, I>(sc: Schedule<R, I, 
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export function untilOutputM_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (o: O) => I.IO<R1, never, boolean>) {
-  return checkM_(sc, (_, o) => I.map_(f(o), (b) => !b))
+export function untilOutputIO_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (o: O) => I.IO<R1, never, boolean>) {
+  return checkIO_(sc, (_, o) => I.map_(f(o), (b) => !b))
 }
 
 /**
  * Returns a new schedule that continues until the specified predicate on the input evaluates
  * to true.
  */
-export function untilOutputM<R1, O>(
+export function untilOutputIO<R1, O>(
   f: (o: O) => I.IO<R1, never, boolean>
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O> {
-  return (sc) => untilOutputM_(sc, f)
+  return (sc) => untilOutputIO_(sc, f)
 }
 
 /**
@@ -1505,18 +1505,18 @@ export function whileInput<I>(f: (i: I) => boolean): <R, O>(sc: Schedule<R, I, O
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export function whileInputM_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => I.IO<R1, never, boolean>) {
-  return checkM_(sc, (i) => f(i))
+export function whileInputIO_<R, I, O, R1>(sc: Schedule<R, I, O>, f: (i: I) => I.IO<R1, never, boolean>) {
+  return checkIO_(sc, (i) => f(i))
 }
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export function whileInputM<R1, I>(
+export function whileInputIO<R1, I>(
   f: (i: I) => I.IO<R1, never, boolean>
 ): <R, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O> {
-  return (sc) => whileInputM_(sc, f)
+  return (sc) => whileInputIO_(sc, f)
 }
 
 /**
@@ -1539,21 +1539,21 @@ export function whileOutput<O>(f: (o: O) => boolean): <R, I>(sc: Schedule<R, I, 
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export function whileOutputM_<R, I, O, R1>(
+export function whileOutputIO_<R, I, O, R1>(
   sc: Schedule<R, I, O>,
   f: (o: O) => I.IO<R1, never, boolean>
 ): Schedule<R & R1, I, O> {
-  return checkM_(sc, (_, o) => f(o))
+  return checkIO_(sc, (_, o) => f(o))
 }
 
 /**
  * Returns a new schedule that continues for as long the specified effectful predicate on the
  * input evaluates to true.
  */
-export function whileOutputM<R1, O>(
+export function whileOutputIO<R1, O>(
   f: (o: O) => I.IO<R1, never, boolean>
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O> {
-  return (sc) => whileOutputM_(sc, f)
+  return (sc) => whileOutputIO_(sc, f)
 }
 
 const windowedLoop =

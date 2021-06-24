@@ -7,7 +7,7 @@ import { Clock } from '../../Clock'
 import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { matchTag } from '../../util/match'
-import { catchAll, crossPar_, defer, first, fresh, fromRawEffect, fromRawFunctionM, identity } from '../core'
+import { catchAll, crossPar_, defer, first, fresh, fromRawIO, fromRawFunctionM, identity } from '../core'
 import * as I from '../internal/io'
 
 /**
@@ -41,7 +41,7 @@ export function retry_<R, E, A, R1>(
 
     return pipe(first<R>()['>=>'](la), catchAll(update['>=>'](defer(() => fresh(loop())))))
   }
-  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawEffect(I.succeed(schedule.step)))['>=>'](loop())
+  return crossPar_(identity<R & R1 & H.Has<Clock>>(), fromRawIO(I.succeed(schedule.step)))['>=>'](loop())
 }
 
 /**

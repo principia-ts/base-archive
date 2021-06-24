@@ -100,8 +100,8 @@ export function fromFunction<I, O>(f: (i: I) => O): Transducer<unknown, never, I
 /**
  * Creates a transducer that effectfully transforms incoming values.
  */
-export function fromFunctionM<R, E, I, O>(f: (i: I) => I.IO<R, E, O>): Transducer<R, E, I, O> {
-  return mapM_(identity(), f)
+export function fromFunctionIO<R, E, I, O>(f: (i: I) => I.IO<R, E, O>): Transducer<R, E, I, O> {
+  return mapIO_(identity(), f)
 }
 
 /**
@@ -190,7 +190,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                 })
               ),
             (data) =>
-              RefM.modifyM_(state, (s) => {
+              RefM.modifyIO_(state, (s) => {
                 switch (s._tag) {
                   case 'Emitting': {
                     return I.map_(s.push(O.some(data)), (_) => [_, s] as const)
@@ -251,7 +251,7 @@ export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never
  * Creates a transducer that starts consuming values as soon as one fails
  * the effectful predicate `p`.
  */
-export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, I> {
+export function dropWhileIO<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, I> {
   return new Transducer(
     pipe(
       Ref.managedRef(true),
@@ -267,7 +267,7 @@ export function dropWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduce
                   if (dropping) {
                     return pipe(
                       is,
-                      C.dropWhileM(p),
+                      C.dropWhileIO(p),
                       I.map((l) => tuple(l, C.isEmpty(l)))
                     )
                   } else {
@@ -338,7 +338,7 @@ export function reduce<I, O>(initial: O, f: (output: O, input: I) => O): Transdu
 /**
  * Creates a sink by effectfully folding over a structure of type `S`.
  */
-export function foldM<R, E, I, O>(
+export function foldWhileIO<R, E, I, O>(
   initial: O,
   cont: (o: O) => boolean,
   f: (output: O, input: I) => I.IO<R, E, O>
@@ -387,8 +387,8 @@ export function foldM<R, E, I, O>(
  * Creates a transducer by effectfully folding over a structure of type `O`. The transducer will
  * fold the inputs until the stream ends, resulting in a stream with one element.
  */
-export function reduceM<R, E, I, O>(initial: O, f: (output: O, input: I) => I.IO<R, E, O>): Transducer<R, E, I, O> {
-  return foldM(initial, () => true, f)
+export function foldIO<R, E, I, O>(initial: O, f: (output: O, input: I) => I.IO<R, E, O>): Transducer<R, E, I, O> {
+  return foldWhileIO(initial, () => true, f)
 }
 
 /**
@@ -418,13 +418,13 @@ export function foldUntil<I, O>(
  *
  * Like `foldWeightedM`, but with a constant cost function of 1.
  */
-export function foldUntilM<R, E, I, O>(
+export function foldUntilIO<R, E, I, O>(
   initial: O,
   max: number,
   f: (output: O, input: I) => I.IO<R, E, O>
 ): Transducer<R, E, I, O> {
   return pipe(
-    foldM(
+    foldWhileIO(
       tuple(initial, 0),
       ([_, n]) => n < max,
       ([o, count], i: I) => I.map_(f(o, i), (o) => [o, count + 1] as const)
@@ -546,7 +546,7 @@ export function foldWeightedDecompose<I, O>(
  *
  * See `foldWeightedDecompose` for an example.
  */
-export function foldWeightedDecomposeM<R, E, I, O>(
+export function foldWeightedDecomposeIO<R, E, I, O>(
   initial: O,
   costFn: (output: O, input: I) => I.IO<R, E, number>,
   max: number,
@@ -750,9 +750,9 @@ export function collectAllWhile<I>(p: Predicate<I>): Transducer<unknown, never, 
 /**
  * Accumulates incoming elements into a chunk as long as they verify effectful predicate `p`.
  */
-export function collectAllWhileM<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, Chunk<I>> {
+export function collectAllWhileIO<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transducer<R, E, I, Chunk<I>> {
   return pipe(
-    foldM<R, E, I, [Chunk<I>, boolean]>(
+    foldWhileIO<R, E, I, [Chunk<I>, boolean]>(
       [C.empty(), true],
       ([, b]) => b,
       ([is, _], i) => I.map_(p(i), (b) => (b ? [C.append_(is, i), true] : [is, false]))
@@ -785,7 +785,7 @@ export function contramap<I, J>(f: (j: J) => I): <R, E, O>(fa: Transducer<R, E, 
 /**
  * Effectually transforms the inputs of this transducer
  */
-export function contramapM_<R, E, I, O, R1, E1, J>(
+export function contramapIO_<R, E, I, O, R1, E1, J>(
   fa: Transducer<R, E, I, O>,
   f: (j: J) => I.IO<R1, E1, I>
 ): Transducer<R & R1, E | E1, J, O> {
@@ -797,7 +797,7 @@ export function contramapM_<R, E, I, O, R1, E1, J>(
           is,
           () => push(O.none()),
           flow(
-            C.mapM(f),
+            C.mapIO(f),
             I.bind((in_) => push(O.some(in_)))
           )
         )
@@ -808,10 +808,10 @@ export function contramapM_<R, E, I, O, R1, E1, J>(
 /**
  * Effectually transforms the inputs of this transducer
  */
-export function contramapM<R1, E1, I, J>(
+export function contramapIO<R1, E1, I, J>(
   f: (j: J) => I.IO<R1, E1, I>
 ): <R, E, O>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, J, O> {
-  return (fa) => contramapM_(fa, f)
+  return (fa) => contramapIO_(fa, f)
 }
 
 /*
@@ -871,7 +871,7 @@ export function filterInput<I>(
 /**
  * Effectually filters the inputs of this transducer.
  */
-export function filterInputM_<R, E, I, O, R1, E1>(
+export function filterInputIO_<R, E, I, O, R1, E1>(
   fa: Transducer<R, E, I, O>,
   predicate: (i: I) => I.IO<R1, E1, boolean>
 ): Transducer<R & R1, E | E1, I, O> {
@@ -883,7 +883,7 @@ export function filterInputM_<R, E, I, O, R1, E1>(
           is,
           () => push(O.none()),
           flow(
-            C.filterM(predicate),
+            C.filterIO(predicate),
             I.bind((in_) => push(O.some(in_)))
           )
         )
@@ -894,10 +894,10 @@ export function filterInputM_<R, E, I, O, R1, E1>(
 /**
  * Effectually filters the inputs of this transducer.
  */
-export function filterInputM<I, R1, E1>(
+export function filterInputIO<I, R1, E1>(
   predicate: (i: I) => I.IO<R1, E1, boolean>
 ): <R, E, O>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, I, O> {
-  return (fa) => filterInputM_(fa, predicate)
+  return (fa) => filterInputIO_(fa, predicate)
 }
 
 /*
@@ -942,7 +942,7 @@ export function mapChunks<O, O1>(
 /**
  * Effectfully transforms the chunks emitted by this transducer.
  */
-export function mapChunksM_<R, E, I, O, R1, E1, O1>(
+export function mapChunksIO_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
   f: (chunk: Chunk<O>) => I.IO<R1, E1, Chunk<O1>>
 ): Transducer<R & R1, E | E1, I, O1> {
@@ -952,29 +952,29 @@ export function mapChunksM_<R, E, I, O, R1, E1, O1>(
 /**
  * Effectfully transforms the chunks emitted by this transducer.
  */
-export function mapChunksM<O, R1, E1, O1>(
+export function mapChunksIO<O, R1, E1, O1>(
   f: (chunk: Chunk<O>) => I.IO<R1, E1, Chunk<O1>>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, I, O1> {
-  return (fa) => mapChunksM_(fa, f)
+  return (fa) => mapChunksIO_(fa, f)
 }
 
 /**
  * Effectually transforms the outputs of this transducer
  */
-export function mapM_<R, E, I, O, R1, E1, O1>(
+export function mapIO_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
   f: (o: O) => I.IO<R1, E1, O1>
 ): Transducer<R & R1, E | E1, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.bind_(push(input), C.mapM(f))))
+  return new Transducer(M.map_(fa.push, (push) => (input) => I.bind_(push(input), C.mapIO(f))))
 }
 
 /**
  * Effectually transforms the outputs of this transducer
  */
-export function mapM<O, R1, E1, O1>(
+export function mapIO<O, R1, E1, O1>(
   f: (o: O) => I.IO<R1, E1, O1>
 ): <R, E, I>(fa: Transducer<R, E, I, O>) => Transducer<R & R1, E | E1, I, O1> {
-  return (fa) => mapM_(fa, f)
+  return (fa) => mapIO_(fa, f)
 }
 
 /*

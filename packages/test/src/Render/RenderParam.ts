@@ -1,10 +1,10 @@
-import type { AssertionM } from '../Assertion/AssertionM'
+import type { AssertionIO } from '../Assertion/AssertionM'
 import type * as S from '@principia/base/Show'
 
 import { isObject } from '@principia/base/prelude'
 import * as Sh from '@principia/base/Structural/Showable'
 
-import { isAssertionM } from '../Assertion/AssertionM'
+import { isAssertionIO } from '../Assertion/AssertionM'
 
 export const RenderAssertionMTypeId = Symbol()
 export type RenderAssertionMTypeId = typeof RenderAssertionMTypeId
@@ -12,7 +12,7 @@ export type RenderAssertionMTypeId = typeof RenderAssertionMTypeId
 export class RenderAssertionM {
   readonly [RenderAssertionMTypeId]: RenderAssertionMTypeId = RenderAssertionMTypeId
 
-  constructor(readonly assertion: AssertionM<any>) {}
+  constructor(readonly assertion: AssertionIO<any>) {}
 
   get rendered(): string {
     return this.assertion.rendered
@@ -38,10 +38,10 @@ export class RenderValue<A> {
 
 export type RenderParam = RenderAssertionM | RenderValue<any>
 
-export function param<A>(assertion: AssertionM<A>): RenderParam
+export function param<A>(assertion: AssertionIO<A>): RenderParam
 export function param<A>(value: A, show?: S.Show<A>): RenderParam
 export function param(value: any, show?: S.Show<any>): RenderParam {
-  if (isAssertionM(value)) {
+  if (isAssertionIO(value)) {
     return new RenderAssertionM(value)
   } else {
     return new RenderValue(value, show)

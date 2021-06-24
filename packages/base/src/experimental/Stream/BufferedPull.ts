@@ -43,7 +43,7 @@ export function ifNotDone<R1, E1, A1>(fa: I.IO<R1, O.Option<E1>, A1>) {
 export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, void> {
   return ifNotDone_(
     self,
-    I.matchM_(
+    I.matchIO_(
       self.upstream,
       O.match(
         () => I.apr_(Ref.set_(self.done, true), Pull.end),

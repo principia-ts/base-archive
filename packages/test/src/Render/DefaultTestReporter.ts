@@ -26,7 +26,7 @@ export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestR
   return (duration, executedSpec) => {
     const rendered = L.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
-    return I.asksServiceM(TestLoggerTag)((l) => l.logLine(pipe(rendered, L.append(stats), L.join('\n'))))
+    return I.asksServiceIO(TestLoggerTag)((l) => l.logLine(pipe(rendered, L.append(stats), L.join('\n'))))
   }
 }
 

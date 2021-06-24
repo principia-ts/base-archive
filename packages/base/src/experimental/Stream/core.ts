@@ -154,36 +154,14 @@ export function fromChunk<O>(c: C.Chunk<O>): Stream<unknown, never, O> {
 /**
  * Creates a stream from a `Chunk` of values
  */
-export function fromChunkTotal<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
+export function fromChunkWith<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
   return new Stream(Ch.unwrap(I.succeedWith(() => Ch.writeWith(c))))
-}
-
-/**
- * Creates a stream from an effect producing a value of type `A`
- */
-export function effect<R, E, A>(stream: I.IO<R, E, A>): Stream<R, E, A> {
-  return new Stream(Ch.unwrap(I.match_(stream, Ch.fail, (x) => Ch.write(C.single(x)))))
-}
-
-/**
- * Creates a stream from an effect producing a value of type `A` or an empty Stream
- */
-export function effectOption<R, E, A>(stream: I.IO<R, O.Option<E>, A>): Stream<R, E, A> {
-  return new Stream(
-    Ch.unwrap(
-      I.match_(
-        stream,
-        O.match(() => Ch.unit(), Ch.fail),
-        (x) => Ch.write(C.single(x))
-      )
-    )
-  )
 }
 
 /**
  * Creates a single-valued stream from a managed resource
  */
-export function managed<R, E, A>(stream: M.Managed<R, E, A>): Stream<R, E, A> {
+export function fromManaged<R, E, A>(stream: M.Managed<R, E, A>): Stream<R, E, A> {
   return new Stream(Ch.managedOut(M.map_(stream, C.single)))
 }
 
@@ -197,11 +175,11 @@ export function succeed<O>(o: O): Stream<unknown, never, O> {
 /**
  * Creates a single-valued pure stream
  */
-export function effectTotal<O>(o: () => O): Stream<unknown, never, O> {
-  return fromChunkTotal(() => C.single(o()))
+export function succeedWith<O>(o: () => O): Stream<unknown, never, O> {
+  return fromChunkWith(() => C.single(o()))
 }
 
-function unfoldChunksLoop<S, R, E, A>(
+function unfoldChunkIOLoop<S, R, E, A>(
   s: S,
   f: (s: S) => I.IO<R, E, O.Option<readonly [C.Chunk<A>, S]>>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown> {
@@ -210,7 +188,7 @@ function unfoldChunksLoop<S, R, E, A>(
       f(s),
       O.match(
         () => Ch.unit(),
-        ([as, s]) => Ch.bind_(Ch.write(as), () => unfoldChunksLoop(s, f))
+        ([as, s]) => Ch.bind_(Ch.write(as), () => unfoldChunkIOLoop(s, f))
       )
     )
   )
@@ -219,39 +197,18 @@ function unfoldChunksLoop<S, R, E, A>(
 /**
  * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
-export function unfoldChunksM<R, E, A, S>(
+export function unfoldChunkIO<R, E, A, S>(
   s: S,
   f: (s: S) => I.IO<R, E, O.Option<readonly [C.Chunk<A>, S]>>
 ): Stream<R, E, A> {
-  return new Stream(unfoldChunksLoop(s, f))
+  return new Stream(unfoldChunkIOLoop(s, f))
 }
 
 /**
  * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
-export function unfoldChunkM<S, R, E, A>(
-  s: S,
-  f: (s: S) => I.IO<R, E, O.Option<readonly [C.Chunk<A>, S]>>
-): Stream<R, E, A> {
-  const loop = (s: S): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, any> =>
-    Ch.unwrap(
-      I.map_(
-        f(s),
-        O.match(
-          () => Ch.end(undefined),
-          ([as, s]) => Ch.zipr_(Ch.write(as), loop(s))
-        )
-      )
-    )
-
-  return new Stream(loop(s))
-}
-
-/**
- * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
- */
-export function unfoldM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, O.Option<readonly [A, S]>>): Stream<R, E, A> {
-  return unfoldChunkM(s, (_) =>
+export function unfoldIO<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, O.Option<readonly [A, S]>>): Stream<R, E, A> {
+  return unfoldChunkIO(s, (_) =>
     I.map_(
       f(_),
       O.map(([a, s]) => tuple(C.single(a), s))
@@ -262,14 +219,14 @@ export function unfoldM<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, O.Option<reado
 /**
  * Creates a stream from an effect producing a value of type `A`
  */
-export function fromEffect<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return fromEffectOption(I.mapError_(fa, O.some))
+export function fromIO<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
+  return fromIOOption(I.mapError_(fa, O.some))
 }
 
 /**
  * Creates a stream from an effect producing a value of type `A` or an empty Stream
  */
-export function fromEffectOption<R, E, A>(fa: I.IO<R, O.Option<E>, A>): Stream<R, E, A> {
+export function fromIOOption<R, E, A>(fa: I.IO<R, O.Option<E>, A>): Stream<R, E, A> {
   return new Stream(
     Ch.unwrap(
       I.match_(
@@ -291,7 +248,7 @@ export function fromQueue_<R, E, O>(
   queue: Q.Queue<never, R, unknown, E, never, O>,
   maxChunkSize: number = DEFAULT_CHUNK_SIZE
 ): Stream<R, E, O> {
-  return repeatEffectChunkOption(
+  return repeatIOChunkOption(
     pipe(
       Q.takeBetween_(queue, 1, maxChunkSize),
       I.map(C.from),
@@ -338,29 +295,29 @@ export function repeatValue<A>(a: A): Stream<unknown, never, A> {
 /**
  * Creates a stream from an effect producing a value of type `A` which repeats forever.
  */
-export function repeatEffect<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return pipe(fa, I.mapError(O.some), repeatEffectOption)
+export function repeatIO<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
+  return pipe(fa, I.mapError(O.some), repeatIOOption)
 }
 
 /**
  * Creates a stream from an effect producing values of type `A` until it fails with None.
  */
-export function repeatEffectOption<R, E, A>(fa: I.IO<R, O.Option<E>, A>): Stream<R, E, A> {
-  return pipe(fa, I.map(C.single), repeatEffectChunkOption)
+export function repeatIOOption<R, E, A>(fa: I.IO<R, O.Option<E>, A>): Stream<R, E, A> {
+  return pipe(fa, I.map(C.single), repeatIOChunkOption)
 }
 
 /**
  * Creates a stream from an effect producing chunks of `A` values which repeats forever.
  */
-export function repeatEffectChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R, E, A> {
-  return pipe(fa, I.mapError(O.some), repeatEffectChunkOption)
+export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R, E, A> {
+  return pipe(fa, I.mapError(O.some), repeatIOChunkOption)
 }
 
 /**
  * Creates a stream from an effect producing chunks of `A` values until it fails with None.
  */
-export function repeatEffectChunkOption<R, E, A>(fa: I.IO<R, O.Option<E>, C.Chunk<A>>): Stream<R, E, A> {
-  return unfoldChunkM(undefined, (_) => {
+export function repeatIOChunkOption<R, E, A>(fa: I.IO<R, O.Option<E>, C.Chunk<A>>): Stream<R, E, A> {
+  return unfoldChunkIO(undefined, (_) => {
     return I.catchAll_(
       I.map_(fa, (chunk) => O.some(tuple(chunk, undefined))),
       O.match(
@@ -375,23 +332,23 @@ export function repeatEffectChunkOption<R, E, A>(fa: I.IO<R, O.Option<E>, C.Chun
  * Creates a stream from an effect producing a value of type `A`, which is repeated using the
  * specified schedule.
  */
-export function repeatEffectWith<R, E, A>(
+export function repeatIOWith<R, E, A>(
   effect: I.IO<R, E, A>,
   schedule: SC.Schedule<R, A, unknown>
 ): Stream<R & Has<Clock>, E, A> {
   return pipe(
     effect,
     I.cross(SC.driver(schedule)),
-    fromEffect,
+    fromIO,
     bind(([a, driver]) =>
       pipe(
         succeed(a),
         concat(
-          unfoldM(
+          unfoldIO(
             a,
             flow(
               driver.next,
-              I.matchM(
+              I.matchIO(
                 (_) => I.succeed(O.none()),
                 () =>
                   pipe(
@@ -411,10 +368,10 @@ export function repeatEffectWith<R, E, A>(
  * Repeats the value using the provided schedule.
  */
 export function repeatValueWith<R, A>(a: A, schedule: SC.Schedule<R, A, unknown>): Stream<R & Has<Clock>, never, A> {
-  return repeatEffectWith(I.succeed(a), schedule)
+  return repeatIOWith(I.succeed(a), schedule)
 }
 
-export function effectAsyncInterrupt<R, E, A>(
+export function asyncInterrupt<R, E, A>(
   register: (
     resolve: (
       next: I.IO<R, O.Option<E>, C.Chunk<A>>,
@@ -458,7 +415,7 @@ export function effectAsyncInterrupt<R, E, A>(
  * The optionality of the error type `E` can be used to signal the end of the stream,
  * by setting it to `None`.
  */
-export function effectAsyncOption<R, E, A>(
+export function asyncOption<R, E, A>(
   register: (
     resolve: (
       next: I.IO<R, O.Option<E>, C.Chunk<A>>,
@@ -467,10 +424,10 @@ export function effectAsyncOption<R, E, A>(
   ) => O.Option<Stream<R, E, A>>,
   outputBuffer = 16
 ): Stream<R, E, A> {
-  return effectAsyncInterrupt((k) => O.match_(register(k), () => E.left(I.unit()), E.right), outputBuffer)
+  return asyncInterrupt((k) => O.match_(register(k), () => E.left(I.unit()), E.right), outputBuffer)
 }
 
-export function effectAsync<R, E, A>(
+export function async<R, E, A>(
   register: (
     resolve: (
       next: I.IO<R, O.Option<E>, C.Chunk<A>>,
@@ -479,13 +436,13 @@ export function effectAsync<R, E, A>(
   ) => void,
   outputBuffer = 16
 ): Stream<R, E, A> {
-  return effectAsyncOption((cb) => {
+  return asyncOption((cb) => {
     register(cb)
     return O.none()
   }, outputBuffer)
 }
 
-export function effectAsyncM<R, E, A, R1 = R, E1 = E>(
+export function asyncIO<R, E, A, R1 = R, E1 = E>(
   register: (
     resolve: (
       next: I.IO<R, O.Option<E>, C.Chunk<A>>,
@@ -503,7 +460,7 @@ export function effectAsyncM<R, E, A, R1 = R, E1 = E>(
         const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
           output.take,
           I.bind(Take.done),
-          I.matchCauseM(
+          I.matchCauseIO(
             (maybeError) =>
               output.shutdown['$>'](() =>
                 pipe(
@@ -524,33 +481,33 @@ export function effectAsyncM<R, E, A, R1 = R, E1 = E>(
   )
 }
 
-function fromIteratorTotalLoop<A>(
+function fromIteratorLoop<A>(
   iterator: Iterator<A>
 ): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
   return Ch.unwrap(
     I.succeedWith(() => {
       const v = iterator.next()
-      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIteratorTotalLoop(iterator)))
+      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIteratorLoop(iterator)))
     })
   )
 }
 
-export function fromIteratorTotal<A>(iterator: () => Iterator<A>): Stream<unknown, never, A> {
-  return new Stream(fromIteratorTotalLoop(iterator()))
+export function fromIterator<A>(iterator: () => Iterator<A>): Stream<unknown, never, A> {
+  return new Stream(fromIteratorLoop(iterator()))
 }
 
 /**
  * The stream that always halts with `cause`.
  */
 export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
-  return fromEffect(I.halt(cause))
+  return fromIO(I.halt(cause))
 }
 
 /**
  * Creates a stream from a subscription to a hub.
  */
 export function fromHub<R, E, A>(hub: H.Hub<never, R, unknown, E, never, A>): Stream<R, E, A> {
-  return bind_(managed(H.subscribe(hub)), fromQueue())
+  return bind_(fromManaged(H.subscribe(hub)), fromQueue())
 }
 
 /*
@@ -687,7 +644,7 @@ export function flatten<R0, E0, R, E, A>(stream: Stream<R0, E0, Stream<R, E, A>>
 /**
  * Maps over elements of the stream with the specified effectful function.
  */
-export function mapM_<R, E, A, R1, E1, B>(
+export function mapIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>
 ): Stream<R & R1, E | E1, B> {
@@ -697,12 +654,12 @@ export function mapM_<R, E, A, R1, E1, B>(
 /**
  * Maps over elements of the stream with the specified effectful function.
  *
- * @dataFirst mapM_
+ * @dataFirst mapIO_
  */
-export function mapM<A, R1, E1, B>(
+export function mapIO<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, B>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapM_(stream, f)
+  return (stream) => mapIO_(stream, f)
 }
 
 /**
@@ -757,20 +714,20 @@ export function mapChunks<A, A1>(
 /**
  * Effectfully transforms the chunks emitted by this stream.
  */
-export function mapChunksM_<R, E, A, R1, E1, B>(
+export function mapChunksIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
-  return new Stream(Ch.mapOutM_(stream.channel, f))
+  return new Stream(Ch.mapOutIO_(stream.channel, f))
 }
 
 /**
  * Effectfully transforms the chunks emitted by this stream.
  */
-export function mapChunksM<A, R1, E1, B>(
+export function mapChunksIO<A, R1, E1, B>(
   f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapChunksM_(stream, f)
+  return (stream) => mapChunksIO_(stream, f)
 }
 
 /*
@@ -815,23 +772,23 @@ export function bimap<E, E1, A, A1>(f: (e: E) => E1, g: (a: A) => A1) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filterM_<R, E, A, R1, E1>(
+export function filterIO_<R, E, A, R1, E1>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A> {
   return loopOnPartialChunksElements_(fa, (a, emit) => f(a)['>>=']((r) => (r ? emit(a) : I.unit())))
 }
 
-export function filterM<A, R1, E1>(
+export function filterIO<A, R1, E1>(
   f: (a: A) => I.IO<R1, E1, boolean>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (fa) => filterM_(fa, f)
+  return (fa) => filterIO_(fa, f)
 }
 
 export function filter_<R, E, A, B extends A>(fa: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
-  return filterM_(fa, flow(predicate, I.succeed))
+  return filterIO_(fa, flow(predicate, I.succeed))
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B>
@@ -840,35 +797,35 @@ export function filter<A>(predicate: P.Predicate<A>): <R, E>(fa: Stream<R, E, A>
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMapM_<R, E, A, R1, E1, B>(
+export function filterMapIO_<R, E, A, R1, E1, B>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, O.Option<B>>
 ): Stream<R & R1, E | E1, B> {
   return loopOnPartialChunksElements_(fa, (a, emit) => f(a)['>>='](O.match(() => I.unit(), emit)))
 }
 
-export function filterMapM<A, R1, E1, B>(
+export function filterMapIO<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, O.Option<B>>
 ): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (fa) => filterMapM_(fa, f)
+  return (fa) => filterMapIO_(fa, f)
 }
 
 export function filterMap_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => O.Option<B>): Stream<R, E, B> {
-  return filterMapM_(fa, flow(f, I.succeed))
+  return filterMapIO_(fa, flow(f, I.succeed))
 }
 
 export function filterMap<A, B>(f: (a: A) => O.Option<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
   return (fa) => filterMap_(fa, f)
 }
 
-export function partitionMapM_<R, E, A, R1, E1, B, C>(
+export function partitionMapIO_<R, E, A, R1, E1, B, C>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, E.Either<B, C>>,
   buffer = 16
 ): M.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, B>, Stream<unknown, E | E1, C>]> {
   return pipe(
     fa,
-    mapM(f),
+    mapIO(f),
     distributedWith(
       2,
       buffer,
@@ -888,13 +845,13 @@ export function partitionMapM_<R, E, A, R1, E1, B, C>(
   )
 }
 
-export function partitionMapM<A, R1, E1, B, C>(
+export function partitionMapIO<A, R1, E1, B, C>(
   f: (a: A) => I.IO<R1, E1, E.Either<B, C>>,
   buffer = 16
 ): <R, E>(
   fa: Stream<R, E, A>
 ) => M.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, B>, Stream<unknown, E | E1, C>]> {
-  return (fa) => partitionMapM_(fa, f, buffer)
+  return (fa) => partitionMapIO_(fa, f, buffer)
 }
 
 export function partitionMap_<R, E, A, B, C>(
@@ -902,7 +859,7 @@ export function partitionMap_<R, E, A, B, C>(
   f: (a: A) => E.Either<B, C>,
   buffer = 16
 ): M.Managed<R, never, readonly [Stream<unknown, E, B>, Stream<unknown, E, C>]> {
-  return partitionMapM_(fa, flow(f, I.succeed), buffer)
+  return partitionMapIO_(fa, flow(f, I.succeed), buffer)
 }
 
 export function partitionMap<A, B, C>(
@@ -912,12 +869,12 @@ export function partitionMap<A, B, C>(
   return (fa) => partitionMap_(fa, f, buffer)
 }
 
-export function partitionM_<R, E, A, R1, E1>(
+export function partitionIO_<R, E, A, R1, E1>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>,
   buffer = 16
 ): M.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, A>, Stream<unknown, E | E1, A>]> {
-  return partitionMapM_(
+  return partitionMapIO_(
     fa,
     (a) =>
       pipe(
@@ -928,13 +885,13 @@ export function partitionM_<R, E, A, R1, E1>(
   )
 }
 
-export function partitionM<A, R1, E1>(
+export function partitionIO<A, R1, E1>(
   f: (a: A) => I.IO<R1, E1, boolean>,
   buffer = 16
 ): <R, E>(
   fa: Stream<R, E, A>
 ) => M.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, A>, Stream<unknown, E | E1, A>]> {
-  return (fa) => partitionM_(fa, f, buffer)
+  return (fa) => partitionIO_(fa, f, buffer)
 }
 
 export function partition_<R, E, A, B extends A>(
@@ -952,7 +909,7 @@ export function partition_<R, E, A>(
   predicate: P.Predicate<A>,
   buffer = 16
 ): M.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]> {
-  return partitionM_(fa, flow(predicate, I.succeed), buffer)
+  return partitionIO_(fa, flow(predicate, I.succeed), buffer)
 }
 
 export function partition<A, B extends A>(
@@ -977,7 +934,7 @@ export function partition<A>(
  */
 
 export function ask<R>(): Stream<R, never, R> {
-  return fromEffect(I.ask<R>())
+  return fromIO(I.ask<R>())
 }
 
 /**
@@ -990,8 +947,8 @@ export function asks<R, A>(f: (r: R) => A): Stream<R, never, A> {
 /**
  * Accesses the environment of the stream in the context of an effect.
  */
-export function asksM<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R, E, A> {
-  return mapM_(ask<R0>(), f)
+export function asksIO<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R, E, A> {
+  return mapIO_(ask<R0>(), f)
 }
 
 /**
@@ -1071,11 +1028,11 @@ function combineChunksProducer<Err, Elem>(
   handoff: HO.Handoff<Take.Take<Err, Elem>>,
   latch: HO.Handoff<void>
 ): Ch.Channel<unknown, Err, C.Chunk<Elem>, unknown, never, never, any> {
-  return Ch.fromEffect(HO.take(latch))['*>'](
+  return Ch.fromIO(HO.take(latch))['*>'](
     Ch.readWithCause(
-      (chunk) => Ch.fromEffect(HO.offer(handoff, Take.chunk(chunk)))['*>'](combineChunksProducer(handoff, latch)),
-      (cause) => Ch.fromEffect(HO.offer(handoff, Take.halt(cause))),
-      () => Ch.fromEffect(HO.offer(handoff, Take.end))['*>'](combineChunksProducer(handoff, latch))
+      (chunk) => Ch.fromIO(HO.offer(handoff, Take.chunk(chunk)))['*>'](combineChunksProducer(handoff, latch)),
+      (cause) => Ch.fromIO(HO.offer(handoff, Take.halt(cause))),
+      () => Ch.fromIO(HO.offer(handoff, Take.end))['*>'](combineChunksProducer(handoff, latch))
     )
   )
 }
@@ -1110,7 +1067,7 @@ export function combineChunks_<R, E, A, R1, E1, A1, S, R2, A2>(
       ([left, right, latchL, latchR]) => {
         const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](Take.done)
         const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](Take.done)
-        return unfoldChunkM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
+        return unfoldChunkIO(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
       }
     )
   )
@@ -1201,7 +1158,7 @@ export function loopOnPartialChunksElements_<R, E, A, R1, E1, A1>(
 ): Stream<R & R1, E | E1, A1> {
   return loopOnPartialChunks_(stream, (a, emit) =>
     I.as_(
-      C.mapM_(a, (a) => f(a, emit)),
+      C.mapIO_(a, (a) => f(a, emit)),
       () => true
     )
   )
@@ -1365,21 +1322,21 @@ export function toPull<R, E, A>(stream: Stream<R, E, A>): M.Managed<R, never, I.
  * Creates a stream produced from an effect
  */
 export function unwrap<R0, E0, R, E, A>(stream: I.IO<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
-  return flatten(effect(stream))
+  return flatten(fromIO(stream))
 }
 
 /**
  * Creates a stream produced from a managed
  */
 export function unwrapManaged<R0, E0, R, E, A>(stream: M.Managed<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
-  return flatten(managed(stream))
+  return flatten(fromManaged(stream))
 }
 
 /**
  * Submerges the error case of an `Either` into the `ZStream`.
  */
 export function absolve<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
-  return mapM_(xs, (_) => I.fromEitherWith(() => _))
+  return mapIO_(xs, (_) => I.fromEitherWith(() => _))
 }
 
 /**
@@ -1471,11 +1428,11 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     SC.driver(schedule)
   )
 
-  return bind_(fromEffect(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
+  return bind_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
     const handoffProducer: Ch.Channel<unknown, E1, C.Chunk<A>, unknown, never, never, any> = Ch.readWithCause(
-      (_in: C.Chunk<A>) => Ch.zipr_(Ch.fromEffect(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
-      (cause: Ca.Cause<E1>) => Ch.fromEffect(HO.offer(handoff, new HO.Halt(cause))),
-      (_: any) => Ch.fromEffect(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
+      (_in: C.Chunk<A>) => Ch.zipr_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
+      (cause: Ca.Cause<E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
+      (_: any) => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
     )
 
     const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
@@ -1490,7 +1447,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
               case HO.HaltTypeId:
                 return Ch.halt(_.error)
               case HO.EndTypeId:
-                return Ch.fromEffect(Ref.set_(sinkEndReason, _.reason))
+                return Ch.fromIO(Ref.set_(sinkEndReason, _.reason))
             }
           })
         }
@@ -1500,7 +1457,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     const scheduledAggregator = (
       lastB: O.Option<B>
     ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E2, C.Chunk<E.Either<C, B>>, any> => {
-      const timeout = I.matchCauseM_(
+      const timeout = I.matchCauseIO_(
         scheduleDriver.next(lastB),
         (_) =>
           E.match_(
@@ -1515,7 +1472,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
           return Ch.bind_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
             return Ch.zipr_(
-              Ch.fromEffect(I.apr_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
+              Ch.fromIO(I.apr_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
                 Ref.modify_(sinkEndReason, (reason) => {
                   switch (reason._typeId) {
@@ -1547,7 +1504,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     }
 
     return zipRight_(
-      managed(pipe(stream.channel['>>>'](handoffProducer), Ch.runManaged, M.fork)),
+      fromManaged(pipe(stream.channel['>>>'](handoffProducer), Ch.runManaged, M.fork)),
       new Stream(scheduledAggregator(O.none()))
     )
   })
@@ -1641,7 +1598,7 @@ export function broadcastDynamic_<R, E, A>(
   stream: Stream<R, E, A>,
   maximumLag: number
 ): M.Managed<R, never, Stream<unknown, E, A>> {
-  return M.map_(broadcastedQueuesDynamic_(stream, maximumLag), (_) => pipe(managed(_), bind(fromQueue()), flattenTake))
+  return M.map_(broadcastedQueuesDynamic_(stream, maximumLag), (_) => pipe(fromManaged(_), bind(fromQueue()), flattenTake))
 }
 
 /**
@@ -1710,7 +1667,7 @@ export function bufferChunks_<R, E, A>(stream: Stream<R, E, A>, capacity: number
   return new Stream(
     Ch.managed_(queue, (queue) => {
       const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-        Ch.fromEffect(queue.take),
+        Ch.fromIO(queue.take),
         Ch.bind((take: Take.Take<E, A>) =>
           Take.fold_(take, Ch.end(undefined), Ch.halt, (value) => Ch.write(value)['*>'](process))
         )
@@ -1733,7 +1690,7 @@ export function buffer_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Str
   return new Stream(
     Ch.managed_(queue, (queue) => {
       const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-        Ch.fromEffect(queue.take),
+        Ch.fromIO(queue.take),
         Ch.bind((exit: Ex.Exit<O.Option<E>, A>) =>
           Ex.match_(
             exit,
@@ -1799,7 +1756,7 @@ function bufferSignalProducer<R, E, A>(
   ref: Ref.URef<Pr.Promise<never, void>>
 ): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> {
   const terminate = (take: Take.Take<E, A>): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> =>
-    Ch.fromEffect(
+    Ch.fromIO(
       I.gen(function* (_) {
         const latch = yield* _(ref.get)
         yield* _(latch.await)
@@ -1811,7 +1768,7 @@ function bufferSignalProducer<R, E, A>(
     )
   return Ch.readWith(
     (inp) =>
-      Ch.fromEffect(
+      Ch.fromIO(
         I.gen(function* (_) {
           const p     = yield* _(Pr.make<never, void>())
           const added = yield* _(queue.offer(tuple(Take.chunk(inp), p)))
@@ -1826,9 +1783,9 @@ function bufferSignalProducer<R, E, A>(
 function bufferSignalConsumer<R, E, A>(
   queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
-  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.fromEffect(queue.take)['>>='](
+  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.fromIO(queue.take)['>>='](
     ([take, promise]) =>
-      Ch.fromEffect(promise.succeed(undefined))['*>'](
+      Ch.fromIO(promise.succeed(undefined))['*>'](
         Take.fold_(take, Ch.end(undefined), Ch.halt, (value) => Ch.write(value)['*>'](process))
       )
   )
@@ -1862,7 +1819,7 @@ export function bufferUnbounded<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, 
   return new Stream(
     Ch.managed_(queue, (queue) => {
       const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.bind_(
-        Ch.fromEffect(Q.take(queue)),
+        Ch.fromIO(Q.take(queue)),
         Take.fold(
           Ch.end(undefined),
           (error) => Ch.halt(error),
@@ -2177,7 +2134,7 @@ export function collectSuccess<R, E, A, L1>(stream: Stream<R, E, Ex.Exit<L1, A>>
 /**
  * Performs an effectful filter and map in a single step.
  */
-export function collectM_<R, R1, E, E1, A, A1>(
+export function collectIO_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   pf: (a: A) => O.Option<I.IO<R1, E1, A1>>
 ): Stream<R & R1, E | E1, A1> {
@@ -2193,8 +2150,8 @@ export function collectM_<R, R1, E, E1, A, A1>(
 /**
  * Performs an effectful filter and map in a single step.
  */
-export function collectM<R1, E1, A, A1>(pf: (a: A) => O.Option<I.IO<R1, E1, A1>>) {
-  return <R, E>(stream: Stream<R, E, A>) => collectM_(stream, pf)
+export function collectIO<R1, E1, A, A1>(pf: (a: A) => O.Option<I.IO<R1, E1, A1>>) {
+  return <R, E>(stream: Stream<R, E, A>) => collectIO_(stream, pf)
 }
 
 /**
@@ -2241,7 +2198,7 @@ export function collectWhileLeft<R, E, A1, L1>(stream: Stream<R, E, E.Either<L1,
 /**
  * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
  */
-export function collectWhileM_<R, R1, E, E1, A, A1>(
+export function collectWhileIO_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   pf: (a: A) => O.Option<I.IO<R1, E1, A1>>
 ): Stream<R & R1, E | E1, A1> {
@@ -2274,8 +2231,8 @@ export function collectWhileM_<R, R1, E, E1, A, A1>(
 /**
  * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
  */
-export function collectWhileM<R1, E1, A, A1>(pf: (a: A) => O.Option<I.IO<R1, E1, A1>>) {
-  return <R, E>(stream: Stream<R, E, A>) => collectWhileM_(stream, pf)
+export function collectWhileIO<R1, E1, A, A1>(pf: (a: A) => O.Option<I.IO<R1, E1, A1>>) {
+  return <R, E>(stream: Stream<R, E, A>) => collectWhileIO_(stream, pf)
 }
 
 /**
@@ -2315,11 +2272,11 @@ function combineProducer<Err, Elem>(
   handoff: HO.Handoff<Ex.Exit<O.Option<Err>, Elem>>,
   latch: HO.Handoff<void>
 ): Ch.Channel<unknown, Err, Elem, unknown, never, never, any> {
-  return Ch.fromEffect(HO.take(latch))['*>'](
+  return Ch.fromIO(HO.take(latch))['*>'](
     Ch.readWithCause(
-      (value) => Ch.fromEffect(HO.offer(handoff, Ex.succeed(value)))['*>'](combineProducer(handoff, latch)),
-      (cause) => Ch.fromEffect(HO.offer(handoff, Ex.halt(Ca.map_(cause, O.some)))),
-      () => Ch.fromEffect(HO.offer(handoff, Ex.fail(O.none())))['*>'](combineProducer(handoff, latch))
+      (value) => Ch.fromIO(HO.offer(handoff, Ex.succeed(value)))['*>'](combineProducer(handoff, latch)),
+      (cause) => Ch.fromIO(HO.offer(handoff, Ex.halt(Ca.map_(cause, O.some)))),
+      () => Ch.fromIO(HO.offer(handoff, Ex.fail(O.none())))['*>'](combineProducer(handoff, latch))
     )
   )
 }
@@ -2372,7 +2329,7 @@ export function combine<R, E, A, R1, E1, A1, S, R2, A2>(
       ([left, right, latchL, latchR]) => {
         const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](I.done)
         const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](I.done)
-        return unfoldM(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
+        return unfoldIO(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.done, I.optional))).channel
       }
     )
   )
@@ -2416,11 +2373,11 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
             C.last(inp),
             O.match(
               () => producer,
-              (last) => Ch.fromEffect(HO.offer(handoff, new HO.Emit(C.single(last))))['*>'](producer)
+              (last) => Ch.fromIO(HO.offer(handoff, new HO.Emit(C.single(last))))['*>'](producer)
             )
           ),
-        (cause: Ca.Cause<E>) => Ch.fromEffect(HO.offer(handoff, new HO.Halt(cause))),
-        () => Ch.fromEffect(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
+        (cause: Ca.Cause<E>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
+        () => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
       )
       function consumer(
         state: DS.DebounceState<E, A>
@@ -2467,7 +2424,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
           })
         )
       }
-      return managed(pipe(stream.channel, Ch.pipeTo(producer), Ch.runManaged, M.fork))['*>'](
+      return fromManaged(pipe(stream.channel, Ch.pipeTo(producer), Ch.runManaged, M.fork))['*>'](
         new Stream(consumer(new DS.NotStarted()))
       )
     })
@@ -2499,7 +2456,7 @@ export function distributedWithDynamic_<R, E, A>(
             if (shouldProcess(id)) {
               return pipe(
                 queue.offer(Ex.succeed(a)),
-                I.matchCauseM(
+                I.matchCauseIO(
                   (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
                   () => I.succeed(b)
                 )
@@ -2570,7 +2527,7 @@ export function distributedWithDynamic_<R, E, A>(
           pipe(
             ma,
             runForeachManaged(offer(queuesRef)),
-            M.matchCauseM(flow(Ca.map(O.some), Ex.halt, finalize, I.toManaged()), () =>
+            M.matchCauseManaged(flow(Ca.map(O.some), Ex.halt, finalize, I.toManaged()), () =>
               pipe(O.none(), Ex.fail, finalize, I.toManaged())
             ),
             M.fork
@@ -2612,7 +2569,7 @@ export function distributedWith_<R, E, A>(
 ): M.Managed<R, never, C.Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return pipe(
     Pr.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
-    M.fromEffect,
+    M.fromIO,
     M.bind((p) =>
       pipe(
         distributedWithDynamic_(
@@ -2645,7 +2602,7 @@ export function distributedWith_<R, E, A>(
                 I.as(() => queues)
               )
             }),
-            M.fromEffect
+            M.fromIO
           )
         )
       )
@@ -2770,12 +2727,12 @@ export function find<A>(f: Predicate<A>): <R, E>(stream: Stream<R, E, A>) => Str
 /**
  * Finds the first element emitted by this stream that satisfies the provided effectful predicate.
  */
-export function findM_<R, E, A, R1, E1>(
+export function findIO_<R, E, A, R1, E1>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A> {
   const loop: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, unknown> = Ch.readWith(
-    flow(C.findM(f), I.map(O.match(() => loop, flow(C.single, Ch.write))), Ch.unwrap),
+    flow(C.findIO(f), I.map(O.match(() => loop, flow(C.single, Ch.write))), Ch.unwrap),
     Ch.fail,
     () => Ch.unit()
   )
@@ -2785,10 +2742,10 @@ export function findM_<R, E, A, R1, E1>(
 /**
  * Finds the first element emitted by this stream that satisfies the provided effectful predicate.
  */
-export function findM<A, R1, E1>(
+export function findIO<A, R1, E1>(
   f: (a: A) => I.IO<R1, E1, boolean>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (stream) => findM_(stream, f)
+  return (stream) => findIO_(stream, f)
 }
 
 export function groupBy_<R, E, A, R1, E1, K, V>(
@@ -2809,7 +2766,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
       const add     = yield* _(
         pipe(
           stream,
-          mapM(f),
+          mapIO(f),
           distributedWithDynamic(buffer, ([k, v]) => decider.await['>>=']((f) => f(k, v)), out.offer)
         )
       )
@@ -2922,9 +2879,9 @@ function interleaveWithProducer<R, E, A>(
   handoff: HO.Handoff<Take.Take<E, A>>
 ): Ch.Channel<R, E, A, unknown, never, never, void> {
   return Ch.readWithCause(
-    (value: A) => Ch.fromEffect(HO.offer(handoff, Take.single(value)))['*>'](interleaveWithProducer(handoff)),
-    (cause) => Ch.fromEffect(HO.offer(handoff, Take.halt(cause))),
-    () => Ch.fromEffect(HO.offer(handoff, Take.end))
+    (value: A) => Ch.fromIO(HO.offer(handoff, Take.single(value)))['*>'](interleaveWithProducer(handoff)),
+    (cause) => Ch.fromIO(HO.offer(handoff, Take.halt(cause))),
+    () => Ch.fromIO(HO.offer(handoff, Take.end))
   )
 }
 
@@ -2962,7 +2919,7 @@ export function interleaveWith_<R, E, A, R1, E1, B, R2, E2>(
           Ch.readWithCause(
             (b: boolean) => {
               if (b && leftDone) {
-                return Ch.fromEffect(HO.take(left))['>>='](
+                return Ch.fromIO(HO.take(left))['>>='](
                   Take.fold(
                     rightDone ? Ch.unit() : process(true, rightDone),
                     (cause) => Ch.halt(cause),
@@ -2971,7 +2928,7 @@ export function interleaveWith_<R, E, A, R1, E1, B, R2, E2>(
                 )
               }
               if (!b && !rightDone) {
-                return Ch.fromEffect(HO.take(right))['>>='](
+                return Ch.fromIO(HO.take(right))['>>='](
                   Take.fold(
                     leftDone ? Ch.unit() : process(leftDone, true),
                     (cause) => Ch.halt(cause),
@@ -3099,7 +3056,7 @@ export function mapAccum<A, S, B>(
   return (stream) => mapAccum_(stream, s, f)
 }
 
-export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
+function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<B>, void> {
@@ -3125,7 +3082,7 @@ export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
                 const partialResult = outputChunk.result()
                 return C.isNonEmpty(partialResult) ? Ch.write(partialResult)['*>'](Ch.fail(failure)) : Ch.fail(failure)
               },
-              (s) => Ch.write(outputChunk.result())['*>'](mapAccumMAccumulator(s, f))
+              (s) => Ch.write(outputChunk.result())['*>'](mapAccumIOAccumulator(s, f))
             )
           )
         })
@@ -3139,23 +3096,23 @@ export function mapAccumMAccumulator<R, E, A, R1, E1, S, B>(
  * Statefully and effectfully maps over the elements of this stream to produce
  * new elements.
  */
-export function mapAccumM_<R, E, A, R1, E1, S, B>(
+export function mapAccumIO_<R, E, A, R1, E1, S, B>(
   stream: Stream<R, E, A>,
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): Stream<R & R1, E | E1, B> {
-  return new Stream(stream.channel['>>>'](mapAccumMAccumulator(s, f)))
+  return new Stream(stream.channel['>>>'](mapAccumIOAccumulator(s, f)))
 }
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce
  * new elements.
  */
-export function mapAccumM<A, S, R1, E1, B>(
+export function mapAccumIO<A, S, R1, E1, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapAccumM_(stream, s, f)
+  return (stream) => mapAccumIO_(stream, s, f)
 }
 
 /**
@@ -3194,42 +3151,42 @@ export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(stream: Stream
  * Effectfully maps each element to a chunk, and flattens the chunks into
  * the output of this stream.
  */
-export function mapConcatChunkM_<R, E, A, R1, E1, B>(
+export function mapConcatChunkIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
-  return pipe(stream, mapM(f), mapConcatChunk(identity))
+  return pipe(stream, mapIO(f), mapConcatChunk(identity))
 }
 
 /**
  * Effectfully maps each element to a chunk, and flattens the chunks into
  * the output of this stream.
  */
-export function mapConcatChunkM<A, R1, E1, B>(
+export function mapConcatChunkIO<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapConcatChunkM_(stream, f)
+  return (stream) => mapConcatChunkIO_(stream, f)
 }
 
 /**
  * Effectfully maps each element to an iterable, and flattens the iterables into
  * the output of this stream.
  */
-export function mapConcatM_<R, E, A, R1, E1, B>(
+export function mapConcatIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, Iterable<B>>
 ): Stream<R & R1, E | E1, B> {
-  return pipe(stream, mapM(flow(f, I.map(C.from))), mapConcatChunk(identity))
+  return pipe(stream, mapIO(flow(f, I.map(C.from))), mapConcatChunk(identity))
 }
 
 /**
  * Effectfully maps each element to an iterable, and flattens the iterables into
  * the output of this stream.
  */
-export function mapConcatM<A, R1, E1, B>(
+export function mapConcatIO<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, Iterable<B>>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapConcatM_(stream, f)
+  return (stream) => mapConcatIO_(stream, f)
 }
 
 /**
@@ -3258,12 +3215,12 @@ export function mapErrorCause<E, E1>(
  *
  * @note This combinator destroys the chunking structure. It's recommended to use chunkN afterwards.
  */
-export function mapMPar_<R, E, A, R1, E1, B>(
+export function mapIOPar_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   n: number,
   f: (a: A) => I.IO<R1, E1, B>
 ): Stream<R & R1, E | E1, B> {
-  return new Stream(pipe(stream.channel, Ch.concatMap(Ch.writeChunk), Ch.mapOutMPar(n, f), Ch.mapOut(C.single)))
+  return new Stream(pipe(stream.channel, Ch.concatMap(Ch.writeChunk), Ch.mapOutIOPar(n, f), Ch.mapOut(C.single)))
 }
 
 /**
@@ -3273,11 +3230,11 @@ export function mapMPar_<R, E, A, R1, E1, B>(
  *
  * @note This combinator destroys the chunking structure. It's recommended to use chunkN afterwards.
  */
-export function mapMPar<A, R1, E1, B>(
+export function mapIOPar<A, R1, E1, B>(
   n: number,
   f: (a: A) => I.IO<R1, E1, B>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapMPar_(stream, n, f)
+  return (stream) => mapIOPar_(stream, n, f)
 }
 
 /**
@@ -3285,13 +3242,13 @@ export function mapMPar<A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. The element order
  * is not enforced by this combinator, and elements may be reordered.
  */
-export function mapMParUnordered_<R, E, A, R1, E1, B>(
+export function mapIOParUnordered_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>,
   n: number,
   bufferSize = 16
 ): Stream<R & R1, E | E1, B> {
-  return bindPar_(stream, flow(f, fromEffect), n, bufferSize)
+  return bindPar_(stream, flow(f, fromIO), n, bufferSize)
 }
 
 /**
@@ -3299,12 +3256,12 @@ export function mapMParUnordered_<R, E, A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. The element order
  * is not enforced by this combinator, and elements may be reordered.
  */
-export function mapMParUnordered<A, R1, E1, B>(
+export function mapIOParUnordered<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, B>,
   n: number,
   bufferSize = 16
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (stream) => mapMParUnordered_(stream, f, n, bufferSize)
+  return (stream) => mapIOParUnordered_(stream, f, n, bufferSize)
 }
 
 /**
@@ -3314,7 +3271,7 @@ export function mapMParUnordered<A, R1, E1, B>(
  * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
  * Transformed elements may be reordered but the order within a partition is maintained.
  */
-export function mapMPartitioned_<R, E, A, R1, E1, A1, K>(
+export function mapIOPartitioned_<R, E, A, R1, E1, A1, K>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, A1>,
   keyBy: (a: A) => K,
@@ -3323,7 +3280,7 @@ export function mapMPartitioned_<R, E, A, R1, E1, A1, K>(
   return pipe(
     stream,
     groupByKey(keyBy, buffer),
-    GB.merge((_, s) => mapM_(s, f))
+    GB.merge((_, s) => mapIO_(s, f))
   )
 }
 
@@ -3334,12 +3291,12 @@ export function mapMPartitioned_<R, E, A, R1, E1, A1, K>(
  * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
  * Transformed elements may be reordered but the order within a partition is maintained.
  */
-export function mapMPartitioned<A, R1, E1, A1, K>(
+export function mapIOPartitioned<A, R1, E1, A1, K>(
   f: (a: A) => I.IO<R1, E1, A1>,
   keyBy: (a: A) => K,
   buffer = 16
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (stream) => mapMPartitioned_(stream, f, keyBy, buffer)
+  return (stream) => mapIOPartitioned_(stream, f, keyBy, buffer)
 }
 
 export function mergeWithHandler<R, E>(
@@ -3402,7 +3359,7 @@ export function onError_<R, E, A, R1>(
   stream: Stream<R, E, A>,
   cleanup: (e: Ca.Cause<E>) => I.IO<R1, never, any>
 ): Stream<R & R1, E, A> {
-  return catchAllCause_(stream, (cause) => fromEffect(cleanup(cause)['*>'](I.halt(cause))))
+  return catchAllCause_(stream, (cause) => fromIO(cleanup(cause)['*>'](I.halt(cause))))
 }
 
 /**
@@ -3555,17 +3512,17 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
 
     const consumer = pipe(
       Sink.exposeLeftover(sink),
-      Sink.matchM(
-        (e) => Sink.fromEffect(p.fail(e))['*>'](Sink.fail(e)),
+      Sink.matchSink(
+        (e) => Sink.fromIO(p.fail(e))['*>'](Sink.fail(e)),
         ([z1, leftovers]) => {
           const loop: Ch.Channel<unknown, E, C.Chunk<A1>, unknown, E | E1, C.Chunk<A1>, void> = Ch.readWithCause(
-            (inp: C.Chunk<A1>) => Ch.fromEffect(HO.offer(handoff, new PeelEmit(inp)))['*>'](loop),
-            (cause) => Ch.fromEffect(HO.offer(handoff, new PeelHalt(cause)))['*>'](Ch.halt(cause)),
-            () => Ch.fromEffect(HO.offer(handoff, new PeelEnd()))['*>'](Ch.unit())
+            (inp: C.Chunk<A1>) => Ch.fromIO(HO.offer(handoff, new PeelEmit(inp)))['*>'](loop),
+            (cause) => Ch.fromIO(HO.offer(handoff, new PeelHalt(cause)))['*>'](Ch.halt(cause)),
+            () => Ch.fromIO(HO.offer(handoff, new PeelEnd()))['*>'](Ch.unit())
           )
           return new Sink.Sink(
-            Ch.fromEffect(p.succeed(z1))
-              ['*>'](Ch.fromEffect(HO.offer(handoff, new PeelEmit(leftovers))))
+            Ch.fromIO(p.succeed(z1))
+              ['*>'](Ch.fromIO(HO.offer(handoff, new PeelEmit(leftovers))))
               ['*>'](loop)
           )
         }
@@ -3884,7 +3841,7 @@ export function right<R, E, A, B>(stream: Stream<R, E, E.Either<A, B>>): Stream<
  * Fails with given error 'e' if value is `Left`.
  */
 export function rightOrFail_<R, E, A, B, E1>(stream: Stream<R, E, E.Either<A, B>>, e: () => E1): Stream<R, E | E1, B> {
-  return pipe(stream, mapM(E.match(() => I.fail(e()), I.succeed)))
+  return pipe(stream, mapIO(E.match(() => I.fail(e()), I.succeed)))
 }
 
 /**
@@ -3939,7 +3896,7 @@ export function runIntoElementsManaged_<R, E, A, R1, E1>(
     (err) => Ch.write(Ex.fail(O.some(err))),
     () => Ch.write(Ex.fail(O.none()))
   )
-  return pipe(stream.channel, Ch.pipeTo(writer), Ch.mapOutM(queue.offer), Ch.drain, Ch.runManaged, M.asUnit)
+  return pipe(stream.channel, Ch.pipeTo(writer), Ch.mapOutIO(queue.offer), Ch.drain, Ch.runManaged, M.asUnit)
 }
 
 /*
@@ -3987,7 +3944,7 @@ export function runIntoManaged_<R, R1, E extends E1, E1, A>(
 
   return pipe(
     stream.channel['>>>'](writer),
-    Ch.mapOutM((_) => Q.offer_(queue, _)),
+    Ch.mapOutIO((_) => Q.offer_(queue, _)),
     Ch.drain,
     Ch.runManaged,
     M.asUnit
@@ -4528,7 +4485,7 @@ export class GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
       zipWithIndex,
-      filterM((elem) => {
+      filterIO((elem) => {
         const i = elem[1]
         return i < n ? I.succeed(true) : elem[0][1].shutdown['$>'](() => false)
       }),
@@ -4540,7 +4497,7 @@ export class GroupBy<R, E, K, V> {
   filter(f: (k: K) => boolean): GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
-      filterM(([k, q]) => (f(k) ? I.succeed(true) : q.shutdown['$>'](() => false)))
+      filterIO(([k, q]) => (f(k) ? I.succeed(true) : q.shutdown['$>'](() => false)))
     )
     return new GroupBy(g1, this.buffer)
   }

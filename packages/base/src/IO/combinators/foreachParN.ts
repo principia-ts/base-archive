@@ -28,7 +28,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
         traceAs(f, ([p, a]) =>
           pipe(
             f(a),
-            I.matchCauseM(
+            I.matchCauseIO(
               (c) => I.foreach_(pairs, (_) => _[0].halt(c)),
               (b) => p.succeed(b)
             )
@@ -36,7 +36,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
         )
       ),
       I.bind(() => worker(q, pairs, ref)),
-      I.whenM(Ref.modify_(ref, (n) => tuple(n > 0, n - 1)))
+      I.whenIO(Ref.modify_(ref, (n) => tuple(n > 0, n - 1)))
     )
 
   return pipe(

@@ -1,5 +1,5 @@
 import type { FreeBooleanAlgebra } from '../FreeBooleanAlgebra'
-import type { AssertionM } from './AssertionM'
+import type { AssertionIO } from './AssertionM'
 import type { Eval } from '@principia/base/Eval'
 import type * as S from '@principia/base/Show'
 
@@ -9,7 +9,7 @@ export class AssertionValue<A> {
   readonly _tag = 'AssertionValue'
   constructor(
     readonly value: A,
-    readonly assertion: Eval<AssertionM<A>>,
+    readonly assertion: Eval<AssertionIO<A>>,
     readonly result: Eval<FreeBooleanAlgebra<AssertionValue<A>>>,
     readonly showA?: S.Show<A>
   ) {}

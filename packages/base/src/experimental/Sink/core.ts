@@ -32,12 +32,12 @@ export class Sink<R, InErr, In, OutErr, L, Z> {
   }
 }
 
-export function effectTotal<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
+export function succeedWith<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
   return new Sink(Ch.effectTotal(a))
 }
 
-export function fromEffect<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, unknown, unknown, E, never, Z> {
-  return new Sink(Ch.fromEffect(io))
+export function fromIO<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, unknown, unknown, E, never, Z> {
+  return new Sink(Ch.fromIO(io))
 }
 
 export function fail<E>(e: E): Sink<unknown, unknown, unknown, E, never, never> {
@@ -93,20 +93,20 @@ export function contramap<In, In1>(
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
+export function contramapIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (_: In1) => I.IO<R1, InErr1, In>
 ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
-  return contramapChunksM_(sink, C.mapM(f))
+  return contramapChunksIO_(sink, C.mapIO(f))
 }
 
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapM<In, R1, InErr1, In1>(
+export function contramapIO<In, R1, InErr1, In1>(
   f: (_: In1) => I.IO<R1, InErr1, In>
 ): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
-  return (sink) => contramapM_(sink, f)
+  return (sink) => contramapIO_(sink, f)
 }
 
 /**
@@ -139,7 +139,7 @@ export function contramapChunks<In, In1>(
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
+export function contramapChunksIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
 ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
@@ -151,7 +151,7 @@ export function contramapChunksM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
     InErr | InErr1,
     C.Chunk<In>,
     unknown
-  > = Ch.readWith((chunk) => Ch.fromEffect(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
+  > = Ch.readWith((chunk) => Ch.fromIO(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
   return new Sink(
     loop['>>>'](sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
   )
@@ -161,10 +161,10 @@ export function contramapChunksM_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksM<In, R1, InErr1, In1>(
+export function contramapChunksIO<In, R1, InErr1, In1>(
   f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
 ): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
-  return (sink) => contramapChunksM_(sink, f)
+  return (sink) => contramapChunksIO_(sink, f)
 }
 
 /*
@@ -192,19 +192,19 @@ export function map<Z, Z2>(
   return (sink) => map_(sink, f)
 }
 
-export function mapM_<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
+export function mapIO_<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (z: Z) => I.IO<R1, OutErr1, Z1>
 ): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
-  return new Sink(Ch.mapM_(sink.channel, f))
+  return new Sink(Ch.mapIO_(sink.channel, f))
 }
 
-export function mapM<Z, R1, OutErr1, Z1>(
+export function mapIO<Z, R1, OutErr1, Z1>(
   f: (z: Z) => I.IO<R1, OutErr1, Z1>
 ): <R, InErr, In, OutErr, L>(
   sink: Sink<R, InErr, In, OutErr, L, Z>
 ) => Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
-  return (sink) => mapM_(sink, f)
+  return (sink) => mapIO_(sink, f)
 }
 
 /*
@@ -232,7 +232,7 @@ export function mapError<OutErr, OutErr2>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function matchM_<
+export function matchSink_<
   R,
   InErr,
   In,
@@ -260,7 +260,7 @@ export function matchM_<
     pipe(
       sink.channel,
       Ch.doneCollect,
-      Ch.foldM(
+      Ch.matchIO(
         (err) => onFailure(err).channel,
         ([leftovers, z]) =>
           Ch.deferTotal(() => {
@@ -284,7 +284,7 @@ export function matchM_<
   )
 }
 
-export function matchM<
+export function matchSink<
   In,
   OutErr,
   L0 extends In1 & In2 & (L1 | L2),
@@ -307,7 +307,7 @@ export function matchM<
 ): <R, InErr, L extends L0>(
   sink: Sink<R, InErr, In, OutErr, L0 | L, Z>
 ) => Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2> {
-  return (sink) => matchM_(sink, onFailure, onSuccess)
+  return (sink) => matchSink_(sink, onFailure, onSuccess)
 }
 
 /*
@@ -320,7 +320,7 @@ export function bind_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, I
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
 ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
-  return matchM_(sink, (err) => fail(err), f)
+  return matchSink_(sink, (err) => fail(err), f)
 }
 
 export function bind<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
@@ -503,14 +503,14 @@ export function foldChunks<Err, In, S>(
   return new Sink(cont(s) ? foldChunksReader(s, cont, f) : Ch.end(s))
 }
 
-function foldChunksMReader<Env, Err, In, S>(
+function foldChunksIOReader<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: C.Chunk<In>) => I.IO<Env, Err, S>
 ): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, never, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) =>
-      Ch.fromEffect(f(s, inp))['>>=']((nextS) => (cont(nextS) ? foldChunksMReader(nextS, cont, f) : Ch.end(nextS))),
+      Ch.fromIO(f(s, inp))['>>=']((nextS) => (cont(nextS) ? foldChunksIOReader(nextS, cont, f) : Ch.end(nextS))),
     Ch.fail,
     () => Ch.end(s)
   )
@@ -521,15 +521,15 @@ function foldChunksMReader<Env, Err, In, S>(
  * `contFn` condition is checked only for the initial value and at the end of processing of each chunk.
  * `f` and `contFn` must preserve chunking-invariance.
  */
-export function foldChunksM<Env, Err, In, S>(
+export function foldChunksIO<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: C.Chunk<In>) => I.IO<Env, Err, S>
 ): Sink<Env, Err, In, Err, In, S> {
-  return new Sink(cont(s) ? foldChunksMReader(s, cont, f) : Ch.end(s))
+  return new Sink(cont(s) ? foldChunksIOReader(s, cont, f) : Ch.end(s))
 }
 
-function foldChunkSplitM<Env, Err, In, S>(
+function foldChunkSplitIO<Env, Err, In, S>(
   s: S,
   chunk: C.Chunk<In>,
   cont: (s: S) => boolean,
@@ -547,17 +547,17 @@ function foldChunkSplitM<Env, Err, In, S>(
   return go(s, chunk, 0, chunk.length)
 }
 
-function foldMReader<Env, Err, In, S>(
+function foldIOReader<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
 ): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) =>
-      Ch.fromEffect(foldChunkSplitM(s, inp, cont, f))['>>='](([nextS, leftovers]) =>
+      Ch.fromIO(foldChunkSplitIO(s, inp, cont, f))['>>='](([nextS, leftovers]) =>
         O.match_(
           leftovers,
-          () => foldMReader(nextS, cont, f),
+          () => foldIOReader(nextS, cont, f),
           (l) => Ch.write(l)['$>'](nextS)
         )
       ),
@@ -569,12 +569,12 @@ function foldMReader<Env, Err, In, S>(
 /**
  * A sink that effectfully folds its inputs with the provided function, termination predicate and initial state.
  */
-export function foldM<Env, Err, In, S>(
+export function foldIO<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
 ): Sink<Env, Err, In, Err, In, S> {
-  return new Sink(cont(s) ? foldMReader(s, cont, f) : Ch.end(s))
+  return new Sink(cont(s) ? foldIOReader(s, cont, f) : Ch.end(s))
 }
 
 /**
@@ -600,14 +600,14 @@ export function foldlChunksM<R, Err, In, S>(
   s: S,
   f: (s: S, inp: C.Chunk<In>) => I.IO<R, Err, S>
 ): Sink<R, Err, In, Err, never, S> {
-  return dropLeftover(foldChunksM(s, () => true, f))
+  return dropLeftover(foldChunksIO(s, () => true, f))
 }
 
 /**
  * A sink that effectfully folds its inputs with the provided function and initial state.
  */
 export function foldlM<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, S>): Sink<R, Err, In, Err, In, S> {
-  return foldM(s, () => true, f)
+  return foldIO(s, () => true, f)
 }
 
 /**
@@ -633,13 +633,13 @@ export function foldUntil<Err, In, S>(s: S, max: number, f: (s: S, inp: In) => S
  *
  * Like foldWeightedM, but with a constant cost function of 1.
  */
-export function foldUntilM<Env, In, Err, S>(
+export function foldUntilIO<Env, In, Err, S>(
   s: S,
   max: number,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
 ): Sink<Env, Err, In, Err, In, S> {
   return pipe(
-    foldM<Env, Err, In, readonly [S, number]>(
+    foldIO<Env, Err, In, readonly [S, number]>(
       tuple(s, 0),
       ([, n]) => n < max,
       ([o, count], i) => f(o, i)['<$>']((s) => tuple(s, count + 1))
@@ -760,16 +760,16 @@ export function foldWeightedDecompose<Err, In, S>(
  * force the sink to cross the `max` cost. See foldWeightedDecomposeM
  * for a variant that can handle these cases.
  */
-export function foldWeightedM<Env, Err, In, S, Env1, Err1, Env2, Err2>(
+export function foldWeightedIO<Env, Err, In, S, Env1, Err1, Env2, Err2>(
   s: S,
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
   f: (s: S, inp: In) => I.IO<Env2, Err2, S>
 ): Sink<Env & Env1 & Env2, Err, In, Err | Err1 | Err2, In, S> {
-  return foldWeightedDecomposeM(s, costFn, max, flow(C.single, I.succeed), f)
+  return foldWeightedDecomposeIO(s, costFn, max, flow(C.single, I.succeed), f)
 }
 
-function foldWeightedDecomposeMLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, Env3, Err3>(
+function foldWeightedDecomposeIOLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, Env3, Err3>(
   s0: S,
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
@@ -810,13 +810,13 @@ function foldWeightedDecomposeMLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, Env
             })
         }
       }
-      return Ch.fromEffect(go(inp, s0, dirty0, cost0, 0))['>>='](([nextS, nextCost, nextDirty, leftovers]) => {
+      return Ch.fromIO(go(inp, s0, dirty0, cost0, 0))['>>='](([nextS, nextCost, nextDirty, leftovers]) => {
         if (C.isNonEmpty(leftovers)) {
           return Ch.write(leftovers)['*>'](Ch.end(nextS))
         } else if (cost0 > max) {
           return Ch.end(nextS)
         } else {
-          return foldWeightedDecomposeMLoop(nextS, costFn, max, decompose, f, nextCost, nextDirty)
+          return foldWeightedDecomposeIOLoop(nextS, costFn, max, decompose, f, nextCost, nextDirty)
         }
       })
     },
@@ -839,14 +839,14 @@ function foldWeightedDecomposeMLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, Env
  *
  * See foldWeightedDecompose for an example.
  */
-export function foldWeightedDecomposeM<Env, Err, In, S, Env1, Err1, Env2, Err2, Env3, Err3>(
+export function foldWeightedDecomposeIO<Env, Err, In, S, Env1, Err1, Env2, Err2, Env3, Err3>(
   s: S,
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
   decompose: (inp: In) => I.IO<Env2, Err2, C.Chunk<In>>,
   f: (s: S, inp: In) => I.IO<Env3, Err3, S>
 ): Sink<Env & Env1 & Env2 & Env3, Err, In, Err | Err1 | Err2 | Err3, In, S> {
-  return new Sink(foldWeightedDecomposeMLoop(s, costFn, max, decompose, f, 0, false))
+  return new Sink(foldWeightedDecomposeIOLoop(s, costFn, max, decompose, f, 0, false))
 }
 
 /**
@@ -884,7 +884,7 @@ function foreachWhileLoop<R, Err, In>(
     return cont
   }
   return pipe(
-    Ch.fromEffect(f(C.unsafeGet_(chunk, idx))),
+    Ch.fromIO(f(C.unsafeGet_(chunk, idx))),
     Ch.bind((b) => (b ? foreachWhileLoop(f, chunk, idx + 1, len, cont) : Ch.write(C.drop_(chunk, idx)))),
     Ch.catchAll((e) => Ch.write(C.drop_(chunk, idx))['*>'](Ch.fail(e)))
   )
@@ -911,7 +911,7 @@ export function foreachChunkWhile<R, Err, In>(
   f: (chunk: C.Chunk<In>) => I.IO<R, Err, boolean>
 ): Sink<R, Err, In, Err, In, void> {
   const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
-    (inp: C.Chunk<In>) => Ch.fromEffect(f(inp))['>>=']((cont) => (cont ? reader : Ch.end(undefined))),
+    (inp: C.Chunk<In>) => Ch.fromIO(f(inp))['>>=']((cont) => (cont ? reader : Ch.end(undefined))),
     (err: Err) => Ch.fail(err),
     () => Ch.unit()
   )
@@ -949,8 +949,8 @@ export function summarized_<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
   f: (b1: B, b2: B) => C
 ): Sink<R & R1, InErr, In, OutErr | E1, L, readonly [Z, C]> {
   return new Sink(
-    Ch.fromEffect(summary)['>>=']((start) =>
-      sink.channel['>>=']((done) => Ch.fromEffect(summary)['<$>']((end) => [done, f(start, end)]))
+    Ch.fromIO(summary)['>>=']((start) =>
+      sink.channel['>>=']((done) => Ch.fromIO(summary)['<$>']((end) => [done, f(start, end)]))
     )
   )
 }

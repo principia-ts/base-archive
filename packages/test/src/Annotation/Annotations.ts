@@ -27,19 +27,19 @@ export abstract class Annotations {
   abstract readonly supervisedFibers: UIO<HS.HashSet<RuntimeFiber<any, any>>>
 
   static annotate<V>(key: TestAnnotation<V>, value: V): URIO<Has<Annotations>, void> {
-    return I.asksServiceM(AnnotationsTag)((_) => _.annotate(key, value))
+    return I.asksServiceIO(AnnotationsTag)((_) => _.annotate(key, value))
   }
   static get<V>(key: TestAnnotation<V>): URIO<Has<Annotations>, V> {
-    return I.asksServiceM(AnnotationsTag)((_) => _.get(key))
+    return I.asksServiceIO(AnnotationsTag)((_) => _.get(key))
   }
   static withAnnotation<R, E, A>(io: IO<R, E, A>): IO<R & Has<Annotations>, Annotated<E>, Annotated<A>> {
-    return I.asksServiceM(AnnotationsTag)((_) => _.withAnnotation(io))
+    return I.asksServiceIO(AnnotationsTag)((_) => _.withAnnotation(io))
   }
   static get supervisedFibers(): URIO<Has<Annotations>, HS.HashSet<RuntimeFiber<any, any>>> {
-    return I.asksServiceM(AnnotationsTag)((_) => _.supervisedFibers)
+    return I.asksServiceIO(AnnotationsTag)((_) => _.supervisedFibers)
   }
   static get live(): Layer<unknown, never, Has<Annotations>> {
-    return L.fromEffect(AnnotationsTag)(
+    return L.fromIO(AnnotationsTag)(
       pipe(
         FR.make(TestAnnotationMap.empty),
         I.map(
@@ -51,7 +51,7 @@ export abstract class Annotations {
                 fiberRef,
                 FR.locally(
                   TestAnnotationMap.empty,
-                  I.matchM_(
+                  I.matchIO_(
                     io,
                     (e) =>
                       pipe(

@@ -17,6 +17,6 @@ export function once<R, E, A>(io: IO<R, E, A>): UIO<IO<R, E, void>> {
   const trace = accessCallTrace()
   return I.map_(
     make(true),
-    traceFrom(trace, (ref) => I.whenM_(io, getAndSet_(ref, false)))
+    traceFrom(trace, (ref) => I.whenIO_(io, getAndSet_(ref, false)))
   )
 }

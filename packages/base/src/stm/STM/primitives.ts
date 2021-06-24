@@ -180,7 +180,7 @@ export function catchAll_<R, E, A, R1, E1, B>(self: STM<R, E, A>, f: (e: E) => S
  * Effectfully folds over the `STM` effect, handling both failure and
  * success.
  */
-export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
+export function matchSTM_<R, E, A, R1, E1, B, R2, E2, C>(
   self: STM<R, E, A>,
   g: (e: E) => STM<R2, E2, C>,
   f: (a: A) => STM<R1, E1, B>
@@ -197,7 +197,7 @@ export function matchM_<R, E, A, R1, E1, B, R2, E2, C>(
  * if the full transaction fails, everything will be rolled back.
  */
 export function ensuring_<R, E, A, R1, B>(self: STM<R, E, A>, finalizer: STM<R1, never, B>): STM<R & R1, E, A> {
-  return matchM_(
+  return matchSTM_(
     self,
     (e) => bind_(finalizer, () => fail(e)),
     (a) => bind_(finalizer, () => succeed(a))

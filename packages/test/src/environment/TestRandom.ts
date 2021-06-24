@@ -208,7 +208,7 @@ export class TestRandom implements Random {
   }
 
   static make(initialData: Data): L.Layer<unknown, never, Has<Random> & Has<TestRandom>> {
-    return L.fromRawEffect(
+    return L.fromRawIO(
       I.gen(function* (_) {
         const data   = yield* _(Ref.make(initialData))
         const buffer = yield* _(Ref.make(new Buffer()))
@@ -223,7 +223,7 @@ export class TestRandom implements Random {
   }
 
   static random(): L.Layer<Has<Clock>, never, Has<Random> & Has<TestRandom>> {
-    return L.fromEffect(ClockTag)(I.askService(ClockTag))
+    return L.fromIO(ClockTag)(I.askService(ClockTag))
       ['+++'](this.determinictic)
       ['>>>'](
         L.fromRawFunctionM((env: Has<Clock> & Has<Random> & Has<TestRandom>) => {
@@ -263,22 +263,22 @@ export class TestRandom implements Random {
   static clearStrings  = TestRandom._lifted.clearStrings
   static clearBooleans = TestRandom._lifted.clearBooleans
   static feedInts(...ints: ReadonlyArray<number>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedInts(...ints))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedInts(...ints))
   }
   static feedBytes(...bytes: ReadonlyArray<ReadonlyArray<Byte>>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedBytes(...bytes))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedBytes(...bytes))
   }
   static feedChars(...chars: ReadonlyArray<string>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedChars(...chars))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedChars(...chars))
   }
   static feedDoubles(...doubles: ReadonlyArray<number>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedDoubles(...doubles))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedDoubles(...doubles))
   }
   static feedStrings(...strings: ReadonlyArray<string>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedStrings(...strings))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedStrings(...strings))
   }
   static feedBooleans(...booleans: ReadonlyArray<boolean>) {
-    return I.asksServiceM(TestRandomTag)((tr) => tr.feedBooleans(...booleans))
+    return I.asksServiceIO(TestRandomTag)((tr) => tr.feedBooleans(...booleans))
   }
   static next           = TestRandom._lifted.next
   static nextInt        = TestRandom._lifted.nextInt

@@ -12,7 +12,7 @@ import { builder, concrete, foldl_ } from './core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return I.defer(() => {
     const out = builder<B>()
     return pipe(
@@ -27,15 +27,15 @@ export function mapM_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.I
   })
 }
 
-export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
-  return (as) => mapM_(as, f)
+export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+  return (as) => mapIO_(as, f)
 }
 
-export function collectAllM<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
-  return mapM_(as, identity)
+export function collectAllIO<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
+  return mapIO_(as, identity)
 }
 
-function findMLoop_<R, E, A>(
+function findIOLoop_<R, E, A>(
   iterator: Iterator<ArrayLike<A>>,
   f: (a: A) => I.IO<R, E, boolean>,
   array: ArrayLike<A>,
@@ -44,43 +44,43 @@ function findMLoop_<R, E, A>(
 ): I.IO<R, E, O.Option<A>> {
   if (i < length) {
     const a = array[i]
-    return f(a)['>>=']((b) => (b ? I.succeed(O.some(a)) : findMLoop_(iterator, f, array, i + 1, length)))
+    return f(a)['>>=']((b) => (b ? I.succeed(O.some(a)) : findIOLoop_(iterator, f, array, i + 1, length)))
   }
   let result
   if (!(result = iterator.next()).done) {
     const arr = result.value
     const len = arr.length
-    return findMLoop_(iterator, f, arr, 0, len)
+    return findIOLoop_(iterator, f, arr, 0, len)
   }
   return I.succeed(O.none())
 }
 
-export function findM_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
+export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
   concrete(as)
   const iterator = as.arrayIterator()
   let result
   if (!(result = iterator.next()).done) {
     const array  = result.value
     const length = array.length
-    return findMLoop_(iterator, f, array, 0, length)
+    return findIOLoop_(iterator, f, array, 0, length)
   } else {
     return I.succeed(O.none())
   }
 }
 
-export function findM<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, O.Option<A>> {
-  return (as) => findM_(as, f)
+export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, O.Option<A>> {
+  return (as) => findIO_(as, f)
 }
 
-export function foldlM_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+export function foldlIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
   return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
 }
 
-export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
-  return (as) => foldlM_(as, b, f)
+export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
+  return (as) => foldlIO_(as, b, f)
 }
 
-export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
     concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
@@ -108,11 +108,11 @@ export function takeWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
   })
 }
 
-export function takeWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => takeWhileM_(as, p)
+export function takeWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => takeWhileIO_(as, p)
 }
 
-export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
     concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
@@ -140,11 +140,11 @@ export function dropWhileM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boole
   })
 }
 
-export function dropWhileM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => dropWhileM_(as, p)
+export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => dropWhileIO_(as, p)
 }
 
-export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function filterIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
     concrete(as)
     const c                              = builder<A>()
@@ -168,6 +168,6 @@ export function filterM_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>
   })
 }
 
-export function filterM<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
-  return (as) => filterM_(as, p)
+export function filterIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+  return (as) => filterIO_(as, p)
 }

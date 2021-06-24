@@ -17,7 +17,7 @@ import { uninterruptibleMask } from './interrupt'
  *
  * @trace 0
  */
-export function effectAsyncM<R, E, R1, E1, A>(
+export function asyncIO<R, E, R1, E1, A>(
   register: (k: (_: IO<R1, E1, A>) => void) => IO<R, E, any>
 ): IO<R & R1, E | E1, A> {
   return I.gen(function* (_) {

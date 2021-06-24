@@ -36,8 +36,8 @@ export abstract class Clock {
   abstract readonly currentTime: I.UIO<number>
   abstract readonly sleep: (ms: number) => I.UIO<void>
 
-  static currentTime = I.asksServiceM(ClockTag)((_) => _.currentTime)
-  static sleep       = (ms: number) => I.asksServiceM(ClockTag)((_) => _.sleep(ms))
+  static currentTime = I.asksServiceIO(ClockTag)((_) => _.currentTime)
+  static sleep       = (ms: number) => I.asksServiceIO(ClockTag)((_) => _.sleep(ms))
 
   static live = L.succeed(ClockTag)(new LiveClock())
 }

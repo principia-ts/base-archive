@@ -11,21 +11,21 @@ export type AssertResultM<A> = BA.FreeBooleanAlgebraM<unknown, never, AssertionV
 export const AssertionMTypeId = Symbol('@principia/test/AssertionM')
 export type AssertionMTypeId = typeof AssertionMTypeId
 
-export class AssertionM<A> {
+export class AssertionIO<A> {
   readonly [AssertionMTypeId]: AssertionMTypeId = AssertionMTypeId
 
   constructor(readonly render: Render, readonly runM: (actual: A) => AssertResultM<A>) {}
 
-  ['&&'](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
-    return new AssertionM(infix(param(this), '&&', param(that)), (actual) =>
+  ['&&'](this: AssertionIO<A>, that: AssertionIO<A>): AssertionIO<A> {
+    return new AssertionIO(infix(param(this), '&&', param(that)), (actual) =>
       BA.andM_(this.runM(actual), that.runM(actual))
     )
   }
-  [':'](string: string): AssertionM<A> {
-    return new AssertionM(infix(param(this), ':', param(quoted(string))), this.runM)
+  [':'](string: string): AssertionIO<A> {
+    return new AssertionIO(infix(param(this), ':', param(quoted(string))), this.runM)
   }
-  ['||'](this: AssertionM<A>, that: AssertionM<A>): AssertionM<A> {
-    return new AssertionM(infix(param(this), '||', param(that)), (actual) =>
+  ['||'](this: AssertionIO<A>, that: AssertionIO<A>): AssertionIO<A> {
+    return new AssertionIO(infix(param(this), '||', param(that)), (actual) =>
       BA.orM_(this.runM(actual), that.runM(actual))
     )
   }
@@ -35,14 +35,14 @@ export class AssertionM<A> {
   }
 }
 
-export function isAssertionM(u: unknown): u is AssertionM<unknown> {
+export function isAssertionIO(u: unknown): u is AssertionIO<unknown> {
   return isObject(u) && AssertionMTypeId in u
 }
 
-export function label_<A>(am: AssertionM<A>, string: string): AssertionM<A> {
+export function label_<A>(am: AssertionIO<A>, string: string): AssertionIO<A> {
   return am[':'](string)
 }
 
-export function label(string: string): <A>(am: AssertionM<A>) => AssertionM<A> {
+export function label(string: string): <A>(am: AssertionIO<A>) => AssertionIO<A> {
   return (am) => am[':'](string)
 }

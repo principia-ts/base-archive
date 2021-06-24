@@ -10,7 +10,7 @@ import { pipe } from '../../function'
 import { foreachParN_ as effectForeachParN } from '../../IO/combinators/foreachParN'
 import { foreachUnitParN_ as effectForeachUnitParN } from '../../IO/combinators/foreachUnitParN'
 import { tuple } from '../../tuple'
-import { mapM } from '../core'
+import { mapIO } from '../core'
 import * as I from '../internal/io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
@@ -45,7 +45,7 @@ export function foreachParN_<R, E, A, B>(
 ): Managed<R, E, Chunk<B>> {
   return pipe(
     makeManagedReleaseMap(parallelN(n)),
-    mapM((parallelReleaseMap) => {
+    mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
@@ -100,7 +100,7 @@ export function foreachUnitParN_<R, E, A>(
 ): Managed<R, E, void> {
   return pipe(
     makeManagedReleaseMap(parallelN(n)),
-    mapM((parallelReleaseMap) => {
+    mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),

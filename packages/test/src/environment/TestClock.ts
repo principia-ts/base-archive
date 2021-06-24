@@ -225,7 +225,7 @@ export class TestClock implements Clock {
     })
   }
 
-  private warningDone: UIO<void> = RefM.updateSomeM_(
+  private warningDone: UIO<void> = RefM.updateSomeIO_(
     this.warningState,
     matchTag({
       Start: () => O.some(I.succeed(Done)),
@@ -234,7 +234,7 @@ export class TestClock implements Clock {
     })
   )
 
-  private warningStart: UIO<void> = RefM.updateSomeM_(
+  private warningStart: UIO<void> = RefM.updateSomeIO_(
     this.warningState,
     matchTag(
       {

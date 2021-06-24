@@ -10,7 +10,7 @@ import { pipe } from '../../function'
 import { foreachPar_ as ioForeachPar_ } from '../../IO/combinators/foreachPar'
 import { foreachUnitPar_ as ioForeachUnitPar_ } from '../../IO/combinators/foreachUnitPar'
 import { tuple } from '../../tuple'
-import { mapM } from '../core'
+import { mapIO } from '../core'
 import * as I from '../internal/io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
@@ -25,7 +25,7 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
   return pipe(
     makeManagedReleaseMap(parallel),
-    mapM((parallelReleaseMap) => {
+    mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
@@ -70,7 +70,7 @@ export function foreachPar<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iter
 export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
   return pipe(
     makeManagedReleaseMap(parallel),
-    mapM((parallelReleaseMap) => {
+    mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),

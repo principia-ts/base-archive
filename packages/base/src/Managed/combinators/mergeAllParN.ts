@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 import { parallelN } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import * as Iter from '../../Iterable'
-import { mapM } from '../core'
+import { mapIO } from '../core'
 import * as I from '../internal/_io'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
@@ -28,7 +28,7 @@ export function mergeAllParN_<R, E, A, B>(
 ): Managed<R, E, B> {
   return pipe(
     makeManagedReleaseMap(parallelN(n)),
-    mapM((rm) =>
+    mapIO((rm) =>
       pipe(
         mas,
         Iter.map((m) => I.map_(m.io, ([_, a]) => a)),

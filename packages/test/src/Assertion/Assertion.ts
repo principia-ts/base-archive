@@ -23,12 +23,12 @@ import assert from 'assert'
 import * as BA from '../FreeBooleanAlgebra'
 import { field, fn, infix, param, quoted } from '../Render'
 import { asFailure, AssertionData, asSuccess } from './AssertionData'
-import { AssertionM } from './AssertionM'
+import { AssertionIO } from './AssertionM'
 import { AssertionValue } from './AssertionValue'
 
 export type AssertResult<A> = BA.FreeBooleanAlgebra<AssertionValue<A>>
 
-export class Assertion<A> extends AssertionM<A> {
+export class Assertion<A> extends AssertionIO<A> {
   constructor(readonly render: Render, readonly run: (actual: A) => AssertResult<A>) {
     super(render, (actual) => I.succeed(run(actual)))
   }

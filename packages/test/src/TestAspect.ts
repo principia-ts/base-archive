@@ -191,7 +191,7 @@ export function repeat<R0>(
     <R1, E1>(
       test: I.IO<R1, TestFailure<E1>, TestSuccess>
     ): I.IO<R0 & R1 & Has<Annotations> & Has<Clock>, TestFailure<E1>, TestSuccess> =>
-      I.asksM((r: R0 & R1 & Has<Annotations> & Has<Clock>) =>
+      I.asksIO((r: R0 & R1 & Has<Annotations> & Has<Clock>) =>
         pipe(
           test,
           I.giveAll(r),

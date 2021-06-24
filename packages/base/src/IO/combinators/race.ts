@@ -14,7 +14,7 @@ import { raceWith_ } from './core-scope'
 const mergeInterruption =
   <E1, A, A1>(a: A) =>
   (x: Exit<E1, A1>): IO<unknown, E1, A> => {
-    return Ex.matchM_(
+    return Ex.matchIO_(
       x,
       (cause) => (C.interruptedOnly(cause) ? I.succeed(a) : I.halt(cause)),
       () => I.succeed(a)
@@ -39,14 +39,14 @@ export function race_<R, E, A, R1, E1, A1>(ef: IO<R, E, A>, that: IO<R1, E1, A1>
       ef,
       that,
       traceFrom(trace, (exit, right) =>
-        Ex.matchM_(
+        Ex.matchIO_(
           exit,
           (cause) => I.mapErrorCause_(join(right), (_) => C.both(cause, _)),
           (a) => I.bind_(right.interruptAs(d.id), mergeInterruption(a))
         )
       ),
       traceFrom(trace, (exit, left) =>
-        Ex.matchM_(
+        Ex.matchIO_(
           exit,
           (cause) => I.mapErrorCause_(join(left), (_) => C.both(cause, _)),
           (a) => I.bind_(left.interruptAs(d.id), mergeInterruption(a))

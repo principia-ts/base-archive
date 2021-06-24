@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
 
 import * as Ex from '../../Exit/core'
-import { fromEffect } from '../core'
+import { fromIO } from '../core'
 import * as I from '../internal/io'
 import { ensuringFirstWith_ } from './ensuringFirstWith'
 
@@ -23,10 +23,10 @@ export function interruptible_<R, E, A, R1>(
 ): Managed<R & R1, E, A> {
   const trace = accessCallTrace()
   return ensuringFirstWith_(
-    traceCall(fromEffect, trace)(acquire),
+    traceCall(fromIO, trace)(acquire),
     traceAs(
       release,
-      Ex.matchM(() => I.unit(), release)
+      Ex.matchIO(() => I.unit(), release)
     )
   )
 }
