@@ -175,5 +175,6 @@ declare module './HKT' {
     [IterableURI]: number
     [AsyncIterableURI]: number
     [ChunkURI]: number
+    [ListURI]: number
   }
 }

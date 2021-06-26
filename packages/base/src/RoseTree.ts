@@ -1,8 +1,10 @@
+import type * as Ev from './Eval/core'
 import type * as HKT from './HKT'
 import type { RoseTreeURI } from './Modules'
 import type { Show } from './Show'
 
 import * as A from './Array/core'
+import * as It from './Iterable/core'
 import * as P from './prelude'
 
 /*
@@ -188,16 +190,12 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: RoseTree<A>) => B 
   return (fa) => foldl_(fa, b, f)
 }
 
-export function foldr_<A, B>(fa: RoseTree<A>, b: B, f: (a: A, b: B) => B): B {
-  let r: B  = b
-  const len = fa.forest.length
-  for (let i = len - 1; i >= 0; i--) {
-    r = foldr_(fa.forest[i], r, f)
-  }
+export function foldr_<A, B>(fa: RoseTree<A>, b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): Ev.Eval<B> {
+  const r = It.foldr_(fa.forest, b, (t, b) => foldr_(t, b, f))
   return f(fa.value, r)
 }
 
-export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: RoseTree<A>) => B {
+export function foldr<A, B>(b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): (fa: RoseTree<A>) => Ev.Eval<B> {
   return (fa) => foldr_(fa, b, f)
 }
 

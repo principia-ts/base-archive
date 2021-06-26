@@ -1011,16 +1011,25 @@ export const FilterableWithIndex = P.FilterableWithIndex<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   traverse_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   itraverse_
 })
 
 export const Witherable = P.Witherable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   filter_,
   filterMap_,
   partition_,
@@ -1032,6 +1041,9 @@ export const Witherable = P.Witherable<URI>({
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   ifilter_,
   ifilterMap_,
   ipartition_,

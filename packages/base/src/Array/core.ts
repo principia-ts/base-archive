@@ -962,6 +962,16 @@ export const itraverse: P.TraverseWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => {
   return (f) => (ta) => itraverseG_(ta, f)
 }
 
+export const imapAccumM_: P.MapAccumMWithIndexFn_<[HKT.URI<ArrayURI>]> = (M) => (ta, s, f) =>
+  ifoldl_(ta, M.pure([[] as any[], s]), (b, i, a) =>
+    M.bind_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+  )
+
+export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<ArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccum_(ta, s, f)
+}
+
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
@@ -982,6 +992,16 @@ export const traverse_: P.TraverseFn_<[HKT.URI<ArrayURI>]> = (G) => {
 export const traverse: P.TraverseFn<[HKT.URI<ArrayURI>]> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
+}
+
+export const mapAccumM_: P.MapAccumMFn_<[HKT.URI<ArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (ta, s, f) => imapAccum_(ta, s, (s, _, a) => f(s, a))
+}
+
+export const mapAccumM: P.MapAccumMFn<[HKT.URI<ArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccum_(ta, s, (s, _, a) => f(s, a))
 }
 
 /**
@@ -2503,11 +2523,17 @@ export const Monad = P.Monad<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
-  traverse_
+  traverse_,
+  foldl_,
+  foldr_,
+  foldMap_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   itraverse_
 })
 
@@ -2517,6 +2543,9 @@ export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
 
 export const Witherable = P.Witherable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   filter_,
   filterMap_,
   partition_,
@@ -2528,6 +2557,9 @@ export const Witherable = P.Witherable<URI>({
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   ifilter_,
   ifilterMap_,
   ipartition_,

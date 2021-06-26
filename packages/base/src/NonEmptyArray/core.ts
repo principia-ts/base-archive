@@ -681,6 +681,18 @@ export const itraverse: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
 
+export const imapAccumM_: P.MapAccumMWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
+  _.ifoldl_(
+    tail(ta),
+    M.map_(f(s, 0, head(ta)), ([b, s]) => [pure(b), s]),
+    (b, i, a) => M.bind_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+  )
+
+export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccum_(ta, s, f)
+}
+
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
@@ -702,6 +714,16 @@ export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
 export const traverse: P.TraverseFn<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
+}
+
+export const mapAccumM_: P.MapAccumMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (ta, s, f) => imapAccum_(ta, s, (s, _, a) => f(s, a))
+}
+
+export const mapAccumM: P.MapAccumMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+  const imapAccum_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccum_(ta, s, (s, _, a) => f(s, a))
 }
 
 /**
@@ -1452,11 +1474,17 @@ export const Monad = P.Monad<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   traverse_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   itraverse_
 })
 

@@ -13,6 +13,7 @@ import * as AR from '../../Array'
 import * as Ca from '../../Cause'
 import * as A from '../../Chunk'
 import * as E from '../../Either'
+import * as Ev from '../../Eval'
 import { sequential } from '../../ExecutionStrategy'
 import * as Ex from '../../Exit'
 import * as F from '../../Fiber'
@@ -2465,9 +2466,9 @@ export function writeAll<Out>(
 ): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
   return AR.foldr_(
     outs,
-    end(undefined) as Channel<unknown, unknown, unknown, unknown, never, Out, void>,
-    (out, conduit) => zipr_(write(out), conduit)
-  )
+    Ev.now(end(undefined)) as Ev.Eval<Channel<unknown, unknown, unknown, unknown, never, Out, void>>,
+    (out, conduit) => Ev.map_(conduit, (conduit) => zipr_(write(out), conduit))
+  ).value
 }
 
 function writeChunkWriter<Out>(

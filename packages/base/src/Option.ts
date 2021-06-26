@@ -905,6 +905,8 @@ export const apS: <N extends string, A, B>(
   }
 > = P.apSF(Apply)
 
+export const apT = P.apTF(Apply)
+
 export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
@@ -1001,11 +1003,17 @@ export const Foldable = P.Foldable<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   traverse_
 })
 
 export const Witherable = P.Witherable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   filter_,
   filterMap_,
   partition_,

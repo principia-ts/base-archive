@@ -2,6 +2,7 @@
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
+import type * as Ev from '../Eval/core'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
@@ -2383,16 +2384,25 @@ export const Monad = P.Monad<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   traverse_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   itraverse_
 })
 
 export const Witherable = P.Witherable<URI>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   compactA_,
   separateA_,
   traverse_,
@@ -2404,6 +2414,9 @@ export const Witherable = P.Witherable<URI>({
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
   icompactA_,
   iseparateA_,
   itraverse_,

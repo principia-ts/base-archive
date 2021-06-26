@@ -6,7 +6,7 @@ import * as A from './core'
 /**
  * Effectfully maps the elements of this Array.
  */
-export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
+export function mapIO_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
     A.foldl(I.succeed([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
@@ -26,14 +26,14 @@ export function mapM_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, 
 /**
  * Effectfully maps the elements of this Array.
  */
-export function mapM<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
-  return (as) => mapM_(as, f)
+export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => mapIO_(as, f)
 }
 
 /**
  * Effectfully maps the elements of this Array in parallel.
  */
-export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
+export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
   return I.bind_(I.succeed<never, B[]>(Array(as.length)), (mut_bs) => {
     function fn([a, n]: [A, number]) {
       return I.bind_(
@@ -57,17 +57,17 @@ export function mapMPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, 
 /**
  * Effectfully maps the elements of this Array in parallel.
  */
-export function mapMPar<A, R, E, B>(
+export function mapIOPar<A, R, E, B>(
   f: (a: A) => I.IO<R, E, B>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
-  return (as) => mapMPar_(as, f)
+  return (as) => mapIOPar_(as, f)
 }
 
 /**
  * Statefully and effectfully maps over the elements of this Array to produce
  * new elements.
  */
-export function mapAccumM_<S, A, R, E, B>(
+export function mapAccumIO_<S, A, R, E, B>(
   as: ReadonlyArray<A>,
   s: S,
   f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
@@ -92,14 +92,14 @@ export function mapAccumM_<S, A, R, E, B>(
  * Statefully and effectfully maps over the elements of this Array to produce
  * new elements.
  */
-export function mapAccumM<S, A, R, E, B>(
+export function mapAccumIO<S, A, R, E, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
-  return (as) => mapAccumM_(as, s, f)
+  return (as) => mapAccumIO_(as, s, f)
 }
 
-export function dropWhileM_<A, R, E>(
+export function dropWhileIO_<A, R, E>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
@@ -126,13 +126,13 @@ export function dropWhileM_<A, R, E>(
   })
 }
 
-export function dropWhileM<A, R, E>(
+export function dropWhileIO<A, R, E>(
   p: (a: A) => I.IO<R, E, boolean>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<A>> {
-  return (as) => dropWhileM_(as, p)
+  return (as) => dropWhileIO_(as, p)
 }
 
-export function takeWhileM_<R, E, A>(
+export function takeWhileIO_<R, E, A>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
 ): I.IO<R, E, ReadonlyArray<A>> {
@@ -159,16 +159,16 @@ export function takeWhileM_<R, E, A>(
   })
 }
 
-export function takeWhileM<A, R, E>(
+export function takeWhileIO<A, R, E>(
   p: (a: A) => I.IO<R, E, boolean>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<A>> {
-  return (as) => takeWhileM_(as, p)
+  return (as) => takeWhileIO_(as, p)
 }
 
-export function foldlM_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+export function foldlIO_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
   return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
 }
 
-export function foldlM<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {
-  return (as) => foldlM_(as, b, f)
+export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {
+  return (as) => foldlIO_(as, b, f)
 }

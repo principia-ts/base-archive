@@ -737,6 +737,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
 
   return P.TraversableWithIndex({
     imap_,
+    ...getFoldableWithIndex(O),
     itraverse_
   })
 }

@@ -29,6 +29,7 @@ import * as C from '../Cause/core'
 import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
+import * as Ev from '../Eval/core'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
 import { constant, flow, identity, pipe } from '../function'
@@ -463,6 +464,14 @@ export function fromEitherWith<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A>
 export function fromEither<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
   const trace = accessCallTrace()
   return E.match_(either, (e) => traceCall(fail, trace)(e), succeed)
+}
+
+/**
+ * Lifts an `Eval` into an `IO`
+ */
+export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
+  const trace = accessCallTrace()
+  return succeedWith(traceFrom(trace, () => ma.value))
 }
 
 /**
@@ -2394,13 +2403,17 @@ export function foldMap<M>(M: Monoid<M>) {
  *
  * @trace 2
  */
-export function foldr_<A, B, R, E>(as: Iterable<A>, b: B, f: (a: A, b: B) => IO<R, E, B>): IO<R, E, B> {
-  return I.foldr_(as, succeed(b) as IO<R, E, B>, (el, acc) =>
-    bind_(
-      acc,
-      traceAs(f, (a) => f(el, a))
-    )
-  )
+export function foldr_<A, B, R, E>(as: Iterable<A>, b: UIO<B>, f: (a: A, b: IO<R, E, B>) => IO<R, E, B>): IO<R, E, B> {
+  const iterator        = as[Symbol.iterator]()
+  const go: IO<R, E, B> = defer(() => {
+    const { value: current, done } = iterator.next()
+    if (done) {
+      return b
+    } else {
+      return f(current, go)
+    }
+  })
+  return go
 }
 
 /**
@@ -2412,7 +2425,10 @@ export function foldr_<A, B, R, E>(as: Iterable<A>, b: B, f: (a: A, b: B) => IO<
  * @dataFirst foldr_
  * @trace 1
  */
-export function foldr<A, B, R, E>(b: B, f: (a: A, b: B) => IO<R, E, B>): (i: Iterable<A>) => IO<R, E, B> {
+export function foldr<A, B, R, E>(
+  b: UIO<B>,
+  f: (a: A, b: IO<R, E, B>) => IO<R, E, B>
+): (i: Iterable<A>) => IO<R, E, B> {
   return (i) => foldr_(i, b, f)
 }
 

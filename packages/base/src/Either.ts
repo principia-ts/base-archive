@@ -939,6 +939,9 @@ export function getWitherable<E>(M: P.Monoid<E>) {
 
   return P.Witherable<URI, V_>({
     ...getFilterable(M),
+    foldl_,
+    foldr_,
+    foldMap_,
     traverse_,
     compactA_: compactA_,
     separateA_: separateA_
@@ -1129,6 +1132,9 @@ export const zipAll        = P.zipAllF<URI, V>(Semialign)
  */
 export const Traversable = P.Traversable<URI, V>({
   map_,
+  foldl_,
+  foldr_,
+  foldMap_,
   traverse_
 })
 

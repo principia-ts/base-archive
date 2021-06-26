@@ -4,6 +4,8 @@ import type { IterableURI } from '../Modules'
 import type { Option } from '../Option'
 
 import * as A from '../Array/core'
+import * as Ev from '../Eval/core'
+import { memoize } from '../function'
 import * as O from '../Option'
 import * as P from '../prelude'
 
@@ -380,19 +382,36 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) => B 
   return (fa) => foldl_(fa, b, f)
 }
 
-export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: Iterable<A>) => B {
-  return (fa) => A.ifoldr_(A.from(fa), b, f)
+export function ifoldr_<A, B>(
+  fa: Iterable<A>,
+  b: Ev.Eval<B>,
+  f: (a: A, i: number, b: Ev.Eval<B>) => Ev.Eval<B>
+): Ev.Eval<B> {
+  let i                = 0
+  const iterator       = fa[Symbol.iterator]()
+  const go: Ev.Eval<B> = Ev.defer(() => {
+    const { value: current, done } = iterator.next()
+    if (done) {
+      return b
+    } else {
+      return f(current, i++, go)
+    }
+  }).memoize
+  return go
 }
 
-export function ifoldr_<A, B>(fa: Iterable<A>, b: B, f: (a: A, i: number, b: B) => B): B {
-  return A.ifoldr_(A.from(fa), b, f)
+export function ifoldr<A, B>(
+  b: Ev.Eval<B>,
+  f: (a: A, i: number, b: Ev.Eval<B>) => Ev.Eval<B>
+): (fa: Iterable<A>) => Ev.Eval<B> {
+  return (fa) => ifoldr_(fa, b, f)
 }
 
-export function foldr_<A, B>(fa: Iterable<A>, b: B, f: (a: A, b: B) => B): B {
-  return A.foldr_(A.from(fa), b, f)
+export function foldr_<A, B>(fa: Iterable<A>, b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): Ev.Eval<B> {
+  return ifoldr_(fa, b, (a, _, b) => f(a, b))
 }
 
-export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Iterable<A>) => B {
+export function foldr<A, B>(b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): (fa: Iterable<A>) => Ev.Eval<B> {
   return (fa) => foldr_(fa, b, f)
 }
 
@@ -452,6 +471,30 @@ export function bind_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
   return bind_(mma, P.identity)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Traversable
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<IterableURI>]> = (A) => (ta, f) =>
+  ifoldl_(ta, A.pure(never as Iterable<any>), (b, i, a) => A.crossWith_(b, f(i, a), append_))
+
+export const itraverse: P.TraverseWithIndexFn<[HKT.URI<IterableURI>]> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (ta) => itraverseA_(ta, f)
+}
+
+export const traverse_: P.TraverseFn_<[HKT.URI<IterableURI>]> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (ta, f) => itraverseA_(ta, (_, a) => f(a))
+}
+
+export const traverse: P.TraverseFn<[HKT.URI<IterableURI>]> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (ta) => itraverseA_(ta, (_, a) => f(a))
 }
 
 /*
@@ -520,14 +563,11 @@ export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Op
 
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
   return iterable(function* () {
-    const as = ia[Symbol.iterator]()
-
-    for (let i = 0; i < n; i++) {
-      const el = as.next()
-      if (el.done) {
-        break
-      }
-      yield el.value
+    let i = 0
+    for (const el of ia) {
+      yield el
+      i++
+      if (i >= n) break
     }
   })
 }
