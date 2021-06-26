@@ -1,6 +1,9 @@
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
+import type { Equatable } from '../Structural/Equatable'
+import type { Hashable } from '../Structural/Hashable'
 
+import { identity } from '../function'
 import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
@@ -12,25 +15,33 @@ const _noneHash = hashString('@principia/base/Option/None')
 
 const _someHash = hashString('@principia/base/Option/Some')
 
-export class None {
-  readonly [OptionTypeId]: OptionTypeId = OptionTypeId
-  readonly _tag                         = 'None'
+export abstract class OptionSyntax<A> {
+  readonly _A!: () => A;
+  readonly [OptionTypeId]: OptionTypeId = OptionTypeId;
+}
+
+export class None extends OptionSyntax<never> {
+  readonly _tag = 'None'
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  constructor() {}
+  constructor() {
+    super()
+  }
   [$equals](that: unknown): boolean {
-    return isNone(that)
+    return isOption(that) && isNone(that)
   }
   get [$hash]() {
     return _noneHash
   }
 }
 
-export class Some<A> {
+export class Some<A> extends OptionSyntax<A> {
   readonly [OptionTypeId]: OptionTypeId = OptionTypeId
   readonly _tag                         = 'Some'
-  constructor(readonly value: A) {}
+  constructor(readonly value: A) {
+    super()
+  }
   [$equals](that: unknown): boolean {
-    return isSome(that) && equals(this.value, that.value)
+    return isOption(that) && isSome(that) && equals(this.value, that.value)
   }
   get [$hash]() {
     return combineHash(_someHash, hash(this.value))
@@ -39,16 +50,16 @@ export class Some<A> {
 
 export type Option<A> = None | Some<A>
 
-function isOption(u: unknown): u is Option<unknown> {
+export function isOption(u: unknown): u is Option<unknown> {
   return isObject(u) && OptionTypeId in u
 }
 
-function isNone(u: unknown): u is None {
-  return isOption(u) && u._tag === 'None'
+export function isNone<A>(u: Option<A>): u is None {
+  return u._tag === 'None'
 }
 
-function isSome(u: unknown): u is Some<unknown> {
-  return isOption(u) && u._tag === 'Some'
+export function isSome<A>(u: Option<A>): u is Some<A> {
+  return u._tag === 'Some'
 }
 
 /**
@@ -95,11 +106,19 @@ export function fromNullable<A>(a: A | null | undefined): Option<NonNullable<A>>
   return a == null ? none() : some(a as NonNullable<A>)
 }
 
+export function match_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) => C): B | C {
+  return fa._tag === 'None' ? onNone() : onSome(fa.value)
+}
+
+export function match<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option<A>) => B | C {
+  return (fa) => match_(fa, onNone, onSome)
+}
+
 /**
  * @internal
  */
 export function getOrElse_<A, B>(fa: Option<A>, onNone: () => B): A | B {
-  return fa._tag === 'Some' ? fa.value : onNone()
+  return match_(fa, onNone, identity)
 }
 
 /**

@@ -17,7 +17,7 @@ import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
-import * as E from './internal/Either'
+import * as _ from './internal/Either'
 import * as O from './Option'
 import * as P from './prelude'
 import * as T from './These'
@@ -87,16 +87,16 @@ export function fromNullableK<E>(
  * @category Constructors
  * @since 1.0.0
  */
-export function fromOption_<E, A>(fa: Option<A>, onNothing: () => E): Either<E, A> {
-  return fa._tag === 'None' ? left(onNothing()) : right(fa.value)
+export function fromOption_<E, A>(fa: Option<A>, onNone: () => E): Either<E, A> {
+  return O.match_(fa, flow(onNone, left), right)
 }
 
 /**
  * @category Constructors
  * @since 1.0.0
  */
-export function fromOption<E>(onNothing: () => E): <A>(fa: Option<A>) => Either<E, A> {
-  return (fa) => fromOption_(fa, onNothing)
+export function fromOption<E>(onNone: () => E): <A>(fa: Option<A>) => Either<E, A> {
+  return (fa) => fromOption_(fa, onNone)
 }
 
 /**
@@ -133,7 +133,7 @@ export function fromPredicate<E, A>(predicate: P.Predicate<A>, onFalse: (a: A) =
  * @category Constructors
  * @since 1.0.0
  */
-export const left = E.left
+export const left = _.left
 
 /**
  * Constructs a new `Either` holding a `Right` value.
@@ -142,7 +142,7 @@ export const left = E.left
  * @category Constructors
  * @since 1.0.0
  */
-export const right = E.right
+export const right = _.right
 
 /**
  * Constructs a new `Either` from a function that might throw
@@ -226,7 +226,7 @@ export function isRight<E, A>(fa: Either<E, A>): fa is Right<A> {
  * @category Destructors
  * @since 1.0.0
  */
-export const match_ = E.match_
+export const match_ = _.match_
 
 /**
  * Takes two functions and an `Either` value, if the value is a `Left` the inner value is applied to the first function,
@@ -235,14 +235,14 @@ export const match_ = E.match_
  * @category Destructors
  * @since 1.0.0
  */
-export const match = E.match
+export const match = _.match
 
 /**
  * @category Destructors
  * @since 1.0.0
  */
 export function getOrElse_<E, A, B>(pab: Either<E, A>, onLeft: (e: E) => B): A | B {
-  return isLeft(pab) ? onLeft(pab.left) : pab.right
+  return match_(pab, onLeft, identity)
 }
 
 /**
@@ -393,7 +393,7 @@ export function memento<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
  * @since 1.0.0
  */
 export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> {
-  return isLeft(fab) ? fab : isLeft(fa) ? fa : right(fab.right(fa.right))
+  return match_(fab, left, (f) => match_(fa, left, (a) => right(f(a))))
 }
 
 /**
@@ -482,7 +482,7 @@ export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Eithe
  * @since 1.0.0
  */
 export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f: (a: A, b: B) => C): Either<E | G, C> {
-  return isLeft(fa) ? fa : isLeft(fb) ? fb : right(f(fa.right, fb.right))
+  return match_(fa, left, (a) => match_(fb, left, (b) => right(f(a, b))))
 }
 
 /**
@@ -508,7 +508,7 @@ export function crossWith<A, G, B, C>(
 export function liftA2<A, B, C>(
   f: (a: A) => (b: B) => C
 ): <E>(fa: Either<E, A>) => <G>(fb: Either<G, B>) => Either<E | G, C> {
-  return (fa) => (fb) => isLeft(fa) ? left(fa.left) : isLeft(fb) ? left(fb.left) : right(f(fa.right)(fb.right))
+  return (fa) => (fb) => crossWith_(fa, fb, (a, b) => f(a)(b))
 }
 
 /*
@@ -524,7 +524,7 @@ export function liftA2<A, B, C>(
  * @since 1.0.0
  */
 export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
-  return isLeft(pab) ? right(pab.left) : left(pab.right)
+  return match_(pab, right, left)
 }
 
 /**
@@ -534,7 +534,7 @@ export function swap<E, A>(pab: Either<E, A>): Either<A, E> {
  * @since 1.0.0
  */
 export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) => B): Either<G, B> {
-  return isLeft(pab) ? left(f(pab.left)) : right(g(pab.right))
+  return match_(pab, flow(f, left), flow(g, right))
 }
 
 /**
@@ -554,7 +554,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<
  * @since 1.0.0
  */
 export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, A> {
-  return isLeft(pab) ? left(f(pab.left)) : pab
+  return bimap_(pab, f, identity)
 }
 
 /**
@@ -575,17 +575,19 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
 
 export function getCompactable<E>(M: P.Monoid<E>) {
   return HKT.instance<P.Compactable<[HKT.URI<EitherURI, V>], HKT.Fix<'E', E>>>({
-    compact: (fa) => {
-      return isLeft(fa) ? fa : fa.right._tag === 'None' ? left(M.nat) : right(fa.right.value)
-    },
-
-    separate: (fa) => {
-      return isLeft(fa)
-        ? [fa, fa]
-        : isLeft(fa.right)
-        ? [right(fa.right.left), left(M.nat)]
-        : [left(M.nat), right(fa.right.right)]
-    }
+    compact: match(
+      left,
+      O.match(() => left(M.nat), right)
+    ),
+    separate: (fa) =>
+      match_(
+        fa,
+        (e) => [left(e), left(e)],
+        match(
+          (a) => [right(a), left(M.nat)],
+          (b) => [left(M.nat), right(b)]
+        )
+      )
   })
 }
 
@@ -601,7 +603,22 @@ export function getCompactable<E>(M: P.Monoid<E>) {
  */
 export function getEq<E, A>(eqE: P.Eq<E>, eqA: P.Eq<A>): P.Eq<Either<E, A>> {
   const equals_ = (x: Either<E, A>, y: Either<E, A>) =>
-    x === y || (isLeft(x) ? isLeft(y) && eqE.equals_(x.left, y.left) : isRight(y) && eqA.equals_(x.right, y.right))
+    x === y ||
+    match_(
+      x,
+      (e1) =>
+        match_(
+          y,
+          (e2) => eqE.equals_(e1, e2),
+          () => false
+        ),
+      (a1) =>
+        match_(
+          y,
+          () => false,
+          (a2) => eqA.equals_(a1, a2)
+        )
+    )
   return {
     equals_,
     equals: (y) => (x) => equals_(x, y)
@@ -655,33 +672,35 @@ export function getFilterable<E>(M: P.Monoid<E>) {
 
   const empty = left(M.nat)
 
-  const partitionMap_: P.PartitionMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) => {
-    if (isLeft(fa)) {
-      return [fa, fa]
-    }
-    const e = f(fa.right)
-    return isLeft(e) ? [right(e.left), empty] : [empty, right(e.right)]
-  }
+  const partitionMap_: P.PartitionMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
+    match_(
+      fa,
+      (e) => [left(e), left(e)],
+      (a) =>
+        match_(
+          f(a),
+          (b) => [right(b), empty],
+          (b1) => [empty, right(b1)]
+        )
+    )
 
   const partition_: P.PartitionFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
     predicate: P.Predicate<A>
-  ): readonly [Either<E, A>, Either<E, A>] => {
-    return isLeft(fa) ? [fa, fa] : predicate(fa.right) ? [empty, right(fa.right)] : [right(fa.right), empty]
-  }
+  ): readonly [Either<E, A>, Either<E, A>] =>
+    match_(
+      fa,
+      (e) => [left(e), left(e)],
+      (a) => (predicate(a) ? [empty, right(a)] : [right(a), empty])
+    )
 
-  const filterMap_: P.FilterMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) => {
-    if (isLeft(fa)) {
-      return fa
-    }
-    const ob = f(fa.right)
-    return ob._tag === 'None' ? empty : right(ob.value)
-  }
+  const filterMap_: P.FilterMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
+    match_(fa, left, (a) => O.match_(f(a), () => empty, right))
 
   const filter_: P.FilterFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
     predicate: P.Predicate<A>
-  ): Either<E, A> => (isLeft(fa) ? fa : predicate(fa.right) ? fa : empty)
+  ): Either<E, A> => match_(fa, left, (a) => (predicate(a) ? right(a) : empty))
 
   return P.Filterable<[HKT.URI<EitherURI, V>], FixE>({
     map_,
@@ -699,7 +718,11 @@ export function getFilterable<E>(M: P.Monoid<E>) {
  */
 
 export function foldl_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B {
-  return isLeft(fa) ? b : f(b, fa.right)
+  return match_(
+    fa,
+    () => b,
+    (a) => f(b, a)
+  )
 }
 
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
@@ -707,7 +730,7 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) =
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) => M) => M {
-  return (fa, f) => (isLeft(fa) ? M.nat : f(fa.right))
+  return (fa, f) => match_(fa, () => M.nat, f)
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
@@ -715,7 +738,11 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Eithe
 }
 
 export function foldr_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B {
-  return isLeft(fa) ? b : f(fa.right, b)
+  return match_(
+    fa,
+    () => b,
+    (a) => f(a, b)
+  )
 }
 
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
@@ -735,7 +762,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) =
  * @since 1.0.0
  */
 export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
-  return isLeft(fa) ? fa : right(f(fa.right))
+  return match_(fa, left, flow(f, right))
 }
 
 /**
@@ -761,7 +788,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  * @since 1.0.0
  */
 export function bind_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
-  return isLeft(fa) ? fa : f(fa.right)
+  return match_(fa, left, f)
 }
 
 /**
@@ -836,7 +863,17 @@ export function absolve<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1,
  */
 export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>> {
   const combine_: P.CombineFn_<Either<E, A>> = (x, y) =>
-    isLeft(y) ? x : isLeft(x) ? y : right(S.combine_(x.right, y.right))
+    match_(
+      y,
+      () => x,
+      (a1) =>
+        match_(
+          x,
+          () => y,
+          (a2) => right(S.combine_(a1, a2))
+        )
+    )
+
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y)
@@ -855,7 +892,10 @@ export function getSemigroup<E, A>(S: P.Semigroup<A>): P.Semigroup<Either<E, A>>
  */
 export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either<E, A>> {
   return {
-    show: (fa) => (isLeft(fa) ? `left(${showE.show(fa.left)})` : `right(${showA.show(fa.right)})`)
+    show: match(
+      (e) => `left(${showE.show(e)})`,
+      (a) => `right(${showA.show(a)})`
+    )
   }
 }
 
@@ -872,13 +912,7 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
  * @since 1.0.0
  */
 export const traverse_ = P.implementTraverse_<URI, V>()((_) => (F) => {
-  return (ta, f) =>
-    isLeft(ta)
-      ? F.pure(left(ta.left))
-      : pipe(
-          f(ta.right),
-          F.map((b) => right(b))
-        )
+  return (ta, f) => match_(ta, flow(left, F.pure), flow(f, F.map(right)))
 })
 
 /**
@@ -1195,16 +1229,28 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<UR
   type FixE = V & HKT.Fix<'E', E>
 
   const crossWithV_: P.CrossWithFn_<URI, FixE> = (fa, fb, f) =>
-    isLeft(fa) ? (isLeft(fb) ? left(S.combine_(fa.left, fb.left)) : fa) : isLeft(fb) ? fb : right(f(fa.right, fb.right))
+    match_(
+      fa,
+      (e1) =>
+        match_(
+          fb,
+          (e2) => left(S.combine_(e1, e2)),
+          () => left(e1)
+        ),
+      (a) => match_(fb, left, (b) => right(f(a, b)))
+    )
 
   const apV_: P.ApFn_<URI, FixE> = (fab, fa) =>
-    isLeft(fab)
-      ? isLeft(fa)
-        ? left(S.combine_(fab.left, fa.left))
-        : fab
-      : isLeft(fa)
-      ? fa
-      : right(fab.right(fa.right))
+    match_(
+      fab,
+      (e1) =>
+        match_(
+          fa,
+          (e2) => left(S.combine_(e1, e2)),
+          () => left(e1)
+        ),
+      (f) => match_(fa, left, (a) => right(f(a)))
+    )
 
   return P.Applicative({
     map_,
@@ -1222,13 +1268,8 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<UR
 export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<URI, HKT.Fix<'E', E>> {
   type FixE = V & HKT.Fix<'E', E>
 
-  const altV_: P.AltFn_<URI, FixE> = (fa, that) => {
-    if (isRight(fa)) {
-      return fa
-    }
-    const ea = that()
-    return isLeft(ea) ? left(S.combine_(fa.left, ea.left)) : ea
-  }
+  const altV_: P.AltFn_<URI, FixE> = (fa, that) =>
+    match_(fa, (e1) => match_(that(), (e2) => left(S.combine_(e1, e2)), right), right)
 
   return P.Alt({
     map_,

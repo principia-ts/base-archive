@@ -6,14 +6,15 @@
 import type { Either } from './Either'
 import type { FunctionN } from './function'
 import type * as HKT from './HKT'
-import type { None, Option, Some } from './internal/Option'
+import type { Option } from './internal/Option'
 import type { OptionURI } from './Modules'
 import type { These } from './These'
 
+import { flow, identity, pipe } from './function'
 import * as G from './Guard'
-import * as _E from './internal/Either'
+import * as E from './internal/Either'
 import * as O from './internal/Option'
-import * as _T from './internal/These'
+import * as T from './internal/These'
 import * as P from './prelude'
 
 /*
@@ -23,8 +24,6 @@ import * as P from './prelude'
  */
 
 export { None, Option, Some } from './internal/Option'
-
-export type InferSome<T extends Option<any>> = T extends Some<infer A> ? A : never
 
 type URI = [HKT.URI<OptionURI>]
 
@@ -116,7 +115,7 @@ export const fromPredicate = O.fromPredicate
  * @since 1.0.0
  */
 export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
-  return ma._tag === 'Left' ? none() : some(ma.right)
+  return E.match_(ma, () => none(), some)
 }
 
 /*
@@ -125,17 +124,11 @@ export function fromEither<E, A>(ma: Either<E, A>): Option<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function isNone<A>(fa: Option<A>): fa is None {
-  return fa._tag === 'None'
-}
+export const isNone = O.isNone
 
-export function isSome<A>(fa: Option<A>): fa is Some<A> {
-  return fa._tag === 'Some'
-}
+export const isSome = O.isSome
 
-export function isOption(u: unknown): u is Option<unknown> {
-  return typeof u === 'object' && u != null && '_tag' in u && (u['_tag'] === 'Some' || u['_tag'] === 'None')
-}
+export const isOption = O.isOption
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -151,9 +144,7 @@ export function isOption(u: unknown): u is Option<unknown> {
  * @category Destructors
  * @since 1.0.0
  */
-export function match_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) => C): B | C {
-  return isNone(fa) ? onNone() : onSome(fa.value)
-}
+export const match_ = O.match_
 
 /**
  * Takes a default value, a function, and an `Option` value,
@@ -163,9 +154,7 @@ export function match_<A, B, C>(fa: Option<A>, onNone: () => B, onSome: (a: A) =
  * @category Destructors
  * @since 1.0.0
  */
-export function match<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Option<A>) => B | C {
-  return (fa) => match_(fa, onNone, onSome)
-}
+export const match = O.match
 
 /**
  * Extracts the value out of the structure, if it exists. Otherwise returns `null`.
@@ -174,7 +163,7 @@ export function match<A, B, C>(onNone: () => B, onSome: (a: A) => C): (fa: Optio
  * @since 1.0.0
  */
 export function toNullable<A>(fa: Option<A>): A | null {
-  return isNone(fa) ? null : fa.value
+  return match_(fa, () => null, identity)
 }
 
 /**
@@ -184,7 +173,7 @@ export function toNullable<A>(fa: Option<A>): A | null {
  * @since 1.0.0
  */
 export function toUndefined<A>(fa: Option<A>): A | undefined {
-  return isNone(fa) ? undefined : fa.value
+  return match_(fa, () => undefined, identity)
 }
 
 /**
@@ -210,13 +199,16 @@ export const getOrElse = O.getOrElse
  */
 
 export function alignWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (_: These<A, B>) => C): Option<C> {
-  return fa._tag === 'None'
-    ? fb._tag === 'None'
-      ? none()
-      : some(f(_T.right(fb.value)))
-    : fb._tag === 'None'
-    ? some(f(_T.left(fa.value)))
-    : some(f(_T.both(fa.value, fb.value)))
+  return match_(
+    fa,
+    () => match_(fb, none, flow(T.right, f, some)),
+    (a) =>
+      match_(
+        fb,
+        () => pipe(T.left(a), f, some),
+        (b) => pipe(T.both(a, b), f, some)
+      )
+  )
 }
 
 export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa: Option<A>) => Option<C> {
@@ -315,8 +307,8 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
 
 export function memento<A>(fa: Option<A>): Option<Either<void, A>> {
   return catchAll_(
-    map_(fa, (a) => _E.right(a)),
-    () => some(_E.left(undefined))
+    map_(fa, (a) => E.right(a)),
+    () => some(E.left(undefined))
   )
 }
 
@@ -389,7 +381,7 @@ export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function crossWith_<A, B, C>(fa: Option<A>, fb: Option<B>, f: (a: A, b: B) => C): Option<C> {
-  return fa._tag === 'Some' && fb._tag === 'Some' ? some(f(fa.value, fb.value)) : none()
+  return match_(fa, none, (a) => match_(fb, none, (b) => pipe(f(a, b), some)))
 }
 
 /**
@@ -420,8 +412,11 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (f
  */
 
 export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
-  const o = map_(fa, (e) => [getLeft(e), getRight(e)] as const)
-  return isNone(o) ? [none(), none()] : o.value
+  return pipe(
+    fa,
+    map((eb) => P.tuple(getLeft(eb), getRight(eb))),
+    match(() => [none(), none()], identity)
+  )
 }
 
 export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
@@ -433,7 +428,20 @@ export const compact: <A>(ta: Option<Option<A>>) => Option<A> = flatten
  */
 
 export function getEq<A>(E: P.Eq<A>): P.Eq<Option<A>> {
-  return P.Eq((x, y) => (x === y || isNone(x) ? isNone(y) : isNone(y) ? false : E.equals_(x.value, y.value)))
+  return P.Eq(
+    (x, y) =>
+      x === y ||
+      match_(
+        x,
+        () => isNone(y),
+        (a1) =>
+          match_(
+            y,
+            () => false,
+            (a2) => E.equals_(a1, a2)
+          )
+      )
+  )
 }
 
 /*
@@ -466,7 +474,7 @@ export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
 export function filter_<A, B extends A>(fa: Option<A>, refinement: P.Refinement<A, B>): Option<B>
 export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A>
 export function filter_<A>(fa: Option<A>, predicate: P.Predicate<A>): Option<A> {
-  return isNone(fa) ? none() : predicate(fa.value) ? fa : none()
+  return match_(fa, none, (a) => (predicate(a) ? fa : none()))
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: Option<A>) => Option<B>
@@ -503,7 +511,7 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Option<A>
 /**
  */
 export function filterMap_<A, B>(fa: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(fa) ? none() : f(fa.value)
+  return match_(fa, none, f)
 }
 
 /**
@@ -515,7 +523,11 @@ export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: Option<A>) => Opti
 /**
  */
 export function foldl_<A, B>(fa: Option<A>, b: B, f: (b: B, a: A) => B): B {
-  return isNone(fa) ? b : f(b, fa.value)
+  return match_(
+    fa,
+    () => b,
+    (a) => f(b, a)
+  )
 }
 
 /**
@@ -527,7 +539,11 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Option<A>) => B {
 /**
  */
 export function foldr_<A, B>(fa: Option<A>, b: B, f: (a: A, b: B) => B): B {
-  return isNone(fa) ? b : f(fa.value, b)
+  return match_(
+    fa,
+    () => b,
+    (a) => f(a, b)
+  )
 }
 
 /**
@@ -539,7 +555,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
 /**
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
-  return (fa, f) => (isNone(fa) ? M.nat : f(fa.value))
+  return (fa, f) => match_(fa, () => M.nat, f)
 }
 
 /**
@@ -561,7 +577,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Option<A
  * @since 1.0.0
  */
 export function map_<A, B>(fa: Option<A>, f: (a: A) => B): Option<B> {
-  return isNone(fa) ? fa : some(f(fa.value))
+  return match_(fa, none, flow(f, some))
 }
 
 /**
@@ -587,7 +603,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * @since 1.0.0
  */
 export function bind_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
-  return isNone(ma) ? ma : f(ma.value)
+  return match_(ma, none, f)
 }
 
 /**
@@ -644,7 +660,7 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
  */
 
 export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
-  return bind_(fa, (a) => (a._tag === 'Left' ? none() : some(a.right)))
+  return bind_(fa, E.match(none, some))
 }
 
 /*
@@ -677,7 +693,12 @@ export function getLastMonoid<A = never>(): P.Monoid<Option<A>> {
 }
 
 export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Option<A>> {
-  const combine_ = (x: Option<A>, y: Option<A>) => (isNone(x) ? y : isNone(y) ? x : some(S.combine_(x.value, y.value)))
+  const combine_ = (x: Option<A>, y: Option<A>) =>
+    match_(
+      x,
+      () => y,
+      (a1) => match_(y, none, (a2) => some(S.combine_(a1, a2)))
+    )
   return {
     combine_,
     combine: (y) => (x) => combine_(x, y),
@@ -708,7 +729,10 @@ export function getApplySemigroup<A>(S: P.Semigroup<A>): P.Semigroup<Option<A>> 
 
 export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
   return {
-    show: (a) => (isNone(a) ? 'None' : `Some(${S.show(a.value)})`)
+    show: match(
+      () => 'None',
+      (a) => `Some(${S.show(a)})`
+    )
   }
 }
 
@@ -724,8 +748,7 @@ export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) =>
-  isNone(ta) ? G.pure(none()) : P.pipe(f(ta.value), G.map(some))
+export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) => match_(ta, flow(none, G.pure), flow(f, G.map(some)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -741,7 +764,7 @@ export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI> = (G) => (fa) => isNone(fa) ? G.pure(none()) : P.pipe(fa.value, G.map(some))
+export const sequence: P.SequenceFn<URI> = (G) => (fa) => traverse_(G)(fa, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -759,20 +782,21 @@ export function unit(): Option<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => isNone(wa) ? A.pure(none()) : f(wa.value)
+export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => match_(wa, flow(none, A.pure), f)
 
 export const compactA: P.WitherFn<URI> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) => {
-  const o = map_(
+export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) =>
+  pipe(
     wa,
-    P.flow(
-      f,
-      A.map((e) => P.tuple(getLeft(e), getRight(e)))
-    )
+    map(
+      flow(
+        f,
+        A.map((e) => P.tuple(getLeft(e), getRight(e)))
+      )
+    ),
+    getOrElse(() => A.pure(P.tuple(none(), none())))
   )
-  return isNone(o) ? A.pure(P.tuple(none(), none())) : o.value
-}
 
 export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
@@ -789,7 +813,7 @@ export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, 
  * @since 1.0.0
  */
 export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
-  return isNone(fa) ? none() : fromNullable(f(fa.value))
+  return match_(fa, none, flow(f, fromNullable))
 }
 
 /**
@@ -829,7 +853,7 @@ export function orElse<B>(onNone: () => Option<B>): <A>(fa: Option<A>) => Option
  * @since 1.0.0
  */
 export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
-  return fea._tag === 'Right' ? none() : some(fea.left)
+  return E.match_(fea, some, none)
 }
 
 /**
@@ -839,7 +863,7 @@ export function getLeft<E, A>(fea: Either<E, A>): Option<E> {
  * @since 1.0.0
  */
 export function getRight<E, A>(fea: Either<E, A>): Option<A> {
-  return fea._tag === 'Left' ? none() : some(fea.right)
+  return E.match_(fea, none, some)
 }
 
 /*
@@ -849,7 +873,7 @@ export function getRight<E, A>(fea: Either<E, A>): Option<A> {
  */
 
 export function getGuard<A>(guard: G.Guard<unknown, A>): G.Guard<unknown, Option<A>> {
-  return G.Guard((u): u is Option<A> => isOption(u) && (u._tag === 'None' || guard.is(u.value)))
+  return G.Guard((u): u is Option<A> => isOption(u) && match_(u, () => true, guard.is))
 }
 
 /*

@@ -8,24 +8,32 @@ export type EitherTypeId = typeof EitherTypeId
 const _leftHash  = hashString('@principia/base/Either/Left')
 const _rightHash = hashString('@principia/base/Either/Right')
 
-export class Left<E> {
+export abstract class EitherSyntax<E, A> {
   readonly [EitherTypeId]: EitherTypeId = EitherTypeId
-  readonly _tag                         = 'Left'
-  constructor(readonly left: E) {}
+  readonly _E!: () => E
+  readonly _A!: () => A
+}
+
+export class Left<E> extends EitherSyntax<E, never> {
+  readonly _tag = 'Left'
+  constructor(readonly left: E) {
+    super()
+  }
   [$equals](that: unknown): boolean {
-    return isLeft(that) && equals(this.left, that.left)
+    return isEither(that) && isLeft(that) && equals(this.left, that.left)
   }
   get [$hash](): number {
     return combineHash(_leftHash, hash(this.left))
   }
 }
 
-export class Right<A> {
-  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
-  readonly _tag                         = 'Right'
-  constructor(readonly right: A) {}
+export class Right<A> extends EitherSyntax<never, A> {
+  readonly _tag = 'Right'
+  constructor(readonly right: A) {
+    super()
+  }
   [$equals](that: unknown): boolean {
-    return isRight(that) && equals(this.right, that.right)
+    return isEither(that) && isRight(that) && equals(this.right, that.right)
   }
   get [$hash]() {
     return combineHash(_rightHash, hash(this.right))
@@ -37,28 +45,28 @@ export type Either<E, A> = Left<E> | Right<A>
 /**
  * @internal
  */
-function isEither(u: unknown): u is Either<unknown, unknown> {
+export function isEither(u: unknown): u is Either<unknown, unknown> {
   return isObject(u) && EitherTypeId in u
 }
 
 /**
  * @internal
  */
-function isLeft(u: unknown): u is Left<unknown> {
-  return isEither(u) && u._tag === 'Left'
+export function isLeft<E, A>(u: Either<E, A>): u is Left<E> {
+  return u._tag === 'Left'
 }
 
 /**
  * @internal
  */
-function isRight(u: unknown): u is Right<unknown> {
-  return isEither(u) && u._tag === 'Right'
+export function isRight<E, A>(u: Either<E, A>): u is Right<A> {
+  return u._tag === 'Right'
 }
 
 /**
  * @internal
  */
-export function left<E, A = never>(e: E): Either<E, A> {
+export function left<E = never, A = never>(e: E): Either<E, A> {
   return new Left(e)
 }
 

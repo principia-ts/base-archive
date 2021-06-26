@@ -9,6 +9,7 @@ import type { Refinement } from '../Refinement'
 import type { These } from '../These'
 
 import * as A from '../Array/core'
+import * as E from '../Either'
 import { pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
@@ -1390,7 +1391,7 @@ export function ifilterMap_<A, B>(fa: Chunk<A>, f: (i: number, a: A) => O.Option
     const array = result.value
     for (let j = 0; j < array.length; j++) {
       const ob = f(i, array[j])
-      if (ob._tag === 'Some') {
+      if (O.isSome(ob)) {
         out.append(ob.value)
       }
       i++
@@ -1479,14 +1480,11 @@ export function ipartitionMap_<A, B, C>(
     const array = result.value
     for (let j = 0; j < array.length; j++) {
       const eab = f(i, array[j])
-      switch (eab._tag) {
-        case 'Left':
-          left.append(eab.left)
-          break
-        case 'Right':
-          right.append(eab.right)
-          break
-      }
+      E.match_(
+        eab,
+        (b) => left.append(b),
+        (c) => right.append(c)
+      )
       i++
     }
   }
@@ -1509,14 +1507,11 @@ export function partitionMap_<A, B, C>(fa: Chunk<A>, f: (a: A) => Either<B, C>):
     const array = result.value
     for (let i = 0; i < array.length; i++) {
       const eab = f(array[i])
-      switch (eab._tag) {
-        case 'Left':
-          left.append(eab.left)
-          break
-        case 'Right':
-          right.append(eab.right)
-          break
-      }
+      E.match_(
+        eab,
+        (b) => left.append(b),
+        (c) => right.append(c)
+      )
     }
   }
   return [left.result(), right.result()]
@@ -1627,15 +1622,11 @@ export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chu
     const len   = array.length
     for (let i = 0; i < len; i++) {
       const ea = array[i]
-      switch (ea._tag) {
-        case 'Left': {
-          left.append(ea.left)
-          break
-        }
-        case 'Right': {
-          right.append(ea.right)
-        }
-      }
+      E.match_(
+        ea,
+        (e) => left.append(e),
+        (a) => right.append(a)
+      )
     }
   }
   return [left.result(), right.result()]
@@ -1735,7 +1726,7 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const mt = f(bb)
-    if (mt._tag === 'Some') {
+    if (O.isSome(mt)) {
       const [a, b] = mt.value
       out.append(a)
       bb = b
@@ -1971,10 +1962,10 @@ export function find_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
   const iterator = as.arrayIterator()
   let out        = O.none<A>()
   let result: IteratorResult<ArrayLike<A>>
-  while (out._tag === 'None' && !(result = iterator.next()).done) {
+  while (O.isNone(out) && !(result = iterator.next()).done) {
     const array  = result.value
     const length = array.length
-    for (let i = 0; out._tag === 'None' && i < length; i++) {
+    for (let i = 0; O.isNone(out) && i < length; i++) {
       const a = array[i]
       if (f(a)) {
         out = O.some(a)

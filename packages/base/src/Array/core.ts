@@ -12,6 +12,7 @@ import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
 import * as HKT from '../HKT'
 import * as _ from '../internal/Array'
+import * as E from '../internal/Either'
 import * as Th from '../internal/These'
 import * as NEA from '../NonEmptyArray/core'
 import * as N from '../number'
@@ -293,15 +294,19 @@ export function compact<A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> {
  */
 export function separate<E, A>(fa: ReadonlyArray<Either<E, A>>): readonly [ReadonlyArray<E>, ReadonlyArray<A>] {
   const len   = fa.length
-  const left  = []
-  const right = []
+  const left  = [] as Array<E>
+  const right = [] as Array<A>
   for (let i = 0; i < len; i++) {
-    const e = fa[i]
-    if (e._tag === 'Left') {
-      left.push(e.left)
-    } else {
-      right.push(e.right)
-    }
+    const ea = fa[i]
+    E.match_(
+      ea,
+      (e) => {
+        left.push(e)
+      },
+      (a) => {
+        right.push(a)
+      }
+    )
   }
   return [left, right]
 }
@@ -418,7 +423,7 @@ export function ifilterMap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => 
   const result = []
   for (let i = 0; i < fa.length; i++) {
     const optionB = f(i, fa[i])
-    if (optionB._tag === 'Some') {
+    if (O.isSome(optionB)) {
       result.push(optionB.value)
     }
   }
@@ -537,15 +542,19 @@ export function ipartitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
   f: (i: number, a: A) => Either<B, C>
 ): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  const left  = []
-  const right = []
+  const left  = [] as Array<B>
+  const right = [] as Array<C>
   for (let i = 0; i < ta.length; i++) {
-    const e = f(i, ta[i])
-    if (e._tag === 'Left') {
-      left.push(e.left)
-    } else {
-      right.push(e.right)
-    }
+    const ea = f(i, ta[i])
+    E.match_(
+      ea,
+      (b) => {
+        left.push(b)
+      },
+      (c) => {
+        right.push(c)
+      }
+    )
   }
   return [left, right]
 }
@@ -1031,7 +1040,7 @@ export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): Readon
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     const mt = f(bb)
-    if (mt._tag === 'Some') {
+    if (O.isSome(mt)) {
       const [a, b] = mt.value
       ret.push(a)
       bb = b
@@ -1205,7 +1214,7 @@ export function collectWhile_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>
   const result: Array<B> = []
   for (let i = 0; i < as.length; i++) {
     const o = f(as[i])
-    if (o._tag === 'Some') {
+    if (O.isSome(o)) {
       result.push(o.value)
     } else {
       break
@@ -1852,7 +1861,7 @@ export function lefts<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<E> {
   const ls: Array<E> = []
   for (let i = 0; i < as.length; i++) {
     const a = as[i]
-    if (a._tag === 'Left') {
+    if (E.isLeft(a)) {
       ls.push(a.left)
     }
   }
@@ -1991,7 +2000,7 @@ export function rights<E, A>(as: ReadonlyArray<Either<E, A>>): ReadonlyArray<A> 
   const rs: Array<A> = []
   for (let i = 0; i < as.length; i++) {
     const a = as[i]
-    if (a._tag === 'Right') {
+    if (E.isRight(a)) {
       rs.push(a.right)
     }
   }
@@ -2613,7 +2622,7 @@ const adapter: {
   new GenLazyHKT(() => {
     const x = _()
     if (O.isOption(x)) {
-      return new GenLazyHKT(() => (x._tag === 'None' ? [] : [x.value]))
+      return new GenLazyHKT(() => O.match_(x, () => [], pure))
     }
     return x
   })

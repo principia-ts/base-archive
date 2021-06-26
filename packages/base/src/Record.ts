@@ -1,4 +1,3 @@
-import type * as E from './Either'
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
@@ -6,6 +5,7 @@ import type { Predicate, PredicateWithIndex } from './Predicate'
 import type { Refinement, RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
 
+import * as E from './Either'
 import * as G from './Guard'
 import * as O from './Option'
 import * as P from './prelude'
@@ -361,7 +361,7 @@ export function ifilterMap_<N extends string, A, B>(
   for (let i = 0; i < ks.length; i++) {
     const key     = ks[i]
     const optionB = f(key, fa[key])
-    if (optionB._tag === 'Some') {
+    if (O.isSome(optionB)) {
       mut_r[key] = optionB.value
     }
   }
@@ -473,14 +473,15 @@ export function ipartitionMap_<N extends string, A, B, C>(
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const e   = f(key, fa[key])
-    switch (e._tag) {
-      case 'Left':
-        mut_left[key] = e.left
-        break
-      case 'Right':
-        mut_right[key] = e.right
-        break
-    }
+    E.match_(
+      e,
+      (b) => {
+        mut_left[key] = b
+      },
+      (c) => {
+        mut_right[key] = c
+      }
+    )
   }
   return [mut_left, mut_right]
 }
@@ -907,7 +908,7 @@ export function modifyAt<A>(
 export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<readonly [A, ReadonlyRecord<string, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
-  return O.isNone(oa) ? O.none() : O.some([oa.value, deleteAtk(r)])
+  return O.match_(oa, O.none, (a) => O.some([a, deleteAtk(r)]))
 }
 
 export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {
