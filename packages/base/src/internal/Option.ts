@@ -1,7 +1,5 @@
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
-import type { Equatable } from '../Structural/Equatable'
-import type { Hashable } from '../Structural/Hashable'
 
 import { identity } from '../function'
 import { $equals, equals } from '../Structural/Equatable'
@@ -15,17 +13,11 @@ const _noneHash = hashString('@principia/base/Option/None')
 
 const _someHash = hashString('@principia/base/Option/Some')
 
-export abstract class OptionSyntax<A> {
-  readonly _A!: () => A;
-  readonly [OptionTypeId]: OptionTypeId = OptionTypeId;
-}
-
-export class None extends OptionSyntax<never> {
-  readonly _tag = 'None'
+export class None {
+  readonly [OptionTypeId]: OptionTypeId = OptionTypeId
+  readonly _tag                         = 'None'
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  constructor() {
-    super()
-  }
+  constructor() {}
   [$equals](that: unknown): boolean {
     return isOption(that) && isNone(that)
   }
@@ -34,12 +26,10 @@ export class None extends OptionSyntax<never> {
   }
 }
 
-export class Some<A> extends OptionSyntax<A> {
+export class Some<A> {
   readonly [OptionTypeId]: OptionTypeId = OptionTypeId
   readonly _tag                         = 'Some'
-  constructor(readonly value: A) {
-    super()
-  }
+  constructor(readonly value: A) {}
   [$equals](that: unknown): boolean {
     return isOption(that) && isSome(that) && equals(this.value, that.value)
   }

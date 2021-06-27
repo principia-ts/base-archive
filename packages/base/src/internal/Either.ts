@@ -8,17 +8,10 @@ export type EitherTypeId = typeof EitherTypeId
 const _leftHash  = hashString('@principia/base/Either/Left')
 const _rightHash = hashString('@principia/base/Either/Right')
 
-export abstract class EitherSyntax<E, A> {
+export class Left<E> {
   readonly [EitherTypeId]: EitherTypeId = EitherTypeId
-  readonly _E!: () => E
-  readonly _A!: () => A
-}
-
-export class Left<E> extends EitherSyntax<E, never> {
-  readonly _tag = 'Left'
-  constructor(readonly left: E) {
-    super()
-  }
+  readonly _tag                         = 'Left'
+  constructor(readonly left: E) {}
   [$equals](that: unknown): boolean {
     return isEither(that) && isLeft(that) && equals(this.left, that.left)
   }
@@ -27,11 +20,10 @@ export class Left<E> extends EitherSyntax<E, never> {
   }
 }
 
-export class Right<A> extends EitherSyntax<never, A> {
-  readonly _tag = 'Right'
-  constructor(readonly right: A) {
-    super()
-  }
+export class Right<A> {
+  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
+  readonly _tag                         = 'Right'
+  constructor(readonly right: A) {}
   [$equals](that: unknown): boolean {
     return isEither(that) && isRight(that) && equals(this.right, that.right)
   }
