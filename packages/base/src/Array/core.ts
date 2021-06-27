@@ -660,6 +660,14 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
+export function ifoldMap__<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
+  return ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+}
+
+/**
+ * @category FoldableWithIndex
+ * @since 1.0.0
+ */
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
   return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
@@ -670,6 +678,14 @@ export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: n
  */
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+/**
+ * @category Foldable
+ * @since 1.0.0
+ */
+export function foldMap__<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return ifoldMap__(fa, M, (_, a) => f(a))
 }
 
 /**
@@ -687,6 +703,14 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (a: A)
  */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
+}
+
+/**
+ * @category Foldable
+ * @since 1.0.0
+ */
+export function fold_<M>(fa: ReadonlyArray<M>, M: P.Monoid<M>): M {
+  return ifoldl_(fa, M.nat, (b, _, a) => M.combine_(b, a))
 }
 
 /**
@@ -958,6 +982,14 @@ export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
+export const itraverse__ = P.implementTraverseWithIndex__<[HKT.URI<ArrayURI>]>()(
+  (_) => (ta, G, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
+)
+
+/**
+ * @category TraversableWithIndex
+ * @since 1.0.0
+ */
 export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
   return (ta, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
 })
@@ -980,6 +1012,14 @@ export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<ArrayURI>]> = (M) => {
   const imapAccum_ = imapAccumM_(M)
   return (s, f) => (ta) => imapAccum_(ta, s, f)
 }
+
+/**
+ * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
+ *
+ * @category Traversable
+ * @since 1.0.0
+ */
+export const traverse__: P.TraverseFn__<[HKT.URI<ArrayURI>]> = (ta, A, f) => itraverse__(ta, A, (_, a) => f(a))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results

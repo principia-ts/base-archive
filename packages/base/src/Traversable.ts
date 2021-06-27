@@ -59,6 +59,37 @@ export function getTraversableComposition<F extends HKT.URIS, G extends HKT.URIS
   })
 }
 
+export interface TraverseFn__<F extends HKT.URIS, CF = HKT.Auto> {
+  <
+    G extends HKT.URIS,
+    FN extends string,
+    FK,
+    FQ,
+    FW,
+    FX,
+    FI,
+    FS,
+    FR,
+    FE,
+    GN extends string,
+    GK,
+    GQ,
+    GW,
+    GX,
+    GI,
+    GS,
+    GR,
+    GE,
+    A,
+    B,
+    CG = HKT.Auto
+  >(
+    ta: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
+    A: Applicative<G, CG>,
+    f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
+  ): HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
+}
+
 export interface TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
     f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
