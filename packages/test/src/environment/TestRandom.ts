@@ -226,7 +226,7 @@ export class TestRandom implements Random {
     return L.fromIO(ClockTag)(I.askService(ClockTag))
       ['+++'](this.determinictic)
       ['>>>'](
-        L.fromRawFunctionM((env: Has<Clock> & Has<Random> & Has<TestRandom>) => {
+        L.fromRawFunctionIO((env: Has<Clock> & Has<Random> & Has<TestRandom>) => {
           const random     = RandomTag.read(env)
           const testRandom = TestRandomTag.read(env)
           return I.gen(function* (_) {
