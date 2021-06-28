@@ -128,7 +128,7 @@ export function crossWith_<A, B, C>(
   fb: AsyncIterable<B>,
   f: (a: A, b: B) => C
 ): AsyncIterable<C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(
@@ -143,7 +143,7 @@ export function crossWithPromise_<A, B, C>(
   fb: AsyncIterable<B>,
   f: (a: A, b: B) => Promise<C>
 ): AsyncIterable<C> {
-  return bind_(fa, (a) => mapPromise_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => mapPromise_(fb, (b) => f(a, b)))
 }
 
 export function cross_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIterable<readonly [A, B]> {
@@ -155,7 +155,7 @@ export function cross<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => Asy
 }
 
 export function ap_<A, B>(fab: AsyncIterable<(a: A) => B>, fa: AsyncIterable<A>): AsyncIterable<B> {
-  return bind_(fab, (f) => map_(fa, (a) => f(a)))
+  return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => B>) => AsyncIterable<B> {
@@ -163,7 +163,7 @@ export function ap<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => B>
 }
 
 export function apPromise_<A, B>(fab: AsyncIterable<(a: A) => Promise<B>>, fa: AsyncIterable<A>): AsyncIterable<B> {
-  return bind_(fab, (f) => mapPromise_(fa, (a) => f(a)))
+  return chain_(fab, (f) => mapPromise_(fa, (a) => f(a)))
 }
 
 export function apPromise<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => Promise<B>>) => AsyncIterable<B> {
@@ -479,7 +479,7 @@ export function mapPromise<A, B>(f: (a: A) => Promise<B>): (fa: AsyncIterable<A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>): AsyncIterable<B> {
+export function chain_<A, B>(ma: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>): AsyncIterable<B> {
   return asyncIterable(async function* () {
     for await (const a of ma) {
       yield* f(a)
@@ -487,12 +487,12 @@ export function bind_<A, B>(ma: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>)
   })
 }
 
-export function bind<A, B>(f: (a: A) => AsyncIterable<B>): (ma: AsyncIterable<A>) => AsyncIterable<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => AsyncIterable<B>): (ma: AsyncIterable<A>) => AsyncIterable<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: AsyncIterable<AsyncIterable<A>>): AsyncIterable<A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -609,7 +609,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 

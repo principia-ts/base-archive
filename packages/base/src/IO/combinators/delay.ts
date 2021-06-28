@@ -4,7 +4,7 @@ import type { IO } from '../core'
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { Clock } from '../../Clock'
-import { bind_ } from '../core'
+import { chain_ } from '../core'
 
 /**
  * Delays an `IO` by an arbitrary number of milliseconds
@@ -16,7 +16,7 @@ import { bind_ } from '../core'
  */
 export function delay_<R, E, A>(ma: IO<R, E, A>, ms: number): IO<R & Has<Clock>, E, A> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     Clock.sleep(ms),
     traceFrom(trace, () => ma)
   )

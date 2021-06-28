@@ -29,7 +29,6 @@ import * as C from '../Cause/core'
 import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
-import * as Ev from '../Eval/core'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
 import { constant, flow, identity, pipe } from '../function'
@@ -42,7 +41,7 @@ import * as R from '../Record'
 import * as S from '../Sync'
 import { tuple } from '../tuple'
 import {
-  Bind,
+  Chain,
   CheckDescriptor,
   DeferMaybeWith,
   DeferPartialWith,
@@ -453,7 +452,7 @@ export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
  * @trace 0
  */
 export function fromEitherWith<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return bind_(succeedWith(f), E.match(fail, succeed))
+  return chain_(succeedWith(f), E.match(fail, succeed))
 }
 
 /**
@@ -481,7 +480,7 @@ export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
  * @trace 0
  */
 export function fromOptionWith<A>(m: () => Option<A>): FIO<Option<never>, A> {
-  return bind_(
+  return chain_(
     succeedWith(m),
     O.match(() => fail(O.none()), succeed)
   )
@@ -671,7 +670,7 @@ export function cross<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) 
  * @trace call
  */
 export function ap_<R, E, A, R1, E1, B>(fab: IO<R1, E1, (a: A) => B>, fa: IO<R, E, A>): IO<R1 & R, E1 | E, B> {
-  return bind_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -691,7 +690,7 @@ export function ap<R, E, A>(fa: IO<R, E, A>): <R1, E1, B>(fab: IO<R1, E1, (a: A)
  * @trace call
  */
 export function apl_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
-  return bind_(fa, (a) => map_(fb, () => a))
+  return chain_(fa, (a) => map_(fb, () => a))
 }
 
 /**
@@ -711,7 +710,7 @@ export function apl<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) =>
  * @trace call
  */
 export function apr_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
-  return bind_(fa, () => fb)
+  return chain_(fa, () => fb)
 }
 
 /**
@@ -735,7 +734,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   fb: IO<R1, E1, B>,
   f: (a: A, b: B) => C
 ): IO<R1 & R, E1 | E, C> {
-  return bind_(fa, (ra) =>
+  return chain_(fa, (ra) =>
     map_(
       fb,
       traceAs(f, (rb) => f(ra, rb))
@@ -838,7 +837,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  */
 export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(ma, traceFrom(trace, E.match(fail, succeed)))
+  return chain_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
 
 /**
@@ -1028,7 +1027,7 @@ export function matchTraceIO<E, A, R1, E1, A1, R2, E2, A2>(
  * @trace 1
  */
 export function map_<R, E, A, B>(fa: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-  return bind_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 /**
@@ -1064,8 +1063,8 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  *
  * @trace 1
  */
-export function bind_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-  return new Bind(ma, f)
+export function chain_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
+  return new Chain(ma, f)
 }
 
 /**
@@ -1078,11 +1077,11 @@ export function bind_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => IO<R1, E
  * @category Monad
  * @since 1.0.0
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  * @trace 0
  */
-export function bind<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -1102,7 +1101,7 @@ export function bitap_<R, E, A, R1, E1, R2, E2>(
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => bind_(onFailure(e), () => halt(c)),
+        (e) => chain_(onFailure(e), () => halt(c)),
         (_) => halt(c)
       ),
     (a) => pipe(onSuccess(a), apr(succeed(a)))
@@ -1131,7 +1130,7 @@ export function bitap<E, A, R1, E1, R2, E2>(
  * @since 1.0.0
  */
 export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>): IO<R & R1, E | E1, A> {
-  return bind_(ffa, identity)
+  return chain_(ffa, identity)
 }
 
 /**
@@ -1146,7 +1145,7 @@ export function flatten<R, E, R1, E1, A>(ffa: IO<R, E, IO<R1, E1, A>>): IO<R & R
  * @trace 1
  */
 export function tap_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
-  return bind_(
+  return chain_(
     fa,
     traceAs(f, (a) =>
       pipe(
@@ -1184,7 +1183,7 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => bind_(f(e), () => halt(c)),
+        (e) => chain_(f(e), () => halt(c)),
         (_) => halt(c)
       ),
     pure
@@ -1374,7 +1373,7 @@ export function bindS<R, E, A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return bind(
+  return chain(
     traceAs(f, (a) =>
       pipe(
         f(a),
@@ -1493,7 +1492,7 @@ export function asSomeError<R, E, A>(ma: IO<R, E, A>): IO<R, O.Option<E>, A> {
  * @since 1.0.0
  */
 export function asUnit<R, E>(ma: IO<R, E, any>): IO<R, E, void> {
-  return bind_(ma, () => unit())
+  return chain_(ma, () => unit())
 }
 
 /**
@@ -1811,7 +1810,7 @@ export function collectIO_<R, E, A, R1, E1, A1, E2>(
   f: () => E2,
   pf: (a: A) => Option<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1 | E2, A1> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(
       pf,
@@ -1841,7 +1840,7 @@ export function collectIO<A, R1, E1, A1, E2>(
  */
 export function composel_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     that,
     traceFrom(trace, (r) => giveAll_(me, r))
   )
@@ -1861,7 +1860,7 @@ export function composel<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>
  */
 export function composer_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
   const trace = accessCallTrace()
-  return pipe(ra, bind(traceFrom(trace, (a) => giveAll_(ab, a))))
+  return pipe(ra, chain(traceFrom(trace, (a) => giveAll_(ab, a))))
 }
 
 /**
@@ -1874,7 +1873,7 @@ export function composer<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) =>
 }
 
 export function condIO_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
-  return b ? onTrue : bind_(onFalse, fail)
+  return b ? onTrue : chain_(onFalse, fail)
 }
 
 /**
@@ -2051,7 +2050,7 @@ export function filterOrElse_<R, E, A, R1, E1, A1>(
   or: unknown
 ): IO<R & R1, E | E1, A | A1> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     fa,
     (a): IO<R1, E1, A | A1> =>
       predicate(a) ? traceCall(succeed, trace)(a) : defer(traceFrom(trace, () => (or as (a: A) => IO<R1, E1, A1>)(a)))
@@ -2224,16 +2223,16 @@ export function firstSuccess<R, E, A>(mas: NonEmptyArray<IO<R, E, A>>): IO<R, E,
 /**
  * @trace 1
  */
-export function bindError_<R, R1, E, E1, A>(ma: IO<R, E, A>, f: (e: E) => IO<R1, never, E1>): IO<R & R1, E1, A> {
-  return swapWith_(ma, bind(f))
+export function chainError_<R, R1, E, E1, A>(ma: IO<R, E, A>, f: (e: E) => IO<R1, never, E1>): IO<R & R1, E1, A> {
+  return swapWith_(ma, chain(f))
 }
 
 /**
- * @dataFirst bindError_
+ * @dataFirst chainError_
  * @trace 0
  */
-export function bindError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A> {
-  return (ma) => bindError_(ma, f)
+export function chainError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E1, A> {
+  return (ma) => chainError_(ma, f)
 }
 
 /**
@@ -2252,7 +2251,7 @@ export function foreachUnit_<R, E, A, A1>(as: Iterable<A>, f: (a: A) => IO<R, E,
   return I.foldMap_(
     P.Monoid<IO<R, E, void>>(
       (x, y) =>
-        bind_(
+        chain_(
           x,
           traceAs(f, () => y)
         ),
@@ -2330,7 +2329,7 @@ export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>)
  */
 export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B> {
   return I.foldl_(as, succeed(b) as IO<R, E, B>, (acc, el) =>
-    bind_(
+    chain_(
       acc,
       traceAs(f, (a) => f(a, el))
     )
@@ -2555,7 +2554,7 @@ export function getOrElseIO_<R, E, A, R1, E1, B>(
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
   const trace = accessCallTrace()
-  return bind_(ma as IO<R, E, Option<A | B>>, traceFrom(trace, flow(O.map(succeed), O.getOrElse(constant(orElse)))))
+  return chain_(ma as IO<R, E, Option<A | B>>, traceFrom(trace, flow(O.map(succeed), O.getOrElse(constant(orElse)))))
 }
 
 /**
@@ -2641,7 +2640,7 @@ export function ifIO_<R, E, R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return bind_(mb, (b) =>
+  return chain_(mb, (b) =>
     b
       ? defer(traceAs(onTrue, () => onTrue() as IO<R & R1 & R2, E | E1 | E2, A1 | A2>))
       : defer(traceAs(onFalse, () => onFalse()))
@@ -2744,7 +2743,7 @@ export function isSuccess<R, E, A>(ma: IO<R, E, A>): IO<R, never, boolean> {
  */
 export function iterate_<R, E, A>(initial: A, cont: (a: A) => boolean, body: (a: A) => IO<R, E, A>): IO<R, E, A> {
   return cont(initial)
-    ? bind_(
+    ? chain_(
         body(initial),
         traceAs(body, (a) => iterate_(a, cont, body))
       )
@@ -2846,7 +2845,7 @@ export function joinEither<R1, E1, A1>(
  *  @trace 0
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return bind_(succeedWith(a), flow(E.left, pure))
+  return chain_(succeedWith(a), flow(E.left, pure))
 }
 
 /**
@@ -2874,7 +2873,7 @@ export function loop_<A, R, E, B>(
   body: (b: A) => IO<R, E, B>
 ): IO<R, E, ReadonlyArray<B>> {
   if (cont(initial)) {
-    return bind_(
+    return chain_(
       body(initial),
       traceAs(body, (a) =>
         pipe(
@@ -2913,7 +2912,7 @@ export function loopUnit_<A, R, E>(
   if (cont(initial)) {
     return pipe(
       body(initial),
-      bind(() => loop_(inc(initial), cont, inc, body)),
+      chain(() => loop_(inc(initial), cont, inc, body)),
       asUnit
     )
   } else {
@@ -2929,7 +2928,7 @@ export function mapEffectCatch_<R, E, A, E1, B>(
   f: (a: A) => B,
   onThrow: (u: unknown) => E1
 ): IO<R, E | E1, B> {
-  return bind_(
+  return chain_(
     io,
     traceAs(f, (a) => tryCatch_(() => f(a), onThrow))
   )
@@ -3057,7 +3056,7 @@ export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
  */
 export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return matchCauseIO_(ma, traceFrom(trace, flow(C.bind(C.die), halt)), succeed)
+  return matchCauseIO_(ma, traceFrom(trace, flow(C.chain(C.die), halt)), succeed)
 }
 
 /**
@@ -3347,9 +3346,9 @@ export function rejectIO_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   pf: (a: A) => Option<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
-  return bind_(
+  return chain_(
     fa,
-    traceAs(pf, (a) => O.match_(pf(a), () => pure(a), bind(fail)))
+    traceAs(pf, (a) => O.match_(pf(a), () => pure(a), chain(fail)))
   )
 }
 
@@ -3374,7 +3373,7 @@ export function rejectIO<R1, E1, A>(
  * @internal
  */
 function _repeatN<R, E, A>(ma: IO<R, E, A>, n: number, __trace: string | undefined): IO<R, E, A> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(__trace, (a) => (n <= 0 ? succeed(a) : _repeatN(ma, n - 1, __trace)))
   )
@@ -3434,9 +3433,9 @@ export function repeatUntilIO_<R, E, A, R1, E1>(
   ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return bind_(
+  return chain_(
     ma,
-    traceAs(f, (a) => bind_(f(a), (b) => (b ? pure(a) : repeatUntilIO_(ma, f))))
+    traceAs(f, (a) => chain_(f(a), (b) => (b ? pure(a) : repeatUntilIO_(ma, f))))
   )
 }
 
@@ -3480,9 +3479,9 @@ export function repeatWhileIO_<R, E, A, R1, E1>(
   ma: IO<R, E, A>,
   f: (a: A) => IO<R1, E1, boolean>
 ): IO<R & R1, E | E1, A> {
-  return bind_(
+  return chain_(
     ma,
-    traceAs(f, (a) => bind_(f(a), (b) => (b ? repeatWhileIO_(ma, f) : succeed(a))))
+    traceAs(f, (a) => chain_(f(a), (b) => (b ? repeatWhileIO_(ma, f) : succeed(a))))
   )
 }
 
@@ -3510,11 +3509,11 @@ export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => ReadonlyArra
  * @trace 1
  */
 export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO<R, E, A> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(
       error,
-      O.match(() => bind_(succeedWith(error), fail), succeed)
+      O.match(() => chain_(succeedWith(error), fail), succeed)
     )
   )
 }
@@ -3569,7 +3568,7 @@ export function retryUntilIO_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? fail(e) : retryUntilIO_(fa, f))))
+    traceAs(f, (e) => chain_(f(e), (b) => (b ? fail(e) : retryUntilIO_(fa, f))))
   )
 }
 
@@ -3615,7 +3614,7 @@ export function retryWhileIO_<R, E, A, R1, E1>(
 ): IO<R & R1, E | E1, A> {
   return catchAll_(
     fa,
-    traceAs(f, (e) => bind_(f(e), (b) => (b ? retryWhileIO_(fa, f) : fail(e))))
+    traceAs(f, (e) => chain_(f(e), (b) => (b ? retryWhileIO_(fa, f) : fail(e))))
   )
 }
 
@@ -3646,7 +3645,7 @@ export function tapCause_<R2, A2, R, E, E2>(
 ): IO<R2 & R, E | E2, A2> {
   return matchCauseIO_(
     ma,
-    traceAs(f, (c) => bind_(f(c), () => halt(c))),
+    traceAs(f, (c) => chain_(f(c), () => halt(c))),
     succeed
   )
 }
@@ -3837,7 +3836,7 @@ export function tryOrElse<A, R1, E1, A1, R2, E2, A2>(
  */
 export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     ma,
     traceFrom(trace, (a) => (C.isEmpty(a) ? unit() : halt(a)))
   )
@@ -3935,7 +3934,7 @@ export function unsandbox<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
  */
 export function whenIO_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean>) {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     mb,
     traceFrom(trace, (a) => (a ? asUnit(ma) : unit()))
   )
@@ -4089,7 +4088,7 @@ export function giveServicesSIO<SS extends Record<string, Tag<any>>>(s: SS) {
   return <R, E>(services: IO<R, E, ServicesStruct<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasStruct<SS>, E1, A>): IO<R & R1, E | E1, A> =>
       asksIO((r: R & R1) =>
-        bind_(services, (svcs) =>
+        chain_(services, (svcs) =>
           giveAll_(
             io,
             Object.assign(
@@ -4127,7 +4126,7 @@ export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
   return <R, E>(services: IO<R, E, ServicesTuple<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasTuple<SS>, E1, A>): IO<R & R1, E | E1, A> =>
       asksIO((r: R & R1) =>
-        bind_(services, (svcs) =>
+        chain_(services, (svcs) =>
           giveAll_(
             io,
             Object.assign(
@@ -4155,7 +4154,7 @@ export function giveServiceIO<T>(
 ): <R, E>(f: IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R & R1, E | E1, A1> {
   return <R, E>(f: IO<R, E, T>) =>
     <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
-      asksIO((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+      asksIO((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -4293,7 +4292,7 @@ export function gen(...args: any[]): any {
             // eslint-disable-next-line functional/immutable-data
             f['$trace'] = state.value._trace
           }
-          return bind_(state.value.T, f)
+          return chain_(state.value.T, f)
         }
 
         return run(state)

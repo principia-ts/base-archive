@@ -27,7 +27,7 @@ export function ifNotDone_<R, R1, E, E1, A, A1>(
   self: BufferedPull<R, E, A>,
   fa: I.IO<R1, O.Option<E1>, A1>
 ): I.IO<R1, O.Option<E1>, A1> {
-  return I.bind_(Ref.get(self.done), (_) => {
+  return I.chain_(Ref.get(self.done), (_) => {
     if (_) {
       return Pull.end
     } else {

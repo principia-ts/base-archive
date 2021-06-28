@@ -9,11 +9,11 @@ export type V<C> = HKT.CleanParam<C, 'E'> & HKT.V<'E', '+'>
 
 export function getEitherT<F extends HKT.URIS, C = HKT.Auto>(M: P.Monad<F, C>): EitherT<F, C>
 export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
-  const bind_: EitherT<HKT.UHKT<F>>['bind_'] = <E, A, E1, B>(
+  const chain_: EitherT<HKT.UHKT<F>>['chain_'] = <E, A, E1, B>(
     ma: HKT.HKT<F, E.Either<E, A>>,
     f: (a: A) => HKT.HKT<F, E.Either<E1, B>>
   ) =>
-    M.bind_(
+    M.chain_(
       ma,
       E.match(
         (e) => M.pure(E.left<E | E1, B>(e)),
@@ -25,7 +25,7 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
     fa: HKT.HKT<F, E.Either<E, A>>,
     f: (e: E) => HKT.HKT<F, E.Either<E1, A1>>
   ): HKT.HKT<F, E.Either<E1, A | A1>> =>
-    M.bind_(
+    M.chain_(
       fa,
       E.match(
         (e): HKT.HKT<F, E.Either<E1, A | A1>> => f(e),
@@ -36,7 +36,7 @@ export function getEitherT<F>(M: P.Monad<HKT.UHKT<F>>): EitherT<HKT.UHKT<F>> {
   return P.MonadExcept({
     ...P.getApplicativeComposition(M, E.Applicative),
     fail: flow(E.left, M.pure),
-    bind_,
+    chain_,
     catchAll_
   })
 }

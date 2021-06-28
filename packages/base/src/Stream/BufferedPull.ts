@@ -22,7 +22,7 @@ export function ifNotDone<R1, E1, A1>(
   return (self) =>
     pipe(
       self.done.get,
-      I.bind((b) => (b ? Pull.end : fa))
+      I.chain((b) => (b ? Pull.end : fa))
     )
 }
 
@@ -37,7 +37,7 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E
             () =>
               pipe(
                 self.done.set(true),
-                I.bind(() => Pull.end)
+                I.chain(() => Pull.end)
               ),
             (e) => Pull.fail(e)
           ),
@@ -59,7 +59,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
             return [
               pipe(
                 update(self),
-                I.bind(() => pullElement(self))
+                I.chain(() => pullElement(self))
               ),
               [C.empty(), 0]
             ]
@@ -81,7 +81,7 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
         self.cursor,
         R.modify(([chunk, idx]): [I.IO<R, O.Option<E>, Chunk<A>>, [Chunk<A>, number]] => {
           if (idx >= chunk.length) {
-            return [I.bind_(update(self), () => pullArray(self)), [C.empty(), 0]]
+            return [I.chain_(update(self), () => pullArray(self)), [C.empty(), 0]]
           } else {
             return [I.pure(C.drop_(chunk, idx)), [C.empty(), 0]]
           }

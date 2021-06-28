@@ -71,7 +71,8 @@ export function unfoldTreeM<M>(
   M: P.Monad<HKT.UHKT<M>>
 ): <A, B>(b: B, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, RoseTree<A>> {
   const unfoldForestMM = unfoldForestM(M)
-  return (b, f) => M.bind_(f(b), ([a, bs]) => M.bind_(unfoldForestMM(bs, f), (ts) => M.pure({ value: a, forest: ts })))
+  return (b, f) =>
+    M.chain_(f(b), ([a, bs]) => M.chain_(unfoldForestMM(bs, f), (ts) => M.pure({ value: a, forest: ts })))
 }
 
 export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
@@ -129,7 +130,7 @@ export function crossWith<A, B, C>(fb: RoseTree<B>, f: (a: A, b: B) => C): (fa: 
 }
 
 export function ap_<A, B>(fab: RoseTree<(a: A) => B>, fa: RoseTree<A>): RoseTree<B> {
-  return bind_(fab, (f) => map_(fa, (a) => f(a)))
+  return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<A>(fa: RoseTree<A>): <B>(fab: RoseTree<(a: A) => B>) => RoseTree<B> {
@@ -230,26 +231,26 @@ export function map<A, B>(f: (a: A) => B): (fa: RoseTree<A>) => RoseTree<B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<B> {
+export function chain_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<B> {
   const { value, forest } = f(ma.value)
   const combine           = A.getMonoid<RoseTree<B>>().combine_
   return {
     value,
     forest: combine(
       forest,
-      A.map_(ma.forest, (a) => bind_(a, f))
+      A.map_(ma.forest, (a) => chain_(a, f))
     )
   }
 }
 
-export function bind<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTree<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTree<B> {
+  return (ma) => chain_(ma, f)
 }
 
-export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = bind(P.identity)
+export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = chain(P.identity)
 
 export function tap_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<A> {
-  return bind_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTree<A> {

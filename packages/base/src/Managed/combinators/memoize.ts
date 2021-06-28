@@ -31,12 +31,12 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A
                 ma.io,
                 I.giveAll([r, finalizers] as const),
                 I.map(([_, a]) => a),
-                fulfill(promise)
+                (_) => P.fulfill_(promise, _)
               )
             )
           )
         )
-        return pipe(complete, I.apr(promise.await), fromIO)
+        return pipe(complete, I.apr(P.await(promise)), fromIO)
       })
     )
   )

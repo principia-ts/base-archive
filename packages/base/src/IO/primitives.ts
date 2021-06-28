@@ -36,7 +36,7 @@ export const _U = '_U'
 
 export const IOTag = {
   Succeed: 'Succeed',
-  Bind: 'Bind',
+  Chain: 'Chain',
   EffectPartial: 'EffectPartial',
   EffectTotal: 'EffectTotal',
   Async: 'Async',
@@ -75,7 +75,7 @@ abstract class IOSyntax<R, E, A> {
    * @trace 0
    */
   ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-    return new Bind(this, f)
+    return new Chain(this, f)
   }
   /**
    * A symbolic alias for `map`
@@ -177,8 +177,8 @@ export function isIO(u: unknown): u is IO<any, any, any> {
 /**
  * @internal
  */
-export class Bind<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOTag.Bind
+export class Chain<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
+  readonly _tag = IOTag.Chain
   constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
     super()
   }
@@ -476,7 +476,7 @@ export class GetPlatform<R, E, A> extends IO<R, E, A> {
 export const ffiNotImplemented = new Fail(() => new Die(new Error('Integration not implemented or unsupported')))
 
 export type Instruction =
-  | Bind<any, any, any, any, any, any>
+  | Chain<any, any, any, any, any, any>
   | Succeed<any>
   | EffectPartial<any, any>
   | EffectTotal<any>

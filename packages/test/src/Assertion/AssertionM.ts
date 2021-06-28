@@ -14,19 +14,19 @@ export type AssertionMTypeId = typeof AssertionMTypeId
 export class AssertionIO<A> {
   readonly [AssertionMTypeId]: AssertionMTypeId = AssertionMTypeId
 
-  constructor(readonly render: Render, readonly runM: (actual: A) => AssertResultM<A>) {}
+  constructor(readonly render: Render, readonly runIO: (actual: A) => AssertResultM<A>) {}
 
   ['&&'](this: AssertionIO<A>, that: AssertionIO<A>): AssertionIO<A> {
     return new AssertionIO(infix(param(this), '&&', param(that)), (actual) =>
-      BA.andM_(this.runM(actual), that.runM(actual))
+      BA.andM_(this.runIO(actual), that.runIO(actual))
     )
   }
   [':'](string: string): AssertionIO<A> {
-    return new AssertionIO(infix(param(this), ':', param(quoted(string))), this.runM)
+    return new AssertionIO(infix(param(this), ':', param(quoted(string))), this.runIO)
   }
   ['||'](this: AssertionIO<A>, that: AssertionIO<A>): AssertionIO<A> {
     return new AssertionIO(infix(param(this), '||', param(that)), (actual) =>
-      BA.orM_(this.runM(actual), that.runM(actual))
+      BA.orM_(this.runIO(actual), that.runIO(actual))
     )
   }
 

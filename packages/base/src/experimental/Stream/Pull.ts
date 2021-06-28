@@ -17,7 +17,7 @@ export function emitChunk<A>(as: C.Chunk<A>): I.UIO<C.Chunk<A>> {
 }
 
 export function fromQueue<E, A>(d: Q.Dequeue<Take.Take<E, A>>): I.FIO<O.Option<E>, C.Chunk<A>> {
-  return I.bind_(Q.take(d), (_) => Take.done(_))
+  return I.chain_(Q.take(d), (_) => Take.done(_))
 }
 
 export function fail<E>(e: E): I.FIO<O.Option<E>, never> {

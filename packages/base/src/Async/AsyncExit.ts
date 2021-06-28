@@ -186,7 +186,7 @@ export function as<B>(b: () => B): <E, A>(fa: AsyncExit<E, A>) => AsyncExit<E, B
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<E, A, E1, B>(ma: AsyncExit<E, A>, f: (a: A) => AsyncExit<E1, B>): AsyncExit<E | E1, B> {
+export function chain_<E, A, E1, B>(ma: AsyncExit<E, A>, f: (a: A) => AsyncExit<E1, B>): AsyncExit<E | E1, B> {
   return matchTag_(
     ma,
     {
@@ -196,16 +196,16 @@ export function bind_<E, A, E1, B>(ma: AsyncExit<E, A>, f: (a: A) => AsyncExit<E
   )
 }
 
-export function bind<A, E1, B>(f: (a: A) => AsyncExit<E1, B>): <E>(ma: AsyncExit<E, A>) => AsyncExit<E | E1, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, E1, B>(f: (a: A) => AsyncExit<E1, B>): <E>(ma: AsyncExit<E, A>) => AsyncExit<E | E1, B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<E, E1, A>(mma: AsyncExit<E, AsyncExit<E1, A>>): AsyncExit<E | E1, A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 export function tap_<E, A, E1, B>(ma: AsyncExit<E, A>, f: (a: A) => AsyncExit<E1, B>): AsyncExit<E | E1, A> {
-  return bind_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       as(() => a)

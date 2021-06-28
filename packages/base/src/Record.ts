@@ -6,6 +6,7 @@ import type { Refinement, RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
 
 import * as E from './Either'
+import { pipe } from './function'
 import * as G from './Guard'
 import * as O from './Option'
 import * as P from './prelude'
@@ -34,19 +35,21 @@ type URI = [HKT.URI<RecordURI>]
  * -------------------------------------------------------------------------------------------------
  */
 
+export function _elem<N extends string, A>(r: ReadonlyRecord<N, A>, E: Eq<A>, a: A): boolean {
+  for (const k in r) {
+    if (E.equals(r[k])(a)) {
+      return true
+    }
+  }
+  return false
+}
+
 /**
  * @category Guards
  * @since 1.0.0
  */
 export function elem_<A>(E: Eq<A>): <N extends string>(r: Readonly<Record<N, A>>, a: A) => boolean {
-  return (r, a) => {
-    for (const k in r) {
-      if (E.equals(r[k])(a)) {
-        return true
-      }
-    }
-    return false
-  }
+  return (r, a) => _elem(r, E, a)
 }
 
 /**
@@ -733,31 +736,35 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-/**
- */
-export const itraverse_ = P.implementTraverseWithIndex_<[HKT.URI<RecordURI>]>()((_) => (G) => {
-  return (ta, f) => {
-    type _ = typeof _
+export const _itraverse = P._implementTraverseWithIndex<[HKT.URI<RecordURI>]>()((_) => (ta, G, f) => {
+  type _ = typeof _
 
-    const ks = keys(ta)
-    if (ks.length === 0) {
-      return G.pure(empty)
-    }
-    let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
-    for (let i = 0; i < ks.length; i++) {
-      const key = ks[i]
-      mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
-        mut_r[key] = b
-        return mut_r
-      })
-    }
-    return mut_gr
+  const ks = keys(ta)
+  if (ks.length === 0) {
+    return G.pure(empty)
   }
+  let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+  for (let i = 0; i < ks.length; i++) {
+    const key = ks[i]
+    mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
+      mut_r[key] = b
+      return mut_r
+    })
+  }
+  return mut_gr
 })
 
 /**
  */
+export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => _itraverse(ta, G, f)
+
+/**
+ */
 export const itraverse: P.TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
+
+/**
+ */
+export const _traverse: P._TraverseFn<[HKT.URI<RecordURI>]> = (ta, G, f) => _itraverse(ta, G, (_, a) => f(a))
 
 /**
  */
@@ -779,14 +786,18 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itrav
 
 /**
  */
-export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => {
-  const traverseG = itraverse_(G)
-  return (wa, f) => P.pipe(traverseG(wa, f), G.map(compact))
-}
+export const _icompactA: P._WitherWithIndexFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
+  pipe(_itraverse(wa, A, f), A.map(compact))
 
 /**
  */
-export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
+export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => _icompactA(wa, G, f)
+
+/**
+ */
+export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _icompactA(wa, G, f)
+
+export const _compactA: P._WitherFn<[HKT.URI<RecordURI>]> = (wa, G, f) => _icompactA(wa, G, (_, a) => f(a))
 
 /**
  */
@@ -796,18 +807,20 @@ export const compactA_: P.WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => ic
  */
 export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
 
-/**
- */
-export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = P.implementWiltWithIndex_<[HKT.URI<RecordURI>]>()(
-  () => (G) => {
-    const traverseG = itraverse_(G)
-    return (wa, f) => P.pipe(traverseG(wa, f), G.map(separate))
-  }
-)
+export const _iseparateA: P._WiltWithIndexFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
+  pipe(_itraverse(wa, A, f), A.map(separate))
 
 /**
  */
-export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
+export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) => _iseparateA(wa, A, f)
+
+/**
+ */
+export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _iseparateA(wa, G, f)
+
+/**
+ */
+export const _separateA: P._WiltFn<[HKT.URI<RecordURI>]> = (wa, A, f) => _iseparateA(wa, A, (_, a) => f(a))
 
 /**
  */

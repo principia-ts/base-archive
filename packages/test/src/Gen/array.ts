@@ -16,7 +16,7 @@ export function array<R, A>(
 ): Gen<R & Has<Random> & Has<Sized>, ReadonlyArray<A>> {
   const minLength = constraints.minLength || 0
   return constraints.maxLength
-    ? G.bind_(G.int({ min: minLength, max: constraints.maxLength }), (n) => arrayN_(g, n))
+    ? G.chain_(G.int({ min: minLength, max: constraints.maxLength }), (n) => arrayN_(g, n))
     : G.small((n) => arrayN_(g, n), minLength)
 }
 

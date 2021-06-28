@@ -512,7 +512,7 @@ export function map<V, A>(f: (v: V) => A): <K>(fa: HashMap<K, V>) => HashMap<K, 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function bind_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): HashMap<K, A> {
+export function chain_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): HashMap<K, A> {
   return ifoldl_(ma, make<K, A>(ma.config), (z, _, v) =>
     mutate_(z, (m) => {
       iforEach_(f(v), (_k, _a) => {
@@ -525,16 +525,16 @@ export function bind_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): H
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  */
-export function bind<K, V, A>(f: (v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
-  return (ma) => bind_(ma, f)
+export function chain<K, V, A>(f: (v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function ibind_<K, V, A>(ma: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>): HashMap<K, A> {
+export function ichain_<K, V, A>(ma: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>): HashMap<K, A> {
   return ifoldl_(ma, make<K, A>(ma.config), (z, k, v) =>
     mutate_(z, (m) => {
       iforEach_(f(k, v), (_k, _a) => {
@@ -547,10 +547,10 @@ export function ibind_<K, V, A>(ma: HashMap<K, V>, f: (k: K, v: V) => HashMap<K,
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  *
- * @dataFirst ibind_
+ * @dataFirst ichain_
  */
-export function ibind<K, V, A>(f: (k: K, v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
-  return (ma) => ibind_(ma, f)
+export function ichain<K, V, A>(f: (k: K, v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
+  return (ma) => ichain_(ma, f)
 }
 
 /**

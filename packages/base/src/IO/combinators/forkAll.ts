@@ -8,7 +8,7 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 import * as Ch from '../../Chunk/core'
 import * as Fiber from '../../Fiber'
 import * as I from '../../Iterable'
-import { bind_, foreach_, fork, map_, unit } from '../core'
+import { chain_, foreach_, fork, map_, unit } from '../core'
 
 /**
  * Returns an IO that forks all of the specified values, and returns a
@@ -39,7 +39,7 @@ export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fibe
 export function forkAllUnit<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, void> {
   const trace = accessCallTrace()
   return I.foldl_(mas, unit() as URIO<R, void>, (b, a) =>
-    bind_(
+    chain_(
       fork(a),
       traceFrom(trace, () => b)
     )

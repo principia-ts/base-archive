@@ -158,14 +158,14 @@ export function fail<E>(e: E): STM<unknown, E, never> {
  * Maps the value produced by the effect.
  */
 export function map_<R, E, A, B>(self: STM<R, E, A>, f: (a: A) => B): STM<R, E, B> {
-  return bind_(self, (a) => succeed(f(a)))
+  return chain_(self, (a) => succeed(f(a)))
 }
 
 /**
  * Feeds the value produced by this effect to the specified function,
  * and then runs the returned effect as well to produce its results.
  */
-export function bind_<R, E, A, R1, E1, B>(self: STM<R, E, A>, f: (a: A) => STM<R1, E1, B>): STM<R1 & R, E | E1, B> {
+export function chain_<R, E, A, R1, E1, B>(self: STM<R, E, A>, f: (a: A) => STM<R1, E1, B>): STM<R1 & R, E | E1, B> {
   return new OnSuccess<R1 & R, E | E1, A, B>(self, f)
 }
 
@@ -185,7 +185,7 @@ export function matchSTM_<R, E, A, R1, E1, B, R2, E2, C>(
   g: (e: E) => STM<R2, E2, C>,
   f: (a: A) => STM<R1, E1, B>
 ): STM<R1 & R2 & R, E1 | E2, B | C> {
-  return bind_<R2 & R, E2, E.Either<C, A>, R1, E1, B | C>(
+  return chain_<R2 & R, E2, E.Either<C, A>, R1, E1, B | C>(
     catchAll_(map_(self, E.right), (e) => map_(g(e), E.left)),
     E.match(succeed, f)
   )
@@ -199,7 +199,7 @@ export function matchSTM_<R, E, A, R1, E1, B, R2, E2, C>(
 export function ensuring_<R, E, A, R1, B>(self: STM<R, E, A>, finalizer: STM<R1, never, B>): STM<R & R1, E, A> {
   return matchSTM_(
     self,
-    (e) => bind_(finalizer, () => fail(e)),
-    (a) => bind_(finalizer, () => succeed(a))
+    (e) => chain_(finalizer, () => fail(e)),
+    (a) => chain_(finalizer, () => succeed(a))
   )
 }

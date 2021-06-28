@@ -24,15 +24,15 @@ export class LiveRandom implements Random {
 
   next: I.UIO<number> = I.succeedWith(() => this.PRNG.nextDouble())
 
-  nextBoolean: I.UIO<boolean> = I.bind_(this.next, (n) => I.succeedWith(() => n > 0.5))
+  nextBoolean: I.UIO<boolean> = I.chain_(this.next, (n) => I.succeedWith(() => n > 0.5))
 
   nextInt: I.UIO<number> = I.succeedWith(() => this.PRNG.nextInt())
 
   nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.bind_(this.next, (n) => I.succeedWith(() => (high - low) * n + low))
+    I.chain_(this.next, (n) => I.succeedWith(() => (high - low) * n + low))
 
   nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.bind_(this.next, (n) => I.succeedWith(() => Math.floor((high - low + 1) * n + low)))
+    I.chain_(this.next, (n) => I.succeedWith(() => Math.floor((high - low + 1) * n + low)))
 
   nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint> = (low, high) =>
     I.succeedWith(() => this.PRNG.nextBigInt(low, high))

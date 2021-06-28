@@ -10,11 +10,11 @@ import * as I from '../internal/io'
 export function mapIO_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B>): Fiber<E | E1, B> {
   return {
     _tag: 'SyntheticFiber',
-    await: I.bind_(fiber.await, Ex.foreachIO(f)),
+    await: I.chain_(fiber.await, Ex.foreachIO(f)),
     getRef: (ref) => fiber.getRef(ref),
     inheritRefs: fiber.inheritRefs,
-    interruptAs: (id) => I.bind_(fiber.interruptAs(id), Ex.foreachIO(f)),
-    poll: I.bind_(
+    interruptAs: (id) => I.chain_(fiber.interruptAs(id), Ex.foreachIO(f)),
+    poll: I.chain_(
       fiber.poll,
       O.match(
         () => I.pure(O.none()),

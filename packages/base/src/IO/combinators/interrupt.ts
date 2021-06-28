@@ -18,8 +18,8 @@ import { AtomicReference } from '../../util/support/AtomicReference'
 import { OneShot } from '../../util/support/OneShot'
 import {
   asyncOption,
-  bind,
-  bind_,
+  chain,
+  chain_,
   checkInterruptible,
   defer,
   fiberId,
@@ -49,7 +49,7 @@ export function interruptAs(fiberId: FiberId): FIO<never, never> {
  * Returns an effect that is interrupted as if by the fiber calling this
  * method.
  */
-export const interrupt: IO<unknown, never, never> = bind_(fiberId(), interruptAs)
+export const interrupt: IO<unknown, never, never> = chain_(fiberId(), interruptAs)
 
 /**
  * Switches the interrupt status for this effect. If `true` is used, then the
@@ -136,7 +136,7 @@ export function onInterrupt_<R, E, A, R1>(
       restore(ma),
       (cause) =>
         C.interrupted(cause)
-          ? bind_(
+          ? chain_(
               cleanup(C.interruptors(cause)),
               traceAs(cleanup, () => halt(cause))
             )
@@ -215,8 +215,8 @@ export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
   return uninterruptibleMask(
     traceFrom(trace, ({ restore }) =>
-      bind_(fiberId(), (id) =>
-        bind_(forkDaemon(restore(effect)), (fiber) =>
+      chain_(fiberId(), (id) =>
+        chain_(forkDaemon(restore(effect)), (fiber) =>
           onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
         )
       )
@@ -264,7 +264,7 @@ export function asyncInterruptEither<R, E, A>(
 ): IO<R, E, A> {
   return pipe(
     succeedWith(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
-    bind(([started, cancel]) =>
+    chain(([started, cancel]) =>
       pipe(
         asyncOption<R, E, IO<R, E, A>>(
           traceAs(register, (k) => {

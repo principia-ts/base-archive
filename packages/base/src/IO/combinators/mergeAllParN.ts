@@ -6,7 +6,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../function'
 import * as XR from '../../Ref'
-import { bind, bind_ } from '../core'
+import { chain, chain_ } from '../core'
 import { foreachUnitParN_ } from './foreachUnitParN'
 
 /**
@@ -27,12 +27,12 @@ export function mergeAllParN_<R, E, A, B>(
   b: B,
   f: (b: B, a: A) => B
 ): IO<R, E, B> {
-  return bind_(XR.make(b), (acc) =>
-    bind_(
+  return chain_(XR.make(b), (acc) =>
+    chain_(
       foreachUnitParN_(
         fas,
         n,
-        bind(
+        chain(
           traceAs(f, (a) =>
             pipe(
               acc,

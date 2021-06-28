@@ -3,7 +3,7 @@
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as Ex from '../../Exit'
-import { bind_, Managed } from '../core'
+import { chain_, Managed } from '../core'
 import * as I from '../internal/io'
 import { fiberId } from './fiberId'
 
@@ -39,7 +39,7 @@ export function withEarlyReleaseExit(
  */
 export function withEarlyRelease<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [I.UIO<unknown>, A]> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     fiberId(),
     traceFrom(trace, (id) => withEarlyReleaseExit_(ma, Ex.interrupt(id)))
   )

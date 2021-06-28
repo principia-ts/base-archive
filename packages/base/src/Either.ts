@@ -392,8 +392,18 @@ export function memento<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
  * @category Apply
  * @since 1.0.0
  */
-export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> {
+export function _ap<E, A, G, B>(fa: Either<E, A>, fab: Either<G, (a: A) => B>): Either<E | G, B> {
   return match_(fab, left, (f) => match_(fa, left, (a) => right(f(a))))
+}
+
+/**
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): Either<E | G, B> {
+  return _ap(fa, fab)
 }
 
 /**
@@ -729,8 +739,12 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) =
   return (fa) => foldl_(fa, b, f)
 }
 
+export function _foldMap<E, A, M>(fa: Either<E, A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return match_(fa, () => M.nat, f)
+}
+
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) => M) => M {
-  return (fa, f) => match_(fa, () => M.nat, f)
+  return (fa, f) => _foldMap(fa, M, f)
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
@@ -787,7 +801,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B>
  * @category Monad
  * @since 1.0.0
  */
-export function bind_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
+export function chain_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, B> {
   return match_(fa, left, f)
 }
 
@@ -796,9 +810,11 @@ export function bind_<E, A, G, B>(fa: Either<E, A>, f: (a: A) => Either<G, B>): 
  *
  * @category Monad
  * @since 1.0.0
+ *
+ * @dataFirst chain_
  */
-export function bind<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -809,7 +825,7 @@ export function bind<A, G, B>(f: (e: A) => Either<G, B>): <E>(ma: Either<E, A>) 
  * @since 1.0.0
  */
 export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): Either<E | G, A> {
-  return bind_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)
@@ -835,7 +851,7 @@ export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) =
  * @since 1.0.0
  */
 export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -844,9 +860,7 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function absolve<E, E1, A>(mma: Either<E, Either<E1, A>>): Either<E | E1, A> {
-  return flatten(mma)
-}
+export const absolve = flatten
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -905,15 +919,15 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
  * -------------------------------------------------------------------------------------------------
  */
 
+export const _traverse: P._TraverseFn<URI, V> = (ta, A, f) => match_(ta, flow(left, A.pure), flow(f, A.map(right)))
+
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_ = P.implementTraverse_<URI, V>()((_) => (F) => {
-  return (ta, f) => match_(ta, flow(left, F.pure), flow(f, F.map(right)))
-})
+export const traverse_: P.TraverseFn_<URI, V> = (A) => (ta, f) => _traverse(ta, A, f)
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -1093,7 +1107,7 @@ export const Monad = P.Monad<URI, V>({
   crossWith_,
   cross_,
   ap_,
-  bind_,
+  chain_,
   flatten,
   pure,
   unit
@@ -1125,7 +1139,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten,
   catchAll_,
   fail: left

@@ -26,7 +26,7 @@ export class CompositeRenderer {
   constructor(readonly renderers: ReadonlyArray<TestAnnotationRenderer>) {}
 
   run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap): L.List<string> {
-    return L.bind_(L.from(this.renderers), (r) => r.run(ancestors, child))
+    return L.chain_(L.from(this.renderers), (r) => r.run(ancestors, child))
   }
 }
 

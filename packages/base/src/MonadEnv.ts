@@ -2,7 +2,7 @@ import type { Has, Tag } from './Has'
 import type { MonadMin } from './Monad'
 
 import { pureF } from './Applicative'
-import { bindF_ } from './Bind'
+import { chainF_ } from './Bind'
 import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import { Monad } from './Monad'
@@ -213,8 +213,9 @@ export function givesF_<F>(F: MonadEnvMin<HKT.UHKT3<F>, HKT.V<'R', '-'>>): Gives
  */
 export function givesF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnvMin<F, C>): GivesFn<F, C>
 export function givesF<F>(F: MonadEnvMin<HKT.UHKT3<F>, HKT.V<'R', '-'>>): GivesFn<HKT.UHKT3<F>, HKT.V<'R', '-'>> {
-  return <R0, R>(f: (_: R0) => R) => <E, A>(ma: HKT.HKT3<F, R, E, A>): HKT.HKT3<F, R0, E, A> =>
-    asksMF(F)((r0: R0) => F.giveAll_(ma, f(r0)))
+  return <R0, R>(f: (_: R0) => R) =>
+    <E, A>(ma: HKT.HKT3<F, R, E, A>): HKT.HKT3<F, R0, E, A> =>
+      asksMF(F)((r0: R0) => F.giveAll_(ma, f(r0)))
 }
 
 /**
@@ -225,8 +226,9 @@ export function givesF<F>(F: MonadEnvMin<HKT.UHKT3<F>, HKT.V<'R', '-'>>): GivesF
  */
 export function giveF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnv<F, C>): GiveFn<F, C>
 export function giveF<F>(F: MonadEnv<HKT.UHKT3<F>, HKT.V<'R', '-'>>): GiveFn<HKT.UHKT3<F>, HKT.V<'R', '-'>> {
-  return <R>(r: R) => <R0, E, A>(ma: HKT.HKT3<F, R & R0, E, A>): HKT.HKT3<F, R0, E, A> =>
-    asksMF(F)((r0: R0) => F.giveAll_(ma, { ...r, ...r0 }))
+  return <R>(r: R) =>
+    <R0, E, A>(ma: HKT.HKT3<F, R & R0, E, A>): HKT.HKT3<F, R0, E, A> =>
+      asksMF(F)((r0: R0) => F.giveAll_(ma, { ...r, ...r0 }))
 }
 
 /**
@@ -236,8 +238,8 @@ export function giveF<F>(F: MonadEnv<HKT.UHKT3<F>, HKT.V<'R', '-'>>): GiveFn<HKT
  * ```
  */
 export function asksMF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnvMin<F, C>): AsksMFn<F, C> {
-  const bind_ = bindF_(F)
-  return flow(F.asks, (mma) => bind_(mma, identity))
+  const chain_ = chainF_(F)
+  return flow(F.asks, (mma) => chain_(mma, identity))
 }
 
 /**
@@ -278,7 +280,8 @@ export function giveServiceF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: M
  */
 export function giveServiceMF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnv<F, C>): GiveServiceMFn<F, C>
 export function giveServiceMF<F>(F: MonadEnv<HKT.UHKT3<F>, HKT.V<'R', '-'>>) {
-  return <Service>(H: Tag<Service>) => <R, E>(S: HKT.HKT3<F, R, E, Service>) => <A>(
-    ma: HKT.HKT3<F, R & Has<Service>, E, A>
-  ) => asksMF(F)((r: R) => pipe(S, (mas) => F.bind_(mas, (svc) => F.giveAll_(ma, { ...r, [H.key]: svc } as any))))
+  return <Service>(H: Tag<Service>) =>
+    <R, E>(S: HKT.HKT3<F, R, E, Service>) =>
+    <A>(ma: HKT.HKT3<F, R & Has<Service>, E, A>) =>
+      asksMF(F)((r: R) => pipe(S, (mas) => F.chain_(mas, (svc) => F.giveAll_(ma, { ...r, [H.key]: svc } as any))))
 }

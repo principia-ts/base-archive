@@ -9,7 +9,7 @@ import * as A from '../../Array/core'
 import * as F from '../../Fiber'
 import { pipe } from '../../function'
 import * as O from '../../Option'
-import { bind } from '../core'
+import { chain } from '../core'
 import { forkDaemon } from './core-scope'
 import { onInterrupt, uninterruptibleMask } from './interrupt'
 
@@ -28,10 +28,10 @@ export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
         io,
         restore,
         forkDaemon,
-        bind((executor) =>
+        chain((executor) =>
           pipe(
             scope.extend(executor.scope),
-            bind(() =>
+            chain(() =>
               pipe(
                 restore(F.join(executor)),
                 onInterrupt((interruptors) =>

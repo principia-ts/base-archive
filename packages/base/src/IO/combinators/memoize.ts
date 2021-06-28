@@ -35,14 +35,14 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
                   } else {
                     return I.gen(function* (_) {
                       const p = yield* _(P.make<E, B>())
-                      yield* _(I.fork(p.fulfill(f(a))))
+                      yield* _(I.fork(P.fulfill_(p, f(a))))
                       return tuple(p, HM.set_(m, a, p))
                     })
                   }
                 })
               )
             )
-            return yield* _(promise.await)
+            return yield* _(P.await(promise))
           })
       )
     )
@@ -77,13 +77,13 @@ export function memoizeEq<A>(eq: Eq<A>) {
                       }
                       return I.gen(function* (_) {
                         const p = yield* _(P.make<E, B>())
-                        yield* _(I.fork(p.fulfill(f(a))))
+                        yield* _(I.fork(P.fulfill_(p, f(a))))
                         return tuple(p, HM.set_(m, a, p))
                       })
                     })
                   )
                 )
-                return yield* _(promise.await)
+                return yield* _(P.await(promise))
               })
           )
         )

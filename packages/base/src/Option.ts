@@ -344,8 +344,18 @@ export function cross<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<readonly [
  * @category Apply
  * @since 1.0.0
  */
-export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
+export function _ap<A, B>(fa: Option<A>, fab: Option<(a: A) => B>): Option<B> {
   return crossWith_(fab, fa, (f, a) => f(a))
+}
+
+/**
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
+export function ap_<A, B>(fab: Option<(a: A) => B>, fa: Option<A>): Option<B> {
+  return _ap(fa, fab)
 }
 
 /**
@@ -552,10 +562,14 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
+export function _foldMap<A, M>(fa: Option<A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return match_(fa, () => M.nat, f)
+}
+
 /**
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
-  return (fa, f) => match_(fa, () => M.nat, f)
+  return (fa, f) => _foldMap(fa, M, f)
 }
 
 /**
@@ -602,7 +616,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Option<A>) => Option<B> {
  * @category Uncurried Monad
  * @since 1.0.0
  */
-export function bind_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
+export function chain_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
   return match_(ma, none, f)
 }
 
@@ -612,8 +626,8 @@ export function bind_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<B> {
  * @category Monad
  * @since 1.0.0
  */
-export function bind<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -624,7 +638,7 @@ export function bind<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B>
  * @since 1.0.0
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
-  return bind_(ma, (a) =>
+  return chain_(ma, (a) =>
     P.pipe(
       f(a),
       map(() => a)
@@ -650,7 +664,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -660,7 +674,7 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
  */
 
 export function absolve<E, A>(fa: Option<Either<E, A>>): Option<A> {
-  return bind_(fa, E.match(none, some))
+  return chain_(fa, E.match(none, some))
 }
 
 /*
@@ -748,6 +762,14 @@ export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
+export const _traverse: P._TraverseFn<URI> = (ta, A, f) => match_(ta, flow(none, A.pure), flow(f, A.map(some)))
+
+/**
+ * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
+ *
+ * @category Traversable
+ * @since 1.0.0
+ */
 export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) => match_(ta, flow(none, G.pure), flow(f, G.map(some)))
 
 /**
@@ -782,11 +804,13 @@ export function unit(): Option<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => match_(wa, flow(none, A.pure), f)
+export const _compactA: P._WitherFn<URI> = (wa, A, f) => match_(wa, flow(none, A.pure), f)
+
+export const compactA_: P.WitherFn_<URI> = (A) => (wa, f) => _compactA(wa, A, f)
 
 export const compactA: P.WitherFn<URI> = (A) => (f) => (wa) => compactA_(A)(wa, f)
 
-export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) =>
+export const _separateA: P._WiltFn<URI> = (wa, A, f) =>
   pipe(
     wa,
     map(
@@ -797,6 +821,8 @@ export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) =>
     ),
     getOrElse(() => A.pure(P.tuple(none(), none())))
   )
+
+export const separateA_: P.WiltFn_<URI> = (A) => (wa, f) => _separateA(wa, A, f)
 
 export const separateA: P.WiltFn<URI> = (A) => (f) => (wa) => separateA_(A)(wa, f)
 
@@ -965,7 +991,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 
@@ -976,7 +1002,7 @@ export const MonadExcept = P.MonadExcept<URI, HKT.Fix<'E', void>>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   catchAll_,
   fail

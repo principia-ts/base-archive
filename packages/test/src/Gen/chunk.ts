@@ -17,7 +17,7 @@ export function chunk<R, A>(
 ): Gen<R & Has<Random> & Has<Sized>, Chunk<A>> {
   const minLength = constraints.minLength || 0
   return constraints.maxLength
-    ? G.bind_(G.int({ min: minLength, max: constraints.maxLength }), (n) => chunkN_(g, n))
+    ? G.chain_(G.int({ min: minLength, max: constraints.maxLength }), (n) => chunkN_(g, n))
     : G.small((n) => chunkN_(g, n), minLength)
 }
 

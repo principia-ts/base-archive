@@ -298,7 +298,7 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  */
 
 export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>], HKT.Fix<'E', E>> {
-  const bind_: P.BindFn_<URI, HKT.Fix<'E', E>> = (ma, f) => {
+  const chain_: P.ChainFn_<URI, HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -314,7 +314,7 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>]
   }
   return P.Monad({
     ...getApplicative(SE),
-    bind_
+    chain_
   })
 }
 

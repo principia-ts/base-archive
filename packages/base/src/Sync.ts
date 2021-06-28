@@ -173,7 +173,7 @@ export function matchTogetherSync_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4,
 ): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> {
   return pipe(
     cross_(memento(left), memento(right)),
-    bind(([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
+    chain(([ea, eb]): Sync<R & R1 & R2 & R3 & R4 & R5, E2 | E3 | E4 | E5, C | D | F | G> => {
       switch (ea._tag) {
         case 'Left': {
           switch (eb._tag) {
@@ -371,12 +371,13 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
  * -------------------------------------------------------------------------------------------------
  */
 
-export const bind_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> = Z.bind_
+export const chain_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
+  Z.chain_
 
-export const bind: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
-  Z.bind
+export const chain: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
+  Z.chain
 
-export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = bind(identity)
+export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Sync<R & R1, E | E1, A> = chain(identity)
 
 export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = Z.tap_
 
@@ -577,7 +578,7 @@ export function giveServiceSync<T>(
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) =>
     <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-      Z.asksZ((r: R & R1) => Z.bind_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
+      Z.asksZ((r: R & R1) => Z.chain_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
@@ -797,7 +798,7 @@ export const Monad = P.Monad<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 
@@ -808,7 +809,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   catchAll_,
   fail
@@ -932,7 +933,7 @@ export function gen(...args: any[]): any {
         if (state.done) {
           return succeed(state.value)
         }
-        return bind_(state.value.S, (v) => {
+        return chain_(state.value.S, (v) => {
           const next = iterator.next(v)
           return run(next)
         })

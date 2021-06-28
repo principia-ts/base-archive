@@ -55,7 +55,7 @@ export function range(start: number, end: number): Iterable<number> {
  */
 
 export function crossWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b: B) => C): Iterable<C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
@@ -113,7 +113,7 @@ export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: It
 }
 
 export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> {
-  return bind_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Iterable<B> {
@@ -451,11 +451,11 @@ export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+  return (ma) => chain_(ma, f)
 }
 
-export function bind_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
+export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
     const ia = ma[Symbol.iterator]()
     let result
@@ -470,7 +470,7 @@ export function bind_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -701,7 +701,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 

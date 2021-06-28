@@ -322,7 +322,7 @@ export function contains_<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E
       return yield* _(
         pipe(
           cause,
-          foldl(Ev.now(false), (_, c) => O.some(Ev.bind_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
+          foldl(Ev.now(false), (_, c) => O.some(Ev.chain_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
         )
       )
     })
@@ -467,7 +467,7 @@ export function findEval<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option
     case CauseTag.Then: {
       return pipe(
         Ev.defer(() => findEval(cause.left, f)),
-        Ev.bind((isLeft) => {
+        Ev.chain((isLeft) => {
           if (isLeft._tag === 'Some') {
             return Ev.now(isLeft)
           } else {
@@ -479,7 +479,7 @@ export function findEval<E, A>(cause: Cause<E>, f: (cause: Cause<E>) => O.Option
     case CauseTag.Both: {
       return pipe(
         Ev.defer(() => findEval(cause.left, f)),
-        Ev.bind((isLeft) => {
+        Ev.chain((isLeft) => {
           if (isLeft._tag === 'Some') {
             return Ev.now(isLeft)
           } else {
@@ -659,7 +659,7 @@ export function match<E, A>(
  * @since 1.0.0
  */
 export function alt_<E>(fa: Cause<E>, that: () => Cause<E>): Cause<E> {
-  return bind_(fa, () => that())
+  return chain_(fa, () => that())
 }
 
 /**
@@ -699,7 +699,7 @@ export function pure<E>(e: E): Cause<E> {
  * @since 1.0.0
  */
 export function ap_<E, D>(fab: Cause<(a: E) => D>, fa: Cause<E>): Cause<D> {
-  return bind_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -742,7 +742,7 @@ export function getEq<E>(E: Eq<E>): Eq<Cause<E>> {
  * @since 1.0.0
  */
 export function map_<E, D>(fa: Cause<E>, f: (e: E) => D) {
-  return bind_(fa, (e) => fail(f(e)))
+  return chain_(fa, (e) => fail(f(e)))
 }
 
 /**
@@ -797,7 +797,7 @@ function bindEval<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> 
  * @category Monad
  * @since 1.0.0
  */
-export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
+export function chain_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
   return bindEval(ma, f).value
 }
 
@@ -807,8 +807,8 @@ export function bind_<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Cause<D> {
  * @category Monad
  * @since 1.0.0
  */
-export function bind<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
-  return (ma) => bind_(ma, f)
+export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
+  return (ma) => chain_(ma, f)
 }
 
 /**
@@ -818,7 +818,7 @@ export function bind<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
  * @since 1.0.0
  */
 export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -1535,7 +1535,7 @@ const format = (segment: Segment): readonly string[] => {
       ]
     }
     case 'Sequential': {
-      return A.bind_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
+      return A.chain_(segment.all, (seg) => ['║', ...prefixBlock(format(seg), '╠', '║'), '▼'])
     }
   }
 }

@@ -7,7 +7,7 @@ import { Clock } from '../../Clock'
 import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { matchTag } from '../../util/match'
-import { catchAll, crossPar_, defer, first, fresh, fromRawIO, fromRawFunctionIO, identity } from '../core'
+import { catchAll, crossPar_, defer, first, fresh, fromRawFunctionIO, fromRawIO, identity } from '../core'
 import * as I from '../internal/io'
 
 /**
@@ -24,10 +24,10 @@ export function retry_<R, E, A, R1>(
       pipe(
         Clock.currentTime,
         I.orDie,
-        I.bind((now) =>
+        I.chain((now) =>
           pipe(
             s(now, e),
-            I.bind(
+            I.chain(
               matchTag({
                 Done: (_) => I.fail(e),
                 Continue: (c) => I.as_(Clock.sleep(Math.abs(now - c.interval)), () => tuple(r, c.next))

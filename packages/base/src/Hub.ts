@@ -1,5 +1,7 @@
 import type { MutableQueue } from './util/support/MutableQueue'
 
+import { SourceMap } from 'module'
+
 import * as C from './Chunk'
 import { parallel } from './ExecutionStrategy'
 import * as Ex from './Exit'
@@ -11,7 +13,7 @@ import * as RM from './Managed/ReleaseMap'
 import * as HS from './MutableHashSet'
 import * as P from './Promise'
 import * as Q from './Queue'
-import { Queue } from './Queue'
+import { Queue, QueueInternal } from './Queue'
 import * as Ref from './Ref'
 import * as St from './Structural'
 import { AtomicBoolean } from './util/support/AtomicBoolean'
@@ -27,6 +29,15 @@ export type UHub<A> = Hub<unknown, unknown, never, never, A, A>
 export const HubTypeId = Symbol()
 export type HubTypeId = typeof HubTypeId
 
+export interface Hub<RA, RB, EA, EB, A, B> {
+  readonly _RA: (_: RA) => void
+  readonly _RB: (_: RB) => void
+  readonly _EA: () => EA
+  readonly _EB: () => EB
+  readonly _A: (_: A) => void
+  readonly _B: () => B
+}
+
 /**
  * A `Hub<RA, RB, EA, EB, A, B>` is an asynchronous message hub. Publishers
  * can publish messages of type `A` to the hub and subscribers can subscribe to
@@ -36,7 +47,7 @@ export type HubTypeId = typeof HubTypeId
  * type `EB`.
  */
 
-export abstract class Hub<RA, RB, EA, EB, A, B> {
+export abstract class HubInternal<RA, RB, EA, EB, A, B> implements Hub<RA, RB, EA, EB, A, B> {
   readonly [HubTypeId]: HubTypeId = HubTypeId
   readonly _RA!: (_: RA) => void
   readonly _RB!: (_: RB) => void
@@ -94,7 +105,9 @@ export abstract class Hub<RA, RB, EA, EB, A, B> {
 /**
  * @optimize remove
  */
-export function concrete<RA, RB, EA, EB, A, B>(_: Hub<RA, RB, EA, EB, A, B>): asserts _ is Hub<RA, RB, EA, EB, A, B> {
+export function concrete<RA, RB, EA, EB, A, B>(
+  _: Hub<RA, RB, EA, EB, A, B>
+): asserts _ is HubInternal<RA, RB, EA, EB, A, B> {
   //
 }
 
@@ -112,7 +125,7 @@ export function concrete<RA, RB, EA, EB, A, B>(_: Hub<RA, RB, EA, EB, A, B>): as
  * For best performance use capacities that are powers of two.
  */
 export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
-  return I.bind_(
+  return I.chain_(
     I.succeedWith(() => _makeBounded<A>(requestedCapacity)),
     (_) => _make(_, new BackPressure())
   )
@@ -145,7 +158,7 @@ export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
  * For best performance use capacities that are powers of two.
  */
 export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
-  return I.bind_(
+  return I.chain_(
     I.succeedWith(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
@@ -179,7 +192,7 @@ export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
  * For best performance use capacities that are powers of two.
  */
 export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
-  return I.bind_(
+  return I.chain_(
     I.succeedWith(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
@@ -210,7 +223,7 @@ export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
  * Creates an unbounded hub.
  */
 export function makeUnbounded<A>(): I.UIO<UHub<A>> {
-  return I.bind_(
+  return I.chain_(
     I.succeedWith(() => {
       return _makeUnbounded<A>()
     }),
@@ -234,94 +247,107 @@ export function unsafeMakeUnbounded<A>(): UHub<A> {
   )
 }
 
-function _make<A>(hub: HubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
-  return I.bind_(RM.make, (releaseMap) => {
+function _make<A>(hub: UHubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
+  return I.chain_(RM.make, (releaseMap) => {
     return I.map_(P.make<never, void>(), (promise) => {
       return _unsafeMake(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
     })
   })
 }
 
+export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A, A> {
+  constructor(
+    readonly hub: UHubInternal<A>,
+    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+    readonly releaseMap: RM.ReleaseMap,
+    readonly shutdownHook: P.Promise<never, void>,
+    readonly shutdownFlag: AtomicBoolean,
+    readonly strategy: Strategy<A>
+  ) {
+    super()
+  }
+
+  awaitShutdown = P.await(this.shutdownHook)
+  capacity      = this.hub.capacity
+  isShutdown    = I.succeedWith(() => this.shutdownFlag.get)
+  shutdown      = pipe(
+    I.fiberId(),
+    I.chain((fiberId) =>
+      I.defer(() => {
+        this.shutdownFlag.set(true)
+        return pipe(
+          M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel)['*>'](this.strategy.shutdown),
+          I.whenIO(P.succeed_(this.shutdownHook, undefined))
+        )
+      })
+    ),
+    I.uninterruptible
+  )
+
+  size = I.defer(() => {
+    if (this.shutdownFlag.get) {
+      return I.interrupt
+    }
+
+    return I.succeed(this.hub.size())
+  })
+
+  subscribe = pipe(
+    M.do,
+    M.bindS('dequeue', () => I.toManaged_(subscription(this.hub, this.subscribers, this.strategy))),
+    M.tap(({ dequeue }) =>
+      M.bracketExit_(
+        RM.add(this.releaseMap, (_) => Q.shutdown(dequeue)),
+        (finalizer, exit) => finalizer(exit)
+      )
+    ),
+    M.map(({ dequeue }) => dequeue)
+  )
+
+  publish = (a: A): I.IO<unknown, never, boolean> =>
+    I.defer(() => {
+      if (this.shutdownFlag.get) {
+        return I.interrupt
+      }
+
+      if (this.hub.publish(a)) {
+        this.strategy.unsafeCompleteSubscribers(this.hub, this.subscribers)
+        return I.succeed(true)
+      }
+
+      return this.strategy.handleSurplus(this.hub, this.subscribers, C.single(a), this.shutdownFlag)
+    })
+
+  publishAll = (as: Iterable<A>): I.IO<unknown, never, boolean> =>
+    I.defer(() => {
+      if (this.shutdownFlag.get) {
+        return I.interrupt
+      }
+
+      const surplus = _unsafePublishAll(this.hub, as)
+
+      this.strategy.unsafeCompleteSubscribers(this.hub, this.subscribers)
+
+      if (C.isEmpty(surplus)) {
+        return I.succeed(true)
+      }
+
+      return this.strategy.handleSurplus(this.hub, this.subscribers, surplus, this.shutdownFlag)
+    })
+}
+
 /**
  * Unsafely creates a hub with the specified strategy.
  */
 function _unsafeMake<A>(
-  hub: HubInternal<A>,
+  hub: UHubInternal<A>,
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   releaseMap: RM.ReleaseMap,
   shutdownHook: P.Promise<never, void>,
   shutdownFlag: AtomicBoolean,
   strategy: Strategy<A>
 ): UHub<A> {
-  return new (class extends Hub<unknown, unknown, never, never, A, A> {
-    awaitShutdown = shutdownHook.await
-    capacity      = hub.capacity
-    isShutdown    = I.succeedWith(() => shutdownFlag.get)
-    shutdown      = pipe(
-      I.fiberId(),
-      I.bind((fiberId) =>
-        I.defer(() => {
-          shutdownFlag.set(true)
-          return pipe(
-            M.releaseAll_(releaseMap, Ex.interrupt(fiberId), parallel)['*>'](strategy.shutdown),
-            I.whenIO(shutdownHook.succeed(undefined))
-          )
-        })
-      ),
-      I.uninterruptible
-    )
-
-    size = I.defer(() => {
-      if (shutdownFlag.get) {
-        return I.interrupt
-      }
-
-      return I.succeed(hub.size())
-    })
-
-    subscribe = pipe(
-      M.do,
-      M.bindS('dequeue', () => I.toManaged_(subscription(hub, subscribers, strategy))),
-      M.tap(({ dequeue }) =>
-        M.bracketExit_(
-          RM.add(releaseMap, (_) => Q.shutdown(dequeue)),
-          (finalizer, exit) => finalizer(exit)
-        )
-      ),
-      M.map(({ dequeue }) => dequeue)
-    )
-
-    publish = (a: A): I.IO<unknown, never, boolean> =>
-      I.defer(() => {
-        if (shutdownFlag.get) {
-          return I.interrupt
-        }
-
-        if (hub.publish(a)) {
-          strategy.unsafeCompleteSubscribers(hub, subscribers)
-          return I.succeed(true)
-        }
-
-        return strategy.handleSurplus(hub, subscribers, C.single(a), shutdownFlag)
-      })
-
-    publishAll = (as: Iterable<A>): I.IO<unknown, never, boolean> =>
-      I.defer(() => {
-        if (shutdownFlag.get) {
-          return I.interrupt
-        }
-
-        const surplus = _unsafePublishAll(hub, as)
-
-        strategy.unsafeCompleteSubscribers(hub, subscribers)
-
-        if (C.isEmpty(surplus)) {
-          return I.succeed(true)
-        }
-
-        return strategy.handleSurplus(hub, subscribers, surplus, shutdownFlag)
-      })
-  })()
+  return new UnsafeHub(hub, subscribers, releaseMap, shutdownHook, shutdownFlag, strategy)
 }
 
 /*
@@ -330,30 +356,35 @@ function _unsafeMake<A>(
  * -------------------------------------------------------------------------------------------------
  */
 
+export class ToQueue<RA, RB, EA, EB, A, B> extends QueueInternal<RA, never, EA, unknown, A, never> {
+  constructor(readonly source: HubInternal<RA, RB, EA, EB, A, B>) {
+    super()
+  }
+  awaitShutdown = this.source.awaitShutdown
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  take          = I.never
+  takeAll       = I.succeed(C.empty<never>())
+  offer         = (a: A): I.IO<RA, EA, boolean> => this.source.publish(a)
+  offerAll      = (as: Iterable<A>): I.IO<RA, EA, boolean> => this.source.publishAll(as)
+  takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeed(C.empty())
+}
+
 /**
  * Views the hub as a queue that can only be written to.
  */
 export function toQueue<RA, RB, EA, EB, A, B>(source: Hub<RA, RB, EA, EB, A, B>): HubEnqueue<RA, EA, A> {
   concrete(source)
-  return new (class extends Queue<RA, never, EA, unknown, A, never> {
-    awaitShutdown = source.awaitShutdown
-    capacity      = source.capacity
-    isShutdown    = source.isShutdown
-    shutdown      = source.shutdown
-    size          = source.size
-    take          = I.never
-    takeAll       = I.succeed(C.empty<never>())
-    offer         = (a: A): I.IO<RA, EA, boolean> => source.publish(a)
-    offerAll      = (as: Iterable<A>): I.IO<RA, EA, boolean> => source.publishAll(as)
-    takeUpTo      = (): I.IO<unknown, never, C.Chunk<never>> => I.succeed(C.empty())
-  })()
+  return new ToQueue(source)
 }
 
 /**
  * Creates a subscription with the specified strategy.
  */
 function subscription<A>(
-  hub: HubInternal<A>,
+  hub: UHubInternal<A>,
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   strategy: Strategy<A>
 ): I.UIO<Q.Dequeue<A>> {
@@ -370,11 +401,121 @@ function subscription<A>(
   })
 }
 
+class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, never, never, A> {
+  constructor(
+    readonly hub: UHubInternal<A>,
+    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+    readonly subscription: SubscriptionInternal<A>,
+    readonly pollers: MutableQueue<P.Promise<never, A>>,
+    readonly shutdownHook: P.Promise<never, void>,
+    readonly shutdownFlag: AtomicBoolean,
+    readonly strategy: Strategy<A>
+  ) {
+    super()
+  }
+
+  awaitShutdown: I.UIO<void> = P.await(this.shutdownHook)
+
+  capacity: number = this.hub.capacity
+
+  isShutdown: I.UIO<boolean> = I.succeedWith(() => this.shutdownFlag.get)
+
+  shutdown: I.UIO<void> = pipe(
+    I.fiberId(),
+    I.chain((fiberId) =>
+      I.defer(() => {
+        this.shutdownFlag.set(true)
+        return pipe(
+          I.foreachPar_(_unsafePollAllQueue(this.pollers), P.interruptAs(fiberId))['*>'](
+            I.succeedWith(() => this.subscription.unsubscribe())
+          ),
+          I.whenIO(P.succeed_(this.shutdownHook, undefined))
+        )
+      })
+    )
+  )
+
+  size: I.UIO<number> = I.defer(() => {
+    if (this.shutdownFlag.get) {
+      return I.interrupt
+    }
+
+    return I.succeed(this.subscription.size())
+  })
+
+  offer = (_: never): I.IO<never, unknown, boolean> => I.succeed(false)
+
+  offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeed(false)
+
+  take: I.IO<unknown, never, A> = pipe(
+    I.fiberId(),
+    I.chain((fiberId) =>
+      I.defer(() => {
+        if (this.shutdownFlag.get) {
+          return I.interrupt
+        }
+
+        const empty   = null as unknown as A
+        const message = this.pollers.isEmpty ? this.subscription.poll(empty) : empty
+
+        if (message === null) {
+          const promise = P.unsafeMake<never, A>(fiberId)
+
+          return I.onInterrupt_(
+            I.defer(() => {
+              this.pollers.offer(promise)
+              this.subscribers.add(new HashedPair(this.subscription, this.pollers))
+              this.strategy.unsafeCompletePollers(this.hub, this.subscribers, this.subscription, this.pollers)
+              if (this.shutdownFlag.get) {
+                return I.interrupt
+              } else {
+                return P.await(promise)
+              }
+            }),
+            () =>
+              I.succeedWith(() => {
+                _unsafeRemove(this.pollers, promise)
+              })
+          )
+        } else {
+          this.strategy.unsafeOnHubEmptySpace(this.hub, this.subscribers)
+          return I.succeed(message)
+        }
+      })
+    )
+  )
+
+  takeAll: I.IO<unknown, never, C.Chunk<A>> = I.defer(() => {
+    if (this.shutdownFlag.get) {
+      return I.interrupt
+    }
+
+    const as = this.pollers.isEmpty ? _unsafePollAllSubscription(this.subscription) : C.empty<A>()
+
+    this.strategy.unsafeOnHubEmptySpace(this.hub, this.subscribers)
+
+    return I.succeed(as)
+  })
+
+  takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
+    return I.defer(() => {
+      if (this.shutdownFlag.get) {
+        return I.interrupt
+      }
+
+      const as = this.pollers.isEmpty ? _unsafePollN(this.subscription, n) : C.empty<A>()
+
+      this.strategy.unsafeOnHubEmptySpace(this.hub, this.subscribers)
+      return I.succeed(as)
+    })
+  }
+}
+
 /**
  * Unsafely creates a subscription with the specified strategy.
  */
 function unsafeSubscription<A>(
-  hub: HubInternal<A>,
+  hub: UHubInternal<A>,
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
   subscription: SubscriptionInternal<A>,
   pollers: MutableQueue<P.Promise<never, A>>,
@@ -382,103 +523,7 @@ function unsafeSubscription<A>(
   shutdownFlag: AtomicBoolean,
   strategy: Strategy<A>
 ): Q.Dequeue<A> {
-  return new (class extends Queue<never, unknown, unknown, never, never, A> {
-    awaitShutdown: I.UIO<void> = P.await(shutdownHook)
-
-    capacity: number = hub.capacity
-
-    isShutdown: I.UIO<boolean> = I.succeedWith(() => shutdownFlag.get)
-
-    shutdown: I.UIO<void> = pipe(
-      I.fiberId(),
-      I.bind((fiberId) =>
-        I.defer(() => {
-          shutdownFlag.set(true)
-          return pipe(
-            I.foreachPar_(_unsafePollAllQueue(pollers), P.interruptAs(fiberId))['*>'](
-              I.succeedWith(() => subscription.unsubscribe())
-            ),
-            I.whenIO(shutdownHook.succeed(undefined))
-          )
-        })
-      )
-    )
-
-    size: I.UIO<number> = I.defer(() => {
-      if (shutdownFlag.get) {
-        return I.interrupt
-      }
-
-      return I.succeed(subscription.size())
-    })
-
-    offer = (_: never): I.IO<never, unknown, boolean> => I.succeed(false)
-
-    offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeed(false)
-
-    take: I.IO<unknown, never, A> = pipe(
-      I.fiberId(),
-      I.bind((fiberId) =>
-        I.defer(() => {
-          if (shutdownFlag.get) {
-            return I.interrupt
-          }
-
-          const empty   = null as unknown as A
-          const message = pollers.isEmpty ? subscription.poll(empty) : empty
-
-          if (message === null) {
-            const promise = P.unsafeMake<never, A>(fiberId)
-
-            return I.onInterrupt_(
-              I.defer(() => {
-                pollers.offer(promise)
-                subscribers.add(new HashedPair(subscription, pollers))
-                strategy.unsafeCompletePollers(hub, subscribers, subscription, pollers)
-                if (shutdownFlag.get) {
-                  return I.interrupt
-                } else {
-                  return P.await(promise)
-                }
-              }),
-              () =>
-                I.succeedWith(() => {
-                  _unsafeRemove(pollers, promise)
-                })
-            )
-          } else {
-            strategy.unsafeOnHubEmptySpace(hub, subscribers)
-            return I.succeed(message)
-          }
-        })
-      )
-    )
-
-    takeAll: I.IO<unknown, never, C.Chunk<A>> = I.defer(() => {
-      if (shutdownFlag.get) {
-        return I.interrupt
-      }
-
-      const as = pollers.isEmpty ? _unsafePollAllSubscription(subscription) : C.empty<A>()
-
-      strategy.unsafeOnHubEmptySpace(hub, subscribers)
-
-      return I.succeed(as)
-    })
-
-    takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
-      return I.defer(() => {
-        if (shutdownFlag.get) {
-          return I.interrupt
-        }
-
-        const as = pollers.isEmpty ? _unsafePollN(subscription, n) : C.empty<A>()
-
-        strategy.unsafeOnHubEmptySpace(hub, subscribers)
-        return I.succeed(as)
-      })
-    }
-  })()
+  return new UnsafeSubscription(hub, subscribers, subscription, pollers, shutdownHook, shutdownFlag, strategy)
 }
 
 function subscribersHashSet<A>(): HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>> {
@@ -499,7 +544,7 @@ export function mapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): Hub<RA, RC & RB, EA, EB | EC, A, C> {
-  return dimapM_(self, I.succeed, f)
+  return dimapIO_(self, I.succeed, f)
 }
 
 /**
@@ -545,7 +590,7 @@ export function contramapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): Hub<RC & RA, RB, EA | EC, EB, C, B> {
-  return dimapM_(self, f, I.succeed)
+  return dimapIO_(self, f, I.succeed)
 }
 
 /**
@@ -564,25 +609,42 @@ export function contramapM<RC, EC, A, C>(f: (c: C) => I.IO<RC, EC, A>) {
  * -------------------------------------------------------------------------------------------------
  */
 
+export class DimapIO<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D> extends HubInternal<
+  RC & RA,
+  RD & RB,
+  EA | EC,
+  EB | ED,
+  C,
+  D
+> {
+  constructor(
+    readonly source: HubInternal<RA, RB, EA, EB, A, B>,
+    readonly f: (c: C) => I.IO<RC, EC, A>,
+    readonly g: (b: B) => I.IO<RD, ED, D>
+  ) {
+    super()
+  }
+  awaitShutdown = this.source.awaitShutdown
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = M.map_(this.source.subscribe, Q.mapIO(this.g))
+  publish       = (c: C) => I.chain_(this.f(c), (a) => this.source.publish(a))
+  publishAll    = (cs: Iterable<C>) => I.chain_(I.foreach_(cs, this.f), (as) => this.source.publishAll(as))
+}
+
 /**
  * Transforms messages published to and taken from the hub using the
  * specified effectual functions.
  */
-export function dimapM_<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D>(
+export function dimapIO_<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D>(
   source: Hub<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>,
   g: (b: B) => I.IO<RD, ED, D>
 ): Hub<RC & RA, RD & RB, EA | EC, EB | ED, C, D> {
-  return new (class extends Hub<RC & RA, RD & RB, EA | EC, EB | ED, C, D> {
-    awaitShutdown = source.awaitShutdown
-    capacity      = source.capacity
-    isShutdown    = source.isShutdown
-    shutdown      = source.shutdown
-    size          = source.size
-    subscribe     = M.map_(source.subscribe, Q.mapIO(g))
-    publish       = (c: C) => I.bind_(f(c), (a) => source.publish(a))
-    publishAll    = (cs: Iterable<C>) => I.bind_(I.foreach_(cs, f), (as) => source.publishAll(as))
-  })()
+  concrete(source)
+  return new DimapIO(source, f, g)
 }
 
 /**
@@ -591,8 +653,8 @@ export function dimapM_<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D>(
  *
  * @dataFirst dimapM_
  */
-export function dimapM<A, B, C, D, EC, ED, RC, RD>(f: (c: C) => I.IO<RC, EC, A>, g: (b: B) => I.IO<RD, ED, D>) {
-  return <RA, RB, EA, EB>(self: Hub<RA, RB, EA, EB, A, B>) => dimapM_(self, f, g)
+export function dimapIO<A, B, C, D, EC, ED, RC, RD>(f: (c: C) => I.IO<RC, EC, A>, g: (b: B) => I.IO<RD, ED, D>) {
+  return <RA, RB, EA, EB>(self: Hub<RA, RB, EA, EB, A, B>) => dimapIO_(self, f, g)
 }
 
 /**
@@ -604,7 +666,7 @@ export function dimap_<RA, RB, EA, EB, A, B, C, D>(
   f: (c: C) => A,
   g: (b: B) => D
 ): Hub<RA, RB, EA, EB, C, D> {
-  return dimapM_(
+  return dimapIO_(
     self,
     (c) => I.succeed(f(c)),
     (b) => I.succeed(g(b))
@@ -627,42 +689,48 @@ export function dimap<A, B, C, D>(f: (c: C) => A, g: (b: B) => D) {
  * -------------------------------------------------------------------------------------------------
  */
 
+export class FilterInputIO<RA, RA1, RB, EA, EA1, EB, A, B> extends HubInternal<RA & RA1, RB, EA | EA1, EB, A, B> {
+  constructor(readonly source: HubInternal<RA, RB, EA, EB, A, B>, readonly f: (a: A) => I.IO<RA1, EA1, boolean>) {
+    super()
+  }
+  awaitShutdown = this.source.awaitShutdown
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = this.source.subscribe
+  publish       = (a: A) => I.chain_(this.f(a), (b) => (b ? this.source.publish(a) : I.succeed(false)))
+  publishAll    = (as: Iterable<A>) =>
+    I.chain_(I.filter_(as, this.f), (as) => (C.isNonEmpty(as) ? this.source.publishAll(as) : I.succeed(false)))
+}
+
 /**
  * Filters messages published to the hub using the specified effectual
  * function.
  */
-export function filterInputM_<RA, RA1, RB, EA, EA1, EB, A, B>(
+export function filterInputIO_<RA, RA1, RB, EA, EA1, EB, A, B>(
   source: Hub<RA, RB, EA, EB, A, B>,
   f: (a: A) => I.IO<RA1, EA1, boolean>
 ): Hub<RA & RA1, RB, EA | EA1, EB, A, B> {
-  return new (class extends Hub<RA & RA1, RB, EA | EA1, EB, A, B> {
-    awaitShutdown = source.awaitShutdown
-    capacity      = source.capacity
-    isShutdown    = source.isShutdown
-    shutdown      = source.shutdown
-    size          = source.size
-    subscribe     = source.subscribe
-    publish       = (a: A) => I.bind_(f(a), (b) => (b ? source.publish(a) : I.succeed(false)))
-    publishAll    = (as: Iterable<A>) =>
-      I.bind_(I.filter_(as, f), (as) => (C.isNonEmpty(as) ? source.publishAll(as) : I.succeed(false)))
-  })()
+  concrete(source)
+  return new FilterInputIO(source, f)
 }
 
 /**
  * Filters messages published to the hub using the specified effectual
  * function.
  *
- * @dataFirst filterInputM_
+ * @dataFirst filterInputIO_
  */
-export function filterInputM<RA1, EA1, A>(f: (a: A) => I.IO<RA1, EA1, boolean>) {
-  return <RA, RB, EA, EB, B>(self: Hub<RA, RB, EA, EB, A, B>) => filterInputM_(self, f)
+export function filterInputIO<RA1, EA1, A>(f: (a: A) => I.IO<RA1, EA1, boolean>) {
+  return <RA, RB, EA, EB, B>(self: Hub<RA, RB, EA, EB, A, B>) => filterInputIO_(self, f)
 }
 
 /**
  * Filters messages published to the hub using the specified function.
  */
 export function filterInput_<RA, RB, EA, EB, A, B>(self: Hub<RA, RB, EA, EB, A, B>, f: (a: A) => boolean) {
-  return filterInputM_(self, (a) => I.succeed(f(a)))
+  return filterInputIO_(self, (a) => I.succeed(f(a)))
 }
 
 /**
@@ -674,34 +742,40 @@ export function filterInput<A>(f: (a: A) => boolean) {
   return <RA, RB, EA, EB, B>(self: Hub<RA, RB, EA, EB, A, B>) => filterInput_(self, f)
 }
 
+export class FilterOutputIO<RA, RB, RB1, EA, EB, EB1, A, B> extends HubInternal<RA, RB & RB1, EA, EB | EB1, A, B> {
+  constructor(readonly source: HubInternal<RA, RB, EA, EB, A, B>, readonly f: (a: B) => I.IO<RB1, EB1, boolean>) {
+    super()
+  }
+  awaitShutdown = this.source.awaitShutdown
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = M.map_(this.source.subscribe, Q.filterOutputIO(this.f))
+  publish       = (a: A) => this.source.publish(a)
+  publishAll    = (as: Iterable<A>) => this.source.publishAll(as)
+}
+
 /**
  * Filters messages taken from the hub using the specified effectual
  * function.
  */
-export function filterOutputM_<RA, RB, RB1, EA, EB, EB1, A, B>(
+export function filterOutputIO_<RA, RB, RB1, EA, EB, EB1, A, B>(
   source: Hub<RA, RB, EA, EB, A, B>,
   f: (a: B) => I.IO<RB1, EB1, boolean>
 ): Hub<RA, RB & RB1, EA, EB | EB1, A, B> {
-  return new (class extends Hub<RA, RB & RB1, EA, EB | EB1, A, B> {
-    awaitShutdown = source.awaitShutdown
-    capacity      = source.capacity
-    isShutdown    = source.isShutdown
-    shutdown      = source.shutdown
-    size          = source.size
-    subscribe     = M.map_(source.subscribe, Q.filterOutputIO(f))
-    publish       = (a: A) => source.publish(a)
-    publishAll    = (as: Iterable<A>) => source.publishAll(as)
-  })()
+  concrete(source)
+  return new FilterOutputIO(source, f)
 }
 
 /**
  * Filters messages taken from the hub using the specified effectual
  * function.
  *
- * @dataFirst filterOutputM_
+ * @dataFirst filterOutputIO_
  */
-export function filterOutputM<RB1, EB1, B>(f: (a: B) => I.IO<RB1, EB1, boolean>) {
-  return <RA, RB, EA, EB, A>(self: Hub<RA, RB, EA, EB, A, B>) => filterOutputM_(self, f)
+export function filterOutputIO<RB1, EB1, B>(f: (a: B) => I.IO<RB1, EB1, boolean>) {
+  return <RA, RB, EA, EB, A>(self: Hub<RA, RB, EA, EB, A, B>) => filterOutputIO_(self, f)
 }
 
 /**
@@ -711,7 +785,7 @@ export function filterOutput_<RA, RB, EA, EB, A, B>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => boolean
 ): Hub<RA, RB, EA, EB, A, B> {
-  return filterOutputM_(self, (b) => I.succeed(f(b)))
+  return filterOutputIO_(self, (b) => I.succeed(f(b)))
 }
 
 /**
@@ -838,7 +912,7 @@ export abstract class Strategy<A> {
    * waiting for space to become available in the hub.
    */
   abstract handleSurplus(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
     as: Iterable<A>,
     isShutdown: AtomicBoolean
@@ -854,7 +928,7 @@ export abstract class Strategy<A> {
    * to become available in the hub that space may be available.
    */
   abstract unsafeOnHubEmptySpace(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
   ): void
 
@@ -864,7 +938,7 @@ export abstract class Strategy<A> {
    * longer waiting for additional values.
    */
   unsafeCompletePollers(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
     subscription: SubscriptionInternal<A>,
     pollers: MQ.MutableQueue<P.Promise<never, A>>
@@ -903,7 +977,7 @@ export abstract class Strategy<A> {
    * additional values from the hub that new values are available.
    */
   unsafeCompleteSubscribers(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
   ): void {
     for (const { first: subscription, second: pollers } of subscribers) {
@@ -923,14 +997,14 @@ export class BackPressure<A> extends Strategy<A> {
   publishers: MQ.MutableQueue<readonly [A, P.Promise<never, boolean>, boolean]> = new MQ.Unbounded()
 
   handleSurplus(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
     as: Iterable<A>,
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return pipe(
       I.fiberId(),
-      I.bind((fiberId) =>
+      I.chain((fiberId) =>
         I.defer(() => {
           const promise = P.unsafeMake<never, boolean>(fiberId)
 
@@ -955,14 +1029,16 @@ export class BackPressure<A> extends Strategy<A> {
       I.bindS('fiberId', () => I.fiberId()),
       I.bindS('publishers', () => I.succeedWith(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
-        I.foreachPar_(publishers, ([_, promise, last]) => (last ? I.asUnit(promise.interruptAs(fiberId)) : I.unit()))
+        I.foreachPar_(publishers, ([_, promise, last]) =>
+          last ? I.asUnit(P.interruptAs_(promise, fiberId)) : I.unit()
+        )
       ),
       I.asUnit
     )
   }
 
   unsafeOnHubEmptySpace(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
   ): void {
     const empty     = null as unknown as readonly [A, P.Promise<never, boolean>, boolean]
@@ -1018,7 +1094,7 @@ export class BackPressure<A> extends Strategy<A> {
  */
 export class Dropping<A> extends Strategy<A> {
   handleSurplus(
-    _hub: HubInternal<A>,
+    _hub: UHubInternal<A>,
     _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
     _as: Iterable<A>,
     _isShutdown: AtomicBoolean
@@ -1029,7 +1105,7 @@ export class Dropping<A> extends Strategy<A> {
   shutdown: I.UIO<void> = I.unit()
 
   unsafeOnHubEmptySpace(
-    _hub: HubInternal<A>,
+    _hub: UHubInternal<A>,
     _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
   ): void {
     //
@@ -1044,7 +1120,7 @@ export class Dropping<A> extends Strategy<A> {
  * not receive some messages published to the hub while it is subscribed.
  */
 export class Sliding<A> extends Strategy<A> {
-  private unsafeSlidingPublish(hub: HubInternal<A>, as: Iterable<A>): void {
+  private unsafeSlidingPublish(hub: UHubInternal<A>, as: Iterable<A>): void {
     const it = as[Symbol.iterator]()
     let next = it.next()
 
@@ -1064,7 +1140,7 @@ export class Sliding<A> extends Strategy<A> {
   }
 
   handleSurplus(
-    hub: HubInternal<A>,
+    hub: UHubInternal<A>,
     subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
     as: Iterable<A>,
     _isShutdown: AtomicBoolean
@@ -1079,7 +1155,7 @@ export class Sliding<A> extends Strategy<A> {
   shutdown: I.UIO<void> = I.unit()
 
   unsafeOnHubEmptySpace(
-    _hub: HubInternal<A>,
+    _hub: UHubInternal<A>,
     _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
   ): void {
     //
@@ -1100,7 +1176,7 @@ export abstract class SubscriptionInternal<A> {
   abstract unsubscribe(): void
 }
 
-export abstract class HubInternal<A> {
+export abstract class UHubInternal<A> {
   abstract readonly capacity: number
   abstract isEmpty(): boolean
   abstract isFull(): boolean
@@ -1113,7 +1189,7 @@ export abstract class HubInternal<A> {
 
 /* eslint-disable functional/immutable-data */
 
-export class BoundedHubArb<A> extends HubInternal<A> {
+export class BoundedHubArb<A> extends UHubInternal<A> {
   array: Array<A>
   publisherIndex = 0
   subscribers: Array<number>
@@ -1291,7 +1367,7 @@ class BoundedHubArbSubscription<A> extends SubscriptionInternal<A> {
     }
   }
 }
-export class BoundedHubPow2<A> extends HubInternal<A> {
+export class BoundedHubPow2<A> extends UHubInternal<A> {
   array: Array<A>
   mask: number
   publisherIndex = 0
@@ -1474,7 +1550,7 @@ class BoundedHubPow2Subcription<A> extends SubscriptionInternal<A> {
   }
 }
 
-export class BoundedHubSingle<A> extends HubInternal<A> {
+export class BoundedHubSingle<A> extends UHubInternal<A> {
   publisherIndex  = 0
   subscriberCount = 0
   subscribers     = 0
@@ -1609,7 +1685,7 @@ class Node<A> {
   constructor(public value: A | null, public subscribers: number, public next: Node<A> | null) {}
 }
 
-export class UnboundedHub<A> extends HubInternal<A> {
+export class UnboundedHub<A> extends UHubInternal<A> {
   publisherHead  = new Node<A>(null, 0, null)
   publisherIndex = 0
   publisherTail: Node<A>
@@ -1823,7 +1899,7 @@ function _nextPow2(n: number): number {
   return Math.max(Math.pow(2, nextPow), 2)
 }
 
-function _makeBounded<A>(requestedCapacity: number): HubInternal<A> {
+function _makeBounded<A>(requestedCapacity: number): UHubInternal<A> {
   _ensureCapacity(requestedCapacity)
 
   if (requestedCapacity === 1) {
@@ -1835,7 +1911,7 @@ function _makeBounded<A>(requestedCapacity: number): HubInternal<A> {
   }
 }
 
-function _makeUnbounded<A>(): HubInternal<A> {
+function _makeUnbounded<A>(): UHubInternal<A> {
   return new UnboundedHub()
 }
 
@@ -1877,7 +1953,7 @@ function _unsafePollN<A>(subscription: SubscriptionInternal<A>, max: number): C.
 /**
  * Unsafely publishes the specified values to a hub.
  */
-function _unsafePublishAll<A>(hub: HubInternal<A>, as: Iterable<A>): C.Chunk<A> {
+function _unsafePublishAll<A>(hub: UHubInternal<A>, as: Iterable<A>): C.Chunk<A> {
   return hub.publishAll(as)
 }
 

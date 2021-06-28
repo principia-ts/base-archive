@@ -73,7 +73,7 @@ export abstract class Annotations {
               pipe(
                 FR.get(fiberRef),
                 I.map((m) => m.get(fibers)),
-                I.bind(
+                I.chain(
                   E.match(
                     (_) => I.succeed(HS.make<RuntimeFiber<any, any>>(HashEqFiber)),
                     flow(

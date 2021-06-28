@@ -59,7 +59,7 @@ export function getTraversableComposition<F extends HKT.URIS, G extends HKT.URIS
   })
 }
 
-export interface TraverseFn__<F extends HKT.URIS, CF = HKT.Auto> {
+export interface _TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
   <
     G extends HKT.URIS,
     FN extends string,

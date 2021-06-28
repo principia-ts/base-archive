@@ -99,7 +99,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Clock.currentTime,
-      I.bind((time) =>
+      I.chain((time) =>
         pipe(
           cache,
           RefM.updateSomeAndGetIO((o) =>
@@ -114,7 +114,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
               )
             )
           ),
-          I.bind((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(a.value[1].await)))
+          I.chain((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(P.await(a.value[1]))))
         )
       )
     )

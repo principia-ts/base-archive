@@ -208,17 +208,17 @@ export function every_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
 /**
  * Map + Flatten
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  */
-export function bind<B>(E: HM.Config<B>): <A>(f: (x: A) => Iterable<B>) => (set: HashSet<A>) => HashSet<B> {
-  const c = bind_(E)
+export function chain<B>(E: HM.Config<B>): <A>(f: (x: A) => Iterable<B>) => (set: HashSet<A>) => HashSet<B> {
+  const c = chain_(E)
   return (f) => (set) => c(set, f)
 }
 
 /**
  * Map + Flatten
  */
-export function bind_<B>(E: HM.Config<B>): <A>(set: HashSet<A>, f: (x: A) => Iterable<B>) => HashSet<B> {
+export function chain_<B>(E: HM.Config<B>): <A>(set: HashSet<A>, f: (x: A) => Iterable<B>) => HashSet<B> {
   const r = make<B>(E)
   return (set, f) =>
     mutate_(r, (r) => {

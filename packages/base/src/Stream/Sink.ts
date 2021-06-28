@@ -190,7 +190,7 @@ export function last<I>(): Sink<unknown, never, I, never, O.Option<I>> {
       (state) => (is: O.Option<Chunk<I>>) =>
         pipe(
           state.get,
-          I.bind((last) =>
+          I.chain((last) =>
             O.match_(
               is,
               () => Push.emit(last, C.empty<never>()),
@@ -218,7 +218,7 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
       (state) => (is: O.Option<Chunk<I>>) =>
         pipe(
           state.get,
-          I.bind((take) =>
+          I.chain((take) =>
             O.match_(
               is,
               () => (n >= 0 ? Push.emit(take, C.empty<I>()) : Push.emit(C.empty<I>(), take)),
@@ -252,14 +252,14 @@ export function foldChunksWhileM<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.bind((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.bind((s) => f(s, is)),
+                I.chain((s) => f(s, is)),
                 I.mapError((e) => tuple(E.left(e), C.empty<I>())),
-                I.bind((s) => {
+                I.chain((s) => {
                   if (cont(s)) {
                     return pipe(state.set(s), I.apr(Push.more))
                   } else {
@@ -349,12 +349,12 @@ export function foldWhileIO<R, E, I, Z>(
             () =>
               pipe(
                 state.get,
-                I.bind((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.bind((s) =>
+                I.chain((s) =>
                   pipe(
                     foldChunk(s, is, 0, is.length),
                     I.matchIO(
@@ -408,12 +408,12 @@ export function foldWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) =
             () =>
               pipe(
                 state.get,
-                I.bind((s) => Push.emit(s, C.empty<I>()))
+                I.chain((s) => Push.emit(s, C.empty<I>()))
               ),
             (is) =>
               pipe(
                 state.get,
-                I.bind((s) =>
+                I.chain((s) =>
                   pipe(foldChunk(s, is, 0, is.length), ([st, l]) =>
                     O.match_(
                       l,
@@ -513,7 +513,7 @@ export function crossWith_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z
   fb: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z2> {
-  return bind_(fa, (z) => map_(fb, (_) => f(z, _)))
+  return chain_(fa, (z) => map_(fb, (_) => f(z, _)))
 }
 
 /**
@@ -614,7 +614,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
       const p2       = yield* _(that.push)
 
       return (in_: O.Option<Chunk<I & I1>>) =>
-        I.bind_(stateRef.get, (state) => {
+        I.chain_(stateRef.get, (state) => {
           const newState = pipe(
             state,
             matchTag({
@@ -678,7 +678,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                     >
                 )
 
-                return I.bind_(
+                return I.chain_(
                   I.crossPar_(l, r),
                   ([lr, rr]): I.IO<R & R1, readonly [E.Either<E1, Z2>, Chunk<L | L1>], State<Z, Z1>> => {
                     if (O.isSome(lr)) {
@@ -732,7 +732,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
             })
           )
 
-          return I.bind_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
+          return I.chain_(newState, (ns) => (ns === state ? I.unit() : stateRef.set(ns)))
         })
     })
   )
@@ -865,7 +865,7 @@ export function contramapChunksIO_<R, R1, E, E1, I, I2, L, Z>(
             pipe(
               f(value),
               I.mapError((e: E | E1) => [E.left(e), C.empty<L>()] as const),
-              I.bind((is) => push(O.some(is)))
+              I.chain((is) => push(O.some(is)))
             )
         )
     })
@@ -978,7 +978,7 @@ export function matchSink_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2
       )
 
       return (in_: O.Option<Chunk<I & I1 & I2>>) =>
-        I.bind_(switchedRef.get, (sw) => {
+        I.chain_(switchedRef.get, (sw) => {
           if (!sw) {
             return I.catchAll_(thisPush(in_), (v) => {
               const leftover = v[1]
@@ -986,7 +986,7 @@ export function matchSink_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2
               return pipe(
                 openThatPush(nextSink.push),
                 I.tap(thatPush.set),
-                I.bind((p) =>
+                I.chain((p) =>
                   pipe(
                     switchedRef.set(true),
                     I.apr(
@@ -1010,7 +1010,7 @@ export function matchSink_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2
               )
             })
           } else {
-            return I.bind_(thatPush.get, (p) => p(in_))
+            return I.chain_(thatPush.get, (p) => p(in_))
           }
         })
     })
@@ -1090,7 +1090,7 @@ export function mapIO<R1, E1, Z, Z2>(f: (z: Z) => I.IO<R1, E1, Z2>) {
  *
  * This function essentially runs sinks in sequence.
  */
-export function bind_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function chain_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   self: Sink<R, E, I, L, Z>,
   f: (z: Z) => Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
@@ -1103,8 +1103,8 @@ export function bind_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
  *
  * This function essentially runs sinks in sequence.
  */
-export function bind<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
-  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => bind_(self, f)
+export function chain<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R1, E1, I1, L1, Z1>) {
+  return <E, L extends I1>(self: Sink<R, E, I, L, Z>) => chain_(self, f)
 }
 
 /*
@@ -1149,7 +1149,7 @@ export function gives<R0, R>(f: (r0: R0) => R) {
  * Accesses the environment of the sink in the context of a sink.
  */
 export function asksSink<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
-  return new Sink(M.bind_(M.ask<R>(), (env) => f(env).push))
+  return new Sink(M.chain_(M.ask<R>(), (env) => f(env).push))
 }
 
 /**
@@ -1164,7 +1164,7 @@ export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
  */
 export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
-    M.bind_(L.build(layer), (r) =>
+    M.chain_(L.build(layer), (r) =>
       M.map_(M.giveAll_(self.push, r), (push) => (i: O.Option<Chunk<I>>) => I.giveAll_(push(i), r))
     )
   )
@@ -1224,7 +1224,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
   return new Sink(
     pipe(
       Ref.managedRef(z),
-      M.bind((acc) => {
+      M.chain((acc) => {
         return pipe(
           Push.restartable(sz.push),
           M.map(([push, restart]) => {
@@ -1258,7 +1258,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
               )
 
             return (in_: O.Option<Chunk<I>>) =>
-              I.bind_(acc.get, (s) => I.bind_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
+              I.chain_(acc.get, (s) => I.chain_(go(s, in_, O.isNone(in_)), (s1) => acc.set(s1)))
           })
         )
       })
@@ -1387,7 +1387,7 @@ export function timed<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>): Sink<R & Has<Cl
               E.match_(
                 e,
                 (e) => Push.fail(e, leftover),
-                (z) => I.bind_(Clock.currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
+                (z) => I.chain_(Clock.currentTime, (stop) => Push.emit([z, stop - start] as const, leftover))
               )
           )
       })
@@ -1445,7 +1445,7 @@ export function untilOutputIO_<R, R1, E, E1, I, L extends I, Z>(
             e,
             (e) => Push.fail(e, leftover),
             (z) =>
-              I.bind_(
+              I.chain_(
                 I.mapError_(f(z), (err) => [E.left(err), leftover] as const),
                 (satisfied) => {
                   if (satisfied) {
@@ -1485,7 +1485,7 @@ export function managed_<R, E, A, I, L extends I, Z>(
   return pipe(
     resource,
     M.match((err) => fail(err)<I>() as Sink<R, E, I, I, Z>, fn),
-    M.bind((sink) => sink.push),
+    M.chain((sink) => sink.push),
     fromManagedPush
   )
 }

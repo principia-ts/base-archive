@@ -24,7 +24,7 @@ import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = L.bind_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
+    const rendered = L.chain_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
     return I.asksServiceIO(TestLoggerTag)((l) => l.logLine(pipe(rendered, L.append(stats), L.join('\n'))))
   }
@@ -67,7 +67,7 @@ export function render<E>(
     depth: number,
     ancestors: L.List<TestAnnotationMap>
   ): USync<L.List<RenderedResult<string>>> =>
-    Sy.bind_(executedSpec, (executedSpec) =>
+    Sy.chain_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
           const hasFailures    = ES.exists_(

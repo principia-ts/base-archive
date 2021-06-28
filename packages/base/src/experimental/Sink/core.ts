@@ -28,7 +28,7 @@ export class Sink<R, InErr, In, OutErr, L, Z> {
     this: Sink<R, InErr, In, OutErr, L, Z>,
     f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
   ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
-    return bind_(this, f)
+    return chain_(this, f)
   }
 }
 
@@ -316,19 +316,19 @@ export function matchSink<
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+export function chain_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
   sink: Sink<R, InErr, In, OutErr, L, Z>,
   f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
 ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
   return matchSink_(sink, (err) => fail(err), f)
 }
 
-export function bind<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
+export function chain<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
   f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
 ): <R, InErr, OutErr>(
   sink: Sink<R, InErr, In, OutErr, L, Z>
 ) => Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
-  return (sink) => bind_(sink, f)
+  return (sink) => chain_(sink, f)
 }
 
 /*
@@ -356,7 +356,7 @@ export function crossWith_<
   fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2
 ): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
-  return bind_(fa, (z) => map_(fb, (z1) => f(z, z1)))
+  return chain_(fa, (z) => map_(fb, (z1) => f(z, z1)))
 }
 
 export function apr_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
@@ -885,7 +885,7 @@ function foreachWhileLoop<R, Err, In>(
   }
   return pipe(
     Ch.fromIO(f(C.unsafeGet_(chunk, idx))),
-    Ch.bind((b) => (b ? foreachWhileLoop(f, chunk, idx + 1, len, cont) : Ch.write(C.drop_(chunk, idx)))),
+    Ch.chain((b) => (b ? foreachWhileLoop(f, chunk, idx + 1, len, cont) : Ch.write(C.drop_(chunk, idx)))),
     Ch.catchAll((e) => Ch.write(C.drop_(chunk, idx))['*>'](Ch.fail(e)))
   )
 }

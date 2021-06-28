@@ -30,13 +30,13 @@ const arbiter =
       (e) =>
         pipe(
           fails,
-          Ref.modify((c) => tuple(c === 0 ? pipe(promise.halt(e), I.asUnit) : I.unit(), c - 1)),
+          Ref.modify((c) => tuple(c === 0 ? pipe(P.halt_(promise, e), I.asUnit) : I.unit(), c - 1)),
           I.flatten
         ),
       (a) =>
         pipe(
-          promise.succeed(tuple(a, winner)),
-          I.bind((set) =>
+          P.succeed_(promise, tuple(a, winner)),
+          I.chain((set) =>
             set
               ? C.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
               : I.unit()
@@ -68,7 +68,7 @@ export function raceAll<R, E, A>(
             const fs = yield* _(I.foreach_(ios, flow(interruptible, I.fork)))
             yield* _(
               C.foldl_(fs, I.unit(), (io, f) =>
-                I.bind_(io, () => pipe(f.await, I.bind(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
+                I.chain_(io, () => pipe(f.await, I.chain(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
               )
             )
             const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
@@ -78,8 +78,8 @@ export function raceAll<R, E, A>(
               )
             const c           = yield* _(
               pipe(
-                done.await,
-                I.bind(inheritRefs),
+                P.await(done),
+                I.chain(inheritRefs),
                 restore,
                 onInterrupt(() => C.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))
               )

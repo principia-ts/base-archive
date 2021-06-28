@@ -4,43 +4,43 @@ import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 
-export interface Bind<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
-  readonly bind_: BindFn_<F, TC>
-  readonly bind: BindFn<F, TC>
+export interface Chain<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
+  readonly chain_: ChainFn_<F, TC>
+  readonly chain: ChainFn<F, TC>
   readonly flatten: FlattenFn<F, TC>
   readonly tap_: TapFn_<F, TC>
   readonly tap: TapFn<F, TC>
 }
 
-export type BindMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> &
-  ({ readonly bind_: BindFn_<F, C> } | { readonly flatten: FlattenFn<F, C> })
+export type ChainMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> &
+  ({ readonly chain_: ChainFn_<F, C> } | { readonly flatten: FlattenFn<F, C> })
 
-export function Bind<F extends HKT.URIS, C = HKT.Auto>(F: BindMin<F, C>): Bind<F, C> {
+export function Chain<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): Chain<F, C> {
   const FunctorF = Functor(F)
-  let bind_: BindFn_<F, C>
+  let chain_: ChainFn_<F, C>
   let flatten: FlattenFn<F, C>
 
-  if ('bind_' in F) {
-    bind_   = F.bind_
-    flatten = (mma) => F.bind_(mma, identity)
+  if ('chain_' in F) {
+    chain_  = F.chain_
+    flatten = (mma) => F.chain_(mma, identity)
   } else {
-    bind_   = (ma, f) => F.flatten(F.map_(ma, f))
+    chain_  = (ma, f) => F.flatten(F.map_(ma, f))
     flatten = F.flatten
   }
 
-  const tap_: TapFn_<F, C> = (ma, f) => bind_(ma, (a) => F.map_(f(a), () => a))
+  const tap_: TapFn_<F, C> = (ma, f) => chain_(ma, (a) => F.map_(f(a), () => a))
 
-  return HKT.instance<Bind<F, C>>({
+  return HKT.instance<Chain<F, C>>({
     ...FunctorF,
-    bind_,
-    bind: (f) => (ma) => bind_(ma, f),
+    chain_,
+    chain: (f) => (ma) => chain_(ma, f),
     flatten,
     tap_,
     tap: (f) => (ma) => tap_(ma, f)
   })
 }
 
-export interface BindFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, A>(
     f: (a: A) => HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
   ): <N extends string, K, Q, W, X, I, S, R, E>(
@@ -74,7 +74,7 @@ export interface BindFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface BindFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ChainFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     ma: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
     f: (
@@ -109,9 +109,9 @@ export interface BindFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export function bindF_<F extends HKT.URIS, C = HKT.Auto>(F: BindMin<F, C>): BindFn_<F, C> {
-  if ('bind_' in F) {
-    return F.bind_
+export function chainF_<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): ChainFn_<F, C> {
+  if ('chain_' in F) {
+    return F.chain_
   } else {
     return (ma, f) => F.flatten(F.map_(ma, f))
   }
@@ -380,14 +380,14 @@ export interface TapFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: BindMin<F, TC>): TapFn<F, TC> {
-  const bind_ = bindF_(F)
-  return (f) => (ma) => bind_(ma, (a) => F.map_(f(a), () => a))
+export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: ChainMin<F, TC>): TapFn<F, TC> {
+  const chain_ = chainF_(F)
+  return (f) => (ma) => chain_(ma, (a) => F.map_(f(a), () => a))
 }
 
-export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: BindMin<F, TC>): TapFn_<F, TC> {
-  const bind_ = bindF_(F)
-  return (ma, f) => bind_(ma, (a) => F.map_(f(a), () => a))
+export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: ChainMin<F, TC>): TapFn_<F, TC> {
+  const chain_ = chainF_(F)
+  return (ma, f) => chain_(ma, (a) => F.map_(f(a), () => a))
 }
 
 export interface FlattenFn<F extends HKT.URIS, TC = HKT.Auto> {
@@ -557,10 +557,10 @@ export interface FlattenFnComposition<F extends HKT.URIS, G extends HKT.URIS, TC
   >
 }
 
-export function flattenF<F extends HKT.URIS, C = HKT.Auto>(M: BindMin<F, C>): FlattenFn<F, C> {
+export function flattenF<F extends HKT.URIS, C = HKT.Auto>(M: ChainMin<F, C>): FlattenFn<F, C> {
   if ('flatten' in M) {
     return M.flatten
   } else {
-    return (mma) => M.bind_(mma, identity)
+    return (mma) => M.chain_(mma, identity)
   }
 }

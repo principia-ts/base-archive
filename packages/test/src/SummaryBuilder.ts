@@ -38,8 +38,8 @@ export function buildSummary<E>(executedSpec: ExecutedSpec<E>): Summary {
   const rendered = pipe(
     failures,
     L.from,
-    L.bind((spec) => render(spec, silent)),
-    L.bind((_) => _.rendered),
+    L.chain((spec) => render(spec, silent)),
+    L.chain((_) => _.rendered),
     L.join('\n')
   )
   return new Summary(success, fail, ignore, rendered)

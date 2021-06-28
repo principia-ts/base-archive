@@ -26,7 +26,7 @@ export function arrayInt64(min: ArrayInt64, max: ArrayInt64): Gen<Has<Random>, A
   return pipe(
     computeArrayInt64GenerateRange(min, max, undefined, undefined),
     S.fromIO,
-    S.bind(({ min, max }) => S.repeatIO(Random.nextArrayInt(min, max))),
+    S.chain(({ min, max }) => S.repeatIO(Random.nextArrayInt(min, max))),
     S.map((uncheckedValue) => {
       if (uncheckedValue.data.length === 1) {
         uncheckedValue.data.unshift(0)

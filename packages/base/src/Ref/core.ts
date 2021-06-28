@@ -81,7 +81,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
               getEither,
               E.match((e) => E.left(eb(e)), bd)
             ),
-            (c) => (s) => E.bind_(ca(c), (a) => E.match_(setEither(a)(s), flow(ea, E.left), E.right))
+            (c) => (s) => E.chain_(ca(c), (a) => E.match_(setEither(a)(s), flow(ea, E.left), E.right))
           )
         )
     )
@@ -105,7 +105,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
                 getEither(s),
                 E.match((e) => E.left(ec(e)), ca(c)),
                 E.deunion,
-                E.bind((a) => E.match_(setEither(a)(s), (e) => E.left(ea(e)), E.right))
+                E.chain((a) => E.match_(setEither(a)(s), (e) => E.left(ea(e)), E.right))
               )
           )
         )
@@ -113,7 +113,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
   }
 
   get get(): FIO<EB, B> {
-    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.fail, I.succeed)))))
+    return this.use((value, getEither) => pipe(value.get, I.chain(flow(getEither, E.match(I.fail, I.succeed)))))
   }
 
   set(a: A): FIO<EA, void> {
@@ -158,7 +158,7 @@ export class Derived<EA, EB, A, B> implements Ref<EA, EB, A, B> {
           f(
             value,
             (s) => E.match_(getEither(s), (e) => E.left(eb(e)), bd),
-            (c) => E.bind_(ca(c), (a) => E.match_(setEither(a), (e) => E.left(ea(e)), E.right))
+            (c) => E.chain_(ca(c), (a) => E.match_(setEither(a), (e) => E.left(ea(e)), E.right))
           )
         )
     )
@@ -182,7 +182,7 @@ export class Derived<EA, EB, A, B> implements Ref<EA, EB, A, B> {
                 getEither(s),
                 E.match(flow(ec, E.left), ca(c)),
                 E.deunion,
-                E.bind((a) => pipe(setEither(a), E.match(flow(ea, E.left), E.right)))
+                E.chain((a) => pipe(setEither(a), E.match(flow(ea, E.left), E.right)))
               )
           )
         )
@@ -190,7 +190,7 @@ export class Derived<EA, EB, A, B> implements Ref<EA, EB, A, B> {
   }
 
   get get(): FIO<EB, B> {
-    return this.use((value, getEither) => pipe(value.get, I.bind(flow(getEither, E.match(I.fail, I.succeed)))))
+    return this.use((value, getEither) => pipe(value.get, I.chain(flow(getEither, E.match(I.fail, I.succeed)))))
   }
 
   set(a: A): FIO<EA, void> {
@@ -827,7 +827,7 @@ export function updateAndGet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => A)
       pipe(
         atomic,
         modify((v) => pipe(f(v), (result) => tuple(result, result))),
-        I.bind(() => atomic.get)
+        I.chain(() => atomic.get)
       )
     )
   )

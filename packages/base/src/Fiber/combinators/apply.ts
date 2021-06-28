@@ -49,13 +49,13 @@ export function crossWith_<E, E1, A, A1, B>(
   return {
     _tag: 'SyntheticFiber',
     getRef: (ref) => I.crossWith_(fa.getRef(ref), fb.getRef(ref), (a, b) => ref.join(a, b)),
-    inheritRefs: I.bind_(fa.inheritRefs, () => fb.inheritRefs),
+    inheritRefs: I.chain_(fa.inheritRefs, () => fb.inheritRefs),
     interruptAs: (id) =>
       I.crossWith_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.crossWithCause_(ea, eb, f, C.both)),
     poll: I.crossWith_(fa.poll, fb.poll, (fa, fb) =>
-      O.bind_(fa, (ea) => O.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
+      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
     ),
-    await: I.result(crossWithPar_(I.bind_(fa.await, I.done), I.bind_(fb.await, I.done), f))
+    await: I.result(crossWithPar_(I.chain_(fa.await, I.done), I.chain_(fb.await, I.done), f))
   }
 }
 

@@ -6,7 +6,7 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { build } from '../../Layer'
-import { bind_, gives_ } from '../core'
+import { chain_, gives_ } from '../core'
 
 /**
  * @trace call
@@ -16,7 +16,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
   layer: Layer<R1, E1, A1>
 ): Managed<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     build(layer),
     traceFrom(trace, (p) => gives_(ma, (r: R & R1) => ({ ...r, ...p })))
   )
@@ -30,7 +30,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
 export function giveLayer<R1, E1, A1>(layer: Layer<R1, E1, A1>) {
   const trace = accessCallTrace()
   return <R, E, A>(ma: Managed<R & A1, E, A>): Managed<R & R1, E | E1, A> =>
-    bind_(
+    chain_(
       build(layer),
       traceFrom(trace, (p) => gives_(ma, (r: R & R1) => ({ ...r, ...p })))
     )

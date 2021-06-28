@@ -95,7 +95,7 @@ export class Stream<R, E, A> {
     return concat_(this, that)
   }
   ['>>=']<R1, E1, B>(f: (a: A) => Stream<R1, E1, B>): Stream<R & R1, E | E1, B> {
-    return bind_(this, f)
+    return chain_(this, f)
   }
   ['<$>']<B>(f: (a: A) => B): Stream<R, E, B> {
     return map_(this, f)
@@ -188,7 +188,7 @@ function unfoldChunkIOLoop<S, R, E, A>(
       f(s),
       O.match(
         () => Ch.unit(),
-        ([as, s]) => Ch.bind_(Ch.write(as), () => unfoldChunkIOLoop(s, f))
+        ([as, s]) => Ch.chain_(Ch.write(as), () => unfoldChunkIOLoop(s, f))
       )
     )
   )
@@ -253,7 +253,7 @@ export function fromQueue_<R, E, O>(
       Q.takeBetween_(queue, 1, maxChunkSize),
       I.map(C.from),
       I.catchAllCause((c) =>
-        I.bind_(Q.isShutdown(queue), (down) => {
+        I.chain_(Q.isShutdown(queue), (down) => {
           if (down && Ca.interrupted(c)) {
             return Pull.end
           } else {
@@ -276,7 +276,7 @@ export function fromQueueWithShutdown_<R, E, A>(
   queue: Q.Queue<never, R, unknown, E, never, A>,
   maxChunkSize: number = DEFAULT_CHUNK_SIZE
 ): Stream<R, E, A> {
-  return pipe(fromQueue_(queue, maxChunkSize), ensuring(queue.shutdown))
+  return pipe(fromQueue_(queue, maxChunkSize), ensuring(Q.shutdown(queue)))
 }
 
 export function fromQueueWithShutdown(
@@ -340,7 +340,7 @@ export function repeatIOWith<R, E, A>(
     effect,
     I.cross(SC.driver(schedule)),
     fromIO,
-    bind(([a, driver]) =>
+    chain(([a, driver]) =>
       pipe(
         succeed(a),
         concat(
@@ -382,25 +382,33 @@ export function asyncInterrupt<R, E, A>(
 ): Stream<R, E, A> {
   return unwrapManaged(
     M.gen(function* (_) {
-      const output       = yield* _(M.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), (q) => q.shutdown))
+      const output       = yield* _(M.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), Q.shutdown))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
-        M.succeedWith(() => register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
+        M.succeedWith(() =>
+          register((k, cb) =>
+            pipe(
+              Take.fromPull(k),
+              I.chain((a) => Q.offer_(output, a)),
+              runtime.runCancel(cb)
+            )
+          )
+        )
       )
       return E.match_(
         eitherStream,
         (canceler) => {
           const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-            output.take,
-            I.bind(Take.done),
-            I.match(flow(O.match(() => Ch.end(undefined), Ch.fail)), (a) => Ch.write(a)['*>'](loop)),
+            Q.take(output),
+            I.chain(Take.done),
+            I.match(flow(O.match(() => Ch.end(undefined), Ch.fail)), (a) => Ch.zipr_(Ch.write(a), loop)),
             Ch.unwrap
           )
           return ensuring_(new Stream(loop), canceler)
         },
         (stream) =>
           pipe(
-            output.shutdown,
+            Q.shutdown(output),
             I.as(() => stream),
             unwrap
           )
@@ -454,24 +462,35 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
   return new Stream(
     Ch.unwrapManaged(
       M.gen(function* (_) {
-        const output  = yield* _(M.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), (q) => q.shutdown))
+        const output  = yield* _(M.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), Q.shutdown))
         const runtime = yield* _(I.runtime<R>())
-        yield* _(register((k, cb) => pipe(Take.fromPull(k), I.bind(output.offer), runtime.runCancel(cb))))
+        yield* _(
+          register((k, cb) =>
+            pipe(
+              Take.fromPull(k),
+              I.chain((a) => Q.offer_(output, a)),
+              runtime.runCancel(cb)
+            )
+          )
+        )
         const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-          output.take,
-          I.bind(Take.done),
+          Q.take(output),
+          I.chain(Take.done),
           I.matchCauseIO(
             (maybeError) =>
-              output.shutdown['$>'](() =>
-                pipe(
-                  Ca.failureOrCause(maybeError),
-                  E.match(
-                    O.match(() => Ch.end(undefined), Ch.fail),
-                    Ch.halt
+              pipe(
+                Q.shutdown(output),
+                I.as(() =>
+                  pipe(
+                    Ca.failureOrCause(maybeError),
+                    E.match(
+                      O.match(() => Ch.end(undefined), Ch.fail),
+                      Ch.halt
+                    )
                   )
                 )
               ),
-            (a) => I.succeed(Ch.write(a)['*>'](loop))
+            (a) => I.succeed(Ch.zipr_(Ch.write(a), loop))
           ),
           Ch.unwrap
         )
@@ -507,7 +526,7 @@ export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
  * Creates a stream from a subscription to a hub.
  */
 export function fromHub<R, E, A>(hub: H.Hub<never, R, unknown, E, never, A>): Stream<R, E, A> {
-  return bind_(fromManaged(H.subscribe(hub)), fromQueue())
+  return chain_(fromManaged(H.subscribe(hub)), fromQueue())
 }
 
 /*
@@ -526,7 +545,7 @@ export function cross_<R, R1, E, E1, A, A1>(
 ): Stream<R & R1, E | E1, readonly [A, A1]> {
   return new Stream(
     Ch.concatMap_(stream.channel, (a) =>
-      Ch.mapOut_(that.channel, (b) => C.bind_(a, (a) => C.map_(b, (b) => tuple(a, b))))
+      Ch.mapOut_(that.channel, (b) => C.chain_(a, (a) => C.map_(b, (b) => tuple(a, b))))
     )
   )
 }
@@ -587,7 +606,7 @@ export function crossRight<R1, E1, A1>(that: Stream<R1, E1, A1>) {
  * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
 export function crossWith<R, R1, E, E1, A, A1>(stream: Stream<R, E, A>, that: Stream<R1, E1, A1>) {
-  return <C>(f: (a: A, a1: A1) => C): Stream<R & R1, E | E1, C> => bind_(stream, (l) => map_(that, (r) => f(l, r)))
+  return <C>(f: (a: A, a1: A1) => C): Stream<R & R1, E | E1, C> => chain_(stream, (l) => map_(that, (r) => f(l, r)))
 }
 
 /*
@@ -600,7 +619,7 @@ export function crossWith<R, R1, E, E1, A, A1>(stream: Stream<R, E, A>, that: St
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f`
  */
-export function bind_<R, E, O, R1, E1, O1>(
+export function chain_<R, E, O, R1, E1, O1>(
   stream: Stream<R, E, O>,
   f: (o: O) => Stream<R1, E1, O1>
 ): Stream<R & R1, E | E1, O1> {
@@ -609,7 +628,7 @@ export function bind_<R, E, O, R1, E1, O1>(
       C.foldl_(
         C.map_(o, (x) => f(x).channel),
         Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
-        (s, a) => Ch.bind_(s, () => a)
+        (s, a) => Ch.chain_(s, () => a)
       )
     )
   )
@@ -619,12 +638,12 @@ export function bind_<R, E, O, R1, E1, O1>(
  * Returns a stream made of the concatenation in strict order of all the streams
  * produced by passing each element of this stream to `f`
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  */
-export function bind<O, R1, E1, O1>(
+export function chain<O, R1, E1, O1>(
   f: (o: O) => Stream<R1, E1, O1>
 ): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, O1> {
-  return (stream) => bind_(stream, f)
+  return (stream) => chain_(stream, f)
 }
 
 /**
@@ -632,7 +651,7 @@ export function bind<O, R1, E1, O1>(
  * strict order of all the streams.
  */
 export function flatten<R0, E0, R, E, A>(stream: Stream<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
-  return bind_(stream, identity)
+  return chain_(stream, identity)
 }
 
 /*
@@ -648,7 +667,7 @@ export function mapIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, B>
 ): Stream<R & R1, E | E1, B> {
-  return loopOnPartialChunksElements_<R, E, A, R1, E1, B>(stream, (a, emit) => I.bind_(f(a), emit))
+  return loopOnPartialChunksElements_<R, E, A, R1, E1, B>(stream, (a, emit) => I.chain_(f(a), emit))
 }
 
 /**
@@ -834,7 +853,7 @@ export function partitionMapIO_<R, E, A, R1, E1, B, C>(
         () => I.succeed((_) => _ === 1)
       )
     ),
-    M.bind(([q1, q2]) =>
+    M.chain(([q1, q2]) =>
       M.succeed(
         tuple(
           pipe(fromQueueWithShutdown_(q1), flattenExitOption, collectLeft),
@@ -955,7 +974,7 @@ export function asksIO<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R
  * Accesses the environment of the stream in the context of a stream.
  */
 export function asksStream<R0, R, E, A>(f: (r0: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
-  return bind_(ask<R0>(), f)
+  return chain_(ask<R0>(), f)
 }
 
 /**
@@ -1108,7 +1127,7 @@ export function loopOnChunks_<R, E, A, R1, E1, A1>(
   f: (a: C.Chunk<A>) => Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean>
 ): Stream<R & R1, E | E1, A1> {
   const loop: Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean> = Ch.readWithCause(
-    (chunk) => Ch.bind_(f(chunk), (cont) => (cont ? loop : Ch.end(false))),
+    (chunk) => Ch.chain_(f(chunk), (cont) => (cont ? loop : Ch.end(false))),
     Ch.halt,
     (_) => Ch.end(false)
   )
@@ -1133,14 +1152,14 @@ export function loopOnPartialChunks_<R, E, A, R1, E1, A1>(
                 outputChunk = C.append_(outputChunk, a)
               })
             ),
-            (cont) => Ch.bind_(Ch.write(outputChunk), () => Ch.end(cont))
+            (cont) => Ch.chain_(Ch.write(outputChunk), () => Ch.end(cont))
           ),
           (failure) =>
             I.succeedWith(() => {
               if (C.isEmpty(outputChunk)) {
                 return Ch.fail(failure)
               } else {
-                return Ch.bind_(Ch.write(outputChunk), () => Ch.fail(failure))
+                return Ch.chain_(Ch.write(outputChunk), () => Ch.fail(failure))
               }
             })
         )
@@ -1277,7 +1296,7 @@ function takeLoop<E, A>(n: number): Ch.Channel<unknown, E, C.Chunk<A>, unknown, 
       const taken = C.take_(i, n)
       const left  = Math.max(n - taken.length, 0)
       if (left > 0) {
-        return Ch.bind_(Ch.write(taken), () => takeLoop(left))
+        return Ch.chain_(Ch.write(taken), () => takeLoop(left))
       } else {
         return Ch.write(taken)
       }
@@ -1428,7 +1447,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     SC.driver(schedule)
   )
 
-  return bind_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
+  return chain_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
     const handoffProducer: Ch.Channel<unknown, E1, C.Chunk<A>, unknown, never, never, any> = Ch.readWithCause(
       (_in: C.Chunk<A>) => Ch.zipr_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
       (cause: Ca.Cause<E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
@@ -1436,7 +1455,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     )
 
     const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
-      I.bind_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
+      I.chain_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
         if (C.isEmpty(leftovers)) {
           return I.succeed(Ch.zipr_(Ch.write(leftovers), handoffConsumer))
         } else {
@@ -1470,7 +1489,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
       return pipe(
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
-          return Ch.bind_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
+          return Ch.chain_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
             return Ch.zipr_(
               Ch.fromIO(I.apr_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
@@ -1493,7 +1512,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
             )
           })
         }),
-        Ch.bind((_) => {
+        Ch.chain((_) => {
           if (O.isNone(_)) {
             return Ch.unit()
           } else {
@@ -1535,7 +1554,7 @@ export function aggregateAsyncWithinEither<R1, R2, E1, E2, A1, B, C>(
  * concurrently. Up to `bufferSize` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function bindPar_<R, E, A, R1, E1, B>(
+export function chainPar_<R, E, A, R1, E1, B>(
   ma: Stream<R, E, A>,
   f: (a: A) => Stream<R1, E1, B>,
   n: number,
@@ -1556,12 +1575,12 @@ export function bindPar_<R, E, A, R1, E1, B>(
  * concurrently. Up to `bufferSize` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function bindPar<A, R1, E1, B>(
+export function chainPar<A, R1, E1, B>(
   f: (a: A) => Stream<R1, E1, B>,
   n: number,
   bufferSize = 16
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (ma) => bindPar_(ma, f, n, bufferSize)
+  return (ma) => chainPar_(ma, f, n, bufferSize)
 }
 
 /**
@@ -1598,7 +1617,9 @@ export function broadcastDynamic_<R, E, A>(
   stream: Stream<R, E, A>,
   maximumLag: number
 ): M.Managed<R, never, Stream<unknown, E, A>> {
-  return M.map_(broadcastedQueuesDynamic_(stream, maximumLag), (_) => pipe(fromManaged(_), bind(fromQueue()), flattenTake))
+  return M.map_(broadcastedQueuesDynamic_(stream, maximumLag), (_) =>
+    pipe(fromManaged(_), chain(fromQueue()), flattenTake)
+  )
 }
 
 /**
@@ -1667,9 +1688,9 @@ export function bufferChunks_<R, E, A>(stream: Stream<R, E, A>, capacity: number
   return new Stream(
     Ch.managed_(queue, (queue) => {
       const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-        Ch.fromIO(queue.take),
-        Ch.bind((take: Take.Take<E, A>) =>
-          Take.fold_(take, Ch.end(undefined), Ch.halt, (value) => Ch.write(value)['*>'](process))
+        Ch.fromIO(Q.take(queue)),
+        Ch.chain((take: Take.Take<E, A>) =>
+          Take.fold_(take, Ch.end(undefined), Ch.halt, (value) => Ch.zipr_(Ch.write(value), process))
         )
       )
       return process
@@ -1690,15 +1711,15 @@ export function buffer_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Str
   return new Stream(
     Ch.managed_(queue, (queue) => {
       const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
-        Ch.fromIO(queue.take),
-        Ch.bind((exit: Ex.Exit<O.Option<E>, A>) =>
+        Ch.fromIO(Q.take(queue)),
+        Ch.chain((exit: Ex.Exit<O.Option<E>, A>) =>
           Ex.match_(
             exit,
             flow(
               Ca.flipCauseOption,
               O.match(() => Ch.end(undefined), Ch.halt)
             ),
-            (value) => Ch.write(C.single(value))['*>'](process)
+            (value) => Ch.zipr_(Ch.write(C.single(value)), process)
           )
         )
       )
@@ -1759,22 +1780,25 @@ function bufferSignalProducer<R, E, A>(
     Ch.fromIO(
       I.gen(function* (_) {
         const latch = yield* _(ref.get)
-        yield* _(latch.await)
+        yield* _(Pr.await(latch))
         const p = yield* _(Pr.make<never, void>())
-        yield* _(queue.offer(tuple(take, p)))
+        yield* _(Q.offer_(queue, tuple(take, p)))
         yield* _(ref.set(p))
-        yield* _(p.await)
+        yield* _(Pr.await(p))
       })
     )
   return Ch.readWith(
     (inp) =>
-      Ch.fromIO(
-        I.gen(function* (_) {
-          const p     = yield* _(Pr.make<never, void>())
-          const added = yield* _(queue.offer(tuple(Take.chunk(inp), p)))
-          yield* _(I.when_(ref.set(p), () => added))
-        })
-      )['*>'](bufferSignalProducer(queue, ref)),
+      Ch.zipr_(
+        Ch.fromIO(
+          I.gen(function* (_) {
+            const p     = yield* _(Pr.make<never, void>())
+            const added = yield* _(Q.offer_(queue, tuple(Take.chunk(inp), p)))
+            yield* _(I.when_(ref.set(p), () => added))
+          })
+        ),
+        bufferSignalProducer(queue, ref)
+      ),
     flow(Take.fail, terminate),
     () => terminate(Take.end)
   )
@@ -1783,9 +1807,10 @@ function bufferSignalProducer<R, E, A>(
 function bufferSignalConsumer<R, E, A>(
   queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
-  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.fromIO(queue.take)['>>='](
+  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.fromIO(Q.take(queue))['>>='](
     ([take, promise]) =>
-      Ch.fromIO(promise.succeed(undefined))['*>'](
+      Ch.zipr_(
+        Ch.fromIO(Pr.succeed_(promise, undefined)),
         Take.fold_(take, Ch.end(undefined), Ch.halt, (value) => Ch.write(value)['*>'](process))
       )
   )
@@ -1800,7 +1825,7 @@ function bufferSignal<R, E, A>(
     M.gen(function* (_) {
       const queue = yield* _(managed)
       const start = yield* _(Pr.make<never, void>())
-      yield* _(start.succeed(undefined))
+      yield* _(Pr.succeed_(start, undefined))
       const ref = yield* _(Ref.make(start))
       yield* _(pipe(channel, Ch.pipeTo(bufferSignalProducer(queue, ref)), Ch.runManaged, M.fork))
       return queue
@@ -1818,7 +1843,7 @@ export function bufferUnbounded<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, 
 
   return new Stream(
     Ch.managed_(queue, (queue) => {
-      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.bind_(
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
         Ch.fromIO(Q.take(queue)),
         Take.fold(
           Ch.end(undefined),
@@ -2142,7 +2167,7 @@ export function collectIO_<R, R1, E, E1, A, A1>(
     O.match_(
       pf(a),
       () => I.unit(),
-      (_) => I.asUnit(I.bind_(_, emit))
+      (_) => I.asUnit(I.chain_(_, emit))
     )
   )
 }
@@ -2207,14 +2232,14 @@ export function collectWhileIO_<R, R1, E, E1, A, A1>(
       O.match_(
         pf(a),
         () => I.succeed(false),
-        (_) => I.as_(I.bind_(_, emit), () => true)
+        (_) => I.as_(I.chain_(_, emit), () => true)
       )
 
     const loop = (chunk: C.Chunk<A>): I.IO<R1, E1, boolean> => {
       if (C.isEmpty(chunk)) {
         return I.succeed(true)
       } else {
-        return I.bind_(pfSome(C.unsafeHead(chunk)), (cont) => {
+        return I.chain_(pfSome(C.unsafeHead(chunk)), (cont) => {
           if (cont) {
             return loop(C.unsafeTail(chunk))
           } else {
@@ -2455,7 +2480,7 @@ export function distributedWithDynamic_<R, E, A>(
           I.foldl(C.empty<symbol>(), (b, [id, queue]) => {
             if (shouldProcess(id)) {
               return pipe(
-                queue.offer(Ex.succeed(a)),
+                Q.offer_(queue, Ex.succeed(a)),
                 I.matchCauseIO(
                   (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
                   () => I.succeed(b)
@@ -2465,7 +2490,7 @@ export function distributedWithDynamic_<R, E, A>(
               return I.succeed(b)
             }
           }),
-          I.bind((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, HM.removeMany(ids)) : I.unit()))
+          I.chain((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, HM.removeMany(ids)) : I.unit()))
         )
       )
     })
@@ -2476,7 +2501,7 @@ export function distributedWithDynamic_<R, E, A>(
         Ref.make<HM.HashMap<symbol, Q.UQueue<Ex.Exit<O.Option<E>, A>>>>(HM.makeDefault()),
         flow(
           Ref.get,
-          I.bind((qs) => I.foreach_(HM.values(qs), Q.shutdown))
+          I.chain((qs) => I.foreach_(HM.values(qs), Q.shutdown))
         )
       )
     )
@@ -2495,23 +2520,23 @@ export function distributedWithDynamic_<R, E, A>(
           )
         )
         const finalize = (endTake: Ex.Exit<O.Option<E>, never>): I.UIO<void> =>
-          queuesLock.withPermit(
+          Sem.withPermit(queuesLock)(
             pipe(
               I.gen(function* (_) {
                 const queue = yield* _(Q.makeBounded<Ex.Exit<O.Option<E>, A>>(1))
-                yield* _(queue.offer(endTake))
+                yield* _(Q.offer_(queue, endTake))
                 const id = Symbol() as symbol
                 yield* _(pipe(queuesRef, Ref.update(HM.set(id, queue))))
                 return tuple(id, queue)
               }),
               newQueue.set,
-              I.bind(() =>
+              I.chain(() =>
                 I.gen(function* (_) {
                   const queues = yield* _(pipe(queuesRef.get, I.map(HM.values)))
                   yield* _(
                     I.foreach_(queues, (queue) =>
                       pipe(
-                        queue.offer(endTake),
+                        Q.offer_(queue, endTake),
                         I.catchSomeCause((c) => (Ca.interrupted(c) ? O.some(I.unit()) : O.none<I.UIO<void>>()))
                       )
                     )
@@ -2533,7 +2558,7 @@ export function distributedWithDynamic_<R, E, A>(
             M.fork
           )
         )
-        return queuesLock.withPermit(I.flatten(newQueue.get))
+        return Sem.withPermit(queuesLock)(I.flatten(newQueue.get))
       })
     )
     return add
@@ -2570,15 +2595,15 @@ export function distributedWith_<R, E, A>(
   return pipe(
     Pr.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromIO,
-    M.bind((p) =>
+    M.chain((p) =>
       pipe(
         distributedWithDynamic_(
           ma,
           maximumLag,
-          (o) => I.bind_(p.await, (_) => _(o)),
+          (o) => I.chain_(Pr.await(p), (_) => _(o)),
           (_) => I.unit()
         ),
-        M.bind((next) =>
+        M.chain((next) =>
           pipe(
             I.collectAll(
               pipe(
@@ -2586,7 +2611,7 @@ export function distributedWith_<R, E, A>(
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
-            I.bind((entries) => {
+            I.chain((entries) => {
               const [mappings, queues] = C.foldr_(
                 entries,
                 [HM.makeDefault<symbol, number>(), C.empty<Q.Dequeue<Ex.Exit<O.Option<E>, A>>>()] as const,
@@ -2596,7 +2621,7 @@ export function distributedWith_<R, E, A>(
                 ]
               )
               return pipe(
-                p.succeed((o: A) =>
+                Pr.succeed_(p, (o: A) =>
                   I.map_(decide(o), (f) => (key: symbol) => f(O.toUndefined(HM.get_(mappings, key))!))
                 ),
                 I.as(() => queues)
@@ -2767,30 +2792,44 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
         pipe(
           stream,
           mapIO(f),
-          distributedWithDynamic(buffer, ([k, v]) => decider.await['>>=']((f) => f(k, v)), out.offer)
+          distributedWithDynamic(
+            buffer,
+            ([k, v]) => I.chain_(Pr.await(decider), (f) => f(k, v)),
+            (_) => Q.offer_(out, _)
+          )
         )
       )
       yield* _(
-        decider.succeed((k, _) =>
-          ref.get['<$>'](HM.get(k))['>>='](
-            O.match(
-              () =>
-                add['>>='](([idx, q]) =>
-                  Ref.update_(ref, HM.set(k, idx))
-                    ['*>'](
-                      out.offer(
-                        Ex.succeed([
-                          k,
-                          Q.map_(
-                            q,
-                            Ex.map(([, v]) => v)
+        Pr.succeed_(decider, (k, _) =>
+          pipe(
+            ref.get,
+            I.map(HM.get(k)),
+            I.chain(
+              O.match(
+                () =>
+                  pipe(
+                    add,
+                    I.chain(([idx, q]) =>
+                      pipe(
+                        Ref.update_(ref, HM.set(k, idx)),
+                        I.apr(
+                          Q.offer_(
+                            out,
+                            Ex.succeed([
+                              k,
+                              Q.map_(
+                                q,
+                                Ex.map(([, v]) => v)
+                              )
+                            ] as const)
                           )
-                        ])
+                        ),
+                        I.as(() => (_) => _ === idx)
                       )
                     )
-                    ['$>'](() => (_) => _ === idx)
-                ),
-              (idx) => I.succeed((_) => _ === idx)
+                  ),
+                (idx) => I.succeed((_) => _ === idx)
+              )
             )
           )
         )
@@ -3074,7 +3113,7 @@ function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
             I.foldl(s, (s1, a) =>
               pipe(
                 f(s1, a),
-                I.bind(([b, s2]) => emit(b)['$>'](() => s2))
+                I.chain(([b, s2]) => emit(b)['$>'](() => s2))
               )
             ),
             I.match(
@@ -3120,7 +3159,7 @@ export function mapAccumIO<A, S, R1, E1, B>(
  * this stream.
  */
 export function mapConcatChunk_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => C.Chunk<B>): Stream<R, E, B> {
-  return mapChunks_(stream, C.bind(f))
+  return mapChunks_(stream, C.chain(f))
 }
 
 /**
@@ -3248,7 +3287,7 @@ export function mapIOParUnordered_<R, E, A, R1, E1, B>(
   n: number,
   bufferSize = 16
 ): Stream<R & R1, E | E1, B> {
-  return bindPar_(stream, flow(f, fromIO), n, bufferSize)
+  return chainPar_(stream, flow(f, fromIO), n, bufferSize)
 }
 
 /**
@@ -3513,26 +3552,28 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
     const consumer = pipe(
       Sink.exposeLeftover(sink),
       Sink.matchSink(
-        (e) => Sink.fromIO(p.fail(e))['*>'](Sink.fail(e)),
+        (e) => Sink.apr_(Sink.fromIO(Pr.fail_(p, e)), Sink.fail(e)),
         ([z1, leftovers]) => {
           const loop: Ch.Channel<unknown, E, C.Chunk<A1>, unknown, E | E1, C.Chunk<A1>, void> = Ch.readWithCause(
-            (inp: C.Chunk<A1>) => Ch.fromIO(HO.offer(handoff, new PeelEmit(inp)))['*>'](loop),
-            (cause) => Ch.fromIO(HO.offer(handoff, new PeelHalt(cause)))['*>'](Ch.halt(cause)),
-            () => Ch.fromIO(HO.offer(handoff, new PeelEnd()))['*>'](Ch.unit())
+            (inp: C.Chunk<A1>) => Ch.zipr_(Ch.fromIO(HO.offer(handoff, new PeelEmit(inp))), loop),
+            (cause) => Ch.zipr_(Ch.fromIO(HO.offer(handoff, new PeelHalt(cause))), Ch.halt(cause)),
+            () => Ch.zipr_(Ch.fromIO(HO.offer(handoff, new PeelEnd())), Ch.unit())
           )
           return new Sink.Sink(
-            Ch.fromIO(p.succeed(z1))
-              ['*>'](Ch.fromIO(HO.offer(handoff, new PeelEmit(leftovers))))
-              ['*>'](loop)
+            pipe(
+              Ch.fromIO(Pr.succeed_(p, z1)),
+              Ch.zipr(Ch.fromIO(HO.offer(handoff, new PeelEmit(leftovers)))),
+              Ch.zipr(loop)
+            )
           )
         }
       )
     )
     const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
-      HO.take(handoff)['<$>']((signal) => {
+      I.map_(HO.take(handoff), (signal) => {
         switch (signal._tag) {
           case 'Emit':
-            return Ch.write(signal.els)['*>'](producer)
+            return Ch.zipr_(Ch.write(signal.els), producer)
           case 'Halt':
             return Ch.halt(signal.cause)
           case 'End':
@@ -3541,7 +3582,7 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
       })
     )
     yield* _(M.fork(runManaged_(stream, consumer)))
-    const z = yield* _(p.await)
+    const z = yield* _(Pr.await(p))
     return tuple(z, new Stream(producer))
   })
 }
@@ -3888,15 +3929,25 @@ export function runIntoElementsManaged_<R, E, A, R1, E1>(
 ): M.Managed<R & R1, E | E1, void> {
   const writer: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, never, Ex.Exit<O.Option<E | E1>, A>, unknown> = Ch.readWith(
     (inp: C.Chunk<A>) =>
-      C.foldl_(
-        inp,
-        Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, Ex.Exit<O.Option<E | E1>, A>, unknown>,
-        (channel, a) => channel['*>'](Ch.write(Ex.succeed(a)))
-      )['*>'](writer),
+      Ch.zipr_(
+        C.foldl_(
+          inp,
+          Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, Ex.Exit<O.Option<E | E1>, A>, unknown>,
+          (channel, a) => Ch.zipr_(channel, Ch.write(Ex.succeed(a)))
+        ),
+        writer
+      ),
     (err) => Ch.write(Ex.fail(O.some(err))),
     () => Ch.write(Ex.fail(O.none()))
   )
-  return pipe(stream.channel, Ch.pipeTo(writer), Ch.mapOutIO(queue.offer), Ch.drain, Ch.runManaged, M.asUnit)
+  return pipe(
+    stream.channel,
+    Ch.pipeTo(writer),
+    Ch.mapOutIO((exit) => Q.offer_(queue, exit)),
+    Ch.drain,
+    Ch.runManaged,
+    M.asUnit
+  )
 }
 
 /*
@@ -4022,7 +4073,7 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
             pipe(
               driver.last,
               I.orDie,
-              I.bind((b) => emit(f(a))['*>'](emit(g(b)))),
+              I.chain((b) => emit(f(a))['*>'](emit(g(b)))),
               I.apl(driver.reset)
             )
           )
@@ -4487,7 +4538,7 @@ export class GroupBy<R, E, K, V> {
       zipWithIndex,
       filterIO((elem) => {
         const i = elem[1]
-        return i < n ? I.succeed(true) : elem[0][1].shutdown['$>'](() => false)
+        return i < n ? I.succeed(true) : I.as_(Q.shutdown(elem[0][1]), () => false)
       }),
       map(([_]) => _)
     )
@@ -4497,7 +4548,7 @@ export class GroupBy<R, E, K, V> {
   filter(f: (k: K) => boolean): GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
-      filterIO(([k, q]) => (f(k) ? I.succeed(true) : q.shutdown['$>'](() => false)))
+      filterIO(([k, q]) => (f(k) ? I.succeed(true) : I.as_(Q.shutdown(q), () => false)))
     )
     return new GroupBy(g1, this.buffer)
   }
@@ -4505,7 +4556,7 @@ export class GroupBy<R, E, K, V> {
   apply<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
     return pipe(
       this.grouped,
-      bindPar(([k, q]) => f(k, flattenExitOption(fromQueueWithShutdown_(q))), Number.MAX_SAFE_INTEGER)
+      chainPar(([k, q]) => f(k, flattenExitOption(fromQueueWithShutdown_(q))), Number.MAX_SAFE_INTEGER)
     )
   }
 }

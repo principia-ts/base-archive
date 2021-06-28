@@ -63,7 +63,7 @@ export function genF<F>(
   return <T extends GenHKT<HKT.HKT<F, any>, any>, A>(
     f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<T, A, any>
   ): HKT.HKT<F, A> => {
-    return F.bind_(F.pure(undefined), () => {
+    return F.chain_(F.pure(undefined), () => {
       const iterator = f((config?.adapter ? config.adapter : adapter) as any)
       const state    = iterator.next()
 
@@ -71,7 +71,7 @@ export function genF<F>(
         if (state.done) {
           return F.pure(state.value)
         }
-        return F.bind_(state.value.T, (val) => {
+        return F.chain_(state.value.T, (val) => {
           const next = iterator.next(val)
           return run(next)
         })
@@ -141,7 +141,7 @@ export function genWithHistoryF<F>(
   return <Eff extends GenLazyHKT<HKT.HKT<F, any>, any>, AEff>(
     f: (i: { <A>(_: () => HKT.HKT<F, A>): GenLazyHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
   ): HKT.HKT<F, AEff> => {
-    return F.bind_(F.pure(undefined), () => {
+    return F.chain_(F.pure(undefined), () => {
       function run(replayStack: L.List<any>): HKT.HKT<F, AEff> {
         const iterator = f((config?.adapter ? config.adapter : lazyAdapter) as any)
         let state      = iterator.next()
@@ -154,7 +154,7 @@ export function genWithHistoryF<F>(
         if (state.done) {
           return F.pure(state.value)
         }
-        return F.bind_(state.value.T(), (val) => {
+        return F.chain_(state.value.T(), (val) => {
           return run(L.append_(replayStack, val))
         })
       }

@@ -20,14 +20,14 @@ export function getStateT<F>(M: Monad<HKT.UHKT<F>>): MonadState<StateTURI<HKT.UH
   const map_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['map_'] = (fa, f) =>
     pipe(fa, F.andThen(M.map(([a, s]) => [f(a), s])))
 
-  const bind_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['bind_'] = (ma, f) =>
-    pipe(ma, F.andThen(M.bind(([a, s1]) => f(a).run(s1))))
+  const chain_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['chain_'] = (ma, f) =>
+    pipe(ma, F.andThen(M.chain(([a, s1]) => f(a).run(s1))))
 
   const crossWith_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['crossWith_'] = (fa, fb, f) =>
     pipe(
       fa,
       F.andThen(
-        M.bind(([a, s1]) =>
+        M.chain(([a, s1]) =>
           pipe(
             fb.run(s1),
             M.map(([b, s2]) => [f(a, b), s2])
@@ -39,7 +39,7 @@ export function getStateT<F>(M: Monad<HKT.UHKT<F>>): MonadState<StateTURI<HKT.UH
   return MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>({
     map_,
     crossWith_,
-    bind_,
+    chain_,
     pure: (a) => F.single((s) => M.pure([a, s])),
     get: () => F.single((s) => M.pure([s, s])),
     put: (s) => F.single(() => M.pure([undefined, s])),

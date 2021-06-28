@@ -441,7 +441,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
           this.setInterrupting(true)
 
-          return I.concrete(I.bind_(this.openScope.close(v), () => I.done(v)))
+          return I.concrete(I.chain_(this.openScope.close(v), () => I.done(v)))
         }
       }
     }
@@ -676,7 +676,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       Ex.match_(
         winnerExit,
         () => cb(cont(winnerExit, loser)),
-        () => cb(I.bind_(winner.inheritRefs, () => cont(winnerExit, loser)))
+        () => cb(I.chain_(winner.inheritRefs, () => cont(winnerExit, loser)))
       )
     }
   }
@@ -752,7 +752,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   fastPathTrace(
     k: any,
     effect: any,
-    fastPathBindContinuationTrace: AtomicReference<TraceElement | undefined>
+    fastPathChainContinuationTrace: AtomicReference<TraceElement | undefined>
   ): TraceElement | undefined {
     if (this.inTracingRegion) {
       const kTrace = traceLocation(k)
@@ -761,7 +761,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         this.addTrace(effect)
       }
       if (this.platform.traceStack) {
-        fastPathBindContinuationTrace.set(kTrace)
+        fastPathChainContinuationTrace.set(kTrace)
       }
       return kTrace
     }
@@ -774,7 +774,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   evaluateNow(start: I.Instruction): void {
     try {
       let current: I.Instruction | undefined = start
-      const fastPathBindContinuationTrace    = new AtomicReference<TraceElement | undefined>(undefined)
+      const fastPathChainContinuationTrace   = new AtomicReference<TraceElement | undefined>(undefined)
       currentFiber.set(this)
 
       while (current != null) {
@@ -787,7 +787,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 current = undefined
               } else {
                 switch (current._tag) {
-                  case IOTag.Bind: {
+                  case IOTag.Chain: {
                     const nested = I.concrete(current.io)
                     const k      = current.f as (a: any) => I.IO<any, any, any>
                     switch (nested._tag) {
@@ -802,22 +802,22 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         break
                       }
                       case IOTag.EffectTotal: {
-                        const kTrace = this.fastPathTrace(k, nested.effect, fastPathBindContinuationTrace)
+                        const kTrace = this.fastPathTrace(k, nested.effect, fastPathChainContinuationTrace)
                         if (this.platform.traceExecution && this.inTracingRegion) {
                           this.addTraceValue(kTrace)
                         }
                         if (this.platform.traceStack && kTrace != null) {
-                          fastPathBindContinuationTrace.set(undefined)
+                          fastPathChainContinuationTrace.set(undefined)
                         }
                         current = I.concrete(k(nested.effect()))
                         break
                       }
                       case IOTag.EffectPartial: {
-                        const kTrace = this.fastPathTrace(k, nested.effect, fastPathBindContinuationTrace)
+                        const kTrace = this.fastPathTrace(k, nested.effect, fastPathChainContinuationTrace)
                         try {
                           current = I.concrete(k(nested.effect()))
                           if (this.platform.traceStack && kTrace != null) {
-                            fastPathBindContinuationTrace.set(undefined)
+                            fastPathChainContinuationTrace.set(undefined)
                           }
                           if (this.platform.traceExecution && this.inTracingRegion && kTrace != null) {
                             this.addTraceValue(kTrace)
@@ -878,8 +878,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     if (this.platform.traceEffects && this.inTracingRegion) {
                       this.addTrace(current.fill)
                     }
-                    const fast = fastPathBindContinuationTrace.get
-                    fastPathBindContinuationTrace.set(undefined)
+                    const fast = fastPathChainContinuationTrace.get
+                    fastPathChainContinuationTrace.set(undefined)
                     const fullCause          = current.fill(() => this.captureTrace(fast))
                     const discardedFolds     = this.unwindStack()
                     const maybeRedactedCause = discardedFolds ? C.stripFailures(fullCause) : fullCause

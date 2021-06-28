@@ -384,7 +384,7 @@ export function crossWith_<A, B, C>(
   fb: NonEmptyArray<B>,
   f: (a: A, b: B) => C
 ): NonEmptyArray<C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(
@@ -601,10 +601,10 @@ export function map<A, B>(f: (a: A) => B): (fa: NonEmptyArray<A>) => NonEmptyArr
  * @since 1.0.0
  */
 export function flatten<A>(mma: NonEmptyArray<NonEmptyArray<A>>): NonEmptyArray<A> {
-  return ibind_(mma, (_, a) => a)
+  return ichain_(mma, (_, a) => a)
 }
 
-export function ibind_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
+export function ichain_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
   let outLen = 1
   const len  = ma.length
   // perf: const mut_temp = [f(0, ma[0])]
@@ -635,8 +635,8 @@ export function ibind_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEm
   return mut_out
 }
 
-export function ibind<A, B>(f: (i: number, a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
-  return (ma) => ibind_(ma, f)
+export function ichain<A, B>(f: (i: number, a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
+  return (ma) => ichain_(ma, f)
 }
 
 /**
@@ -645,8 +645,8 @@ export function ibind<A, B>(f: (i: number, a: A) => NonEmptyArray<B>): (ma: NonE
  * @category Monad
  * @since 1.0.0
  */
-export function bind_<A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
-  return ibind_(ma, (_, a) => f(a))
+export function chain_<A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
+  return ichain_(ma, (_, a) => f(a))
 }
 
 /**
@@ -655,8 +655,8 @@ export function bind_<A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>)
  * @category Monad
  * @since 1.0.0
  */
-export function bind<A, B>(f: (a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
+  return (ma) => chain_(ma, f)
 }
 
 /*
@@ -685,7 +685,7 @@ export const imapAccumM_: P.MapAccumMWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> =
   _.ifoldl_(
     tail(ta),
     M.map_(f(s, 0, head(ta)), ([b, s]) => [pure(b), s]),
-    (b, i, a) => M.bind_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+    (b, i, a) => M.chain_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
   )
 
 export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
@@ -1468,7 +1468,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten
 })
 

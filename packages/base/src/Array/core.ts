@@ -160,8 +160,18 @@ export const pure: <A>(a: A) => NonEmptyArray<A> = NEA.pure
  * @category Apply
  * @since 1.0.0
  */
+export function _ap<A, B>(fa: ReadonlyArray<A>, fab: ReadonlyArray<(a: A) => B>): ReadonlyArray<B> {
+  return chain_(fab, (f) => map_(fa, f))
+}
+
+/**
+ * Apply a function to an argument under a type constructor
+ *
+ * @category Apply
+ * @since 1.0.0
+ */
 export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B> {
-  return bind_(fab, (f) => map_(fa, f))
+  return chain_(fab, (f) => map_(fa, f))
 }
 
 /**
@@ -186,7 +196,7 @@ export function crossWith_<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (a: A, b: B) => C
 ): ReadonlyArray<C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 /**
@@ -660,7 +670,7 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldMap__<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
+export function _ifoldMap<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
   return ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
 
@@ -684,8 +694,8 @@ export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (
  * @category Foldable
  * @since 1.0.0
  */
-export function foldMap__<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return ifoldMap__(fa, M, (_, a) => f(a))
+export function _foldMap<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 /**
@@ -778,7 +788,7 @@ export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArr
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ibind_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+export function ichain_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
   let outLen     = 0
   const len      = fa.length
   const mut_temp = Array(len)
@@ -801,8 +811,8 @@ export function ibind_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Reado
   return mut_out
 }
 
-export function ibind<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => ibind_(fa, f)
+export function ichain<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => ichain_(fa, f)
 }
 
 /**
@@ -811,8 +821,8 @@ export function ibind<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: Read
  * @category Monad
  * @since 1.0.0
  */
-export function bind_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-  return ibind_(fa, (_, a) => f(a))
+export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+  return ichain_(fa, (_, a) => f(a))
 }
 
 /**
@@ -821,12 +831,12 @@ export function bind_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>)
  * @category Monad
  * @since 1.0.0
  */
-export function bind<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => bind_(fa, f)
+export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => chain_(fa, f)
 }
 
 /**
- * Removes one level of nesting from a nested `NonEmptyArray`
+ * Removes one level of nesting from a nested `Array`
  *
  * @category Monad
  * @since 1.0.0
@@ -982,7 +992,7 @@ export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const itraverse__ = P.implementTraverseWithIndex__<[HKT.URI<ArrayURI>]>()(
+export const _itraverse = P._implementTraverseWithIndex<[HKT.URI<ArrayURI>]>()(
   (_) => (ta, G, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
 )
 
@@ -1005,7 +1015,7 @@ export const itraverse: P.TraverseWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => {
 
 export const imapAccumM_: P.MapAccumMWithIndexFn_<[HKT.URI<ArrayURI>]> = (M) => (ta, s, f) =>
   ifoldl_(ta, M.pure([[] as any[], s]), (b, i, a) =>
-    M.bind_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+    M.chain_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
   )
 
 export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<ArrayURI>]> = (M) => {
@@ -1019,7 +1029,7 @@ export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<ArrayURI>]> = (M) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse__: P.TraverseFn__<[HKT.URI<ArrayURI>]> = (ta, A, f) => itraverse__(ta, A, (_, a) => f(a))
+export const _traverse: P._TraverseFn<[HKT.URI<ArrayURI>]> = (ta, A, f) => _itraverse(ta, A, (_, a) => f(a))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -1466,6 +1476,18 @@ export function dropLastWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
   return (as) => dropLastWhile_(as, predicate)
 }
 
+export function _elem<A>(as: ReadonlyArray<A>, E: P.Eq<A>, a: A): boolean {
+  const predicate = (element: A) => E.equals_(element, a)
+  let i           = 0
+  const len       = as.length
+  for (; i < len; i++) {
+    if (predicate(as[i])) {
+      return true
+    }
+  }
+  return false
+}
+
 /**
  * Test if a value is a member of an array. Takes a `P.Eq<A>` as a single
  * argument which returns the function to use to search for a value of type `A` in
@@ -1475,17 +1497,7 @@ export function dropLastWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
  * @since 1.0.0
  */
 export function elem_<A>(E: P.Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
-  return (as, a) => {
-    const predicate = (element: A) => E.equals(element)(a)
-    let i           = 0
-    const len       = as.length
-    for (; i < len; i++) {
-      if (predicate(as[i])) {
-        return true
-      }
-    }
-    return false
-  }
+  return (as, a) => _elem(as, E, a)
 }
 
 /**
@@ -1767,14 +1779,8 @@ export function foldrWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (a: A, b: B
   return (as) => foldrWhile_(as, b, predicate, f)
 }
 
-/**
- * Group equal, consecutive elements of an array into non empty arrays.
- *
- * @category combinators
- * @since 1.0.0
- */
-export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
-  return chop((as) => {
+export function _group<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<NonEmptyArray<A>> {
+  return chop_(as, (as) => {
     const h   = as[0]
     const out = [h] as P.Mutable<NonEmptyArray<A>>
     let i     = 1
@@ -1788,6 +1794,16 @@ export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<No
     }
     return [out, as.slice(i)]
   })
+}
+
+/**
+ * Group equal, consecutive elements of an array into non empty arrays.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
+  return (as) => _group(as, E)
 }
 
 /**
@@ -1836,6 +1852,14 @@ export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<NonE
  */
 export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<NonEmptyArray<A>> {
   return (as) => insertAt_(as, i, a)
+}
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export function _intersection<A>(xs: ReadonlyArray<A>, E: P.Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
+  return filter_(xs, (a) => _elem(ys, E, a))
 }
 
 /**
@@ -2402,23 +2426,42 @@ export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [Reado
  * @category combinators
  * @since 1.0.0
  */
-export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => {
-    if (as.length === 1) {
-      return as
-    }
-    const elemE_        = elem_(E)
-    const out: Array<A> = []
-    const len           = as.length
-    let i               = 0
-    for (; i < len; i++) {
-      const a = as[i]
-      if (!elemE_(out, a)) {
-        out.push(a)
-      }
-    }
-    return out
+export function _uniq<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<A> {
+  if (as.length === 1) {
+    return as
   }
+  const elemE_        = elem_(E)
+  const out: Array<A> = []
+  const len           = as.length
+  let i               = 0
+  for (; i < len; i++) {
+    const a = as[i]
+    if (!elemE_(out, a)) {
+      out.push(a)
+    }
+  }
+  return out
+}
+
+/**
+ * Remove duplicates from an array, keeping the first occurrence of an element.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => _uniq(as, E)
+}
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export function _union<A>(xs: ReadonlyArray<A>, E: P.Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
+  return concat_(
+    xs,
+    filter_(ys, (a) => !_elem(xs, E, a))
+  )
 }
 
 /**
@@ -2566,7 +2609,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten
 })
 

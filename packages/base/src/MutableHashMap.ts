@@ -146,7 +146,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   [Symbol.iterator](): Iterator<readonly [K, V]> {
-    return I.bind_(this.backingMap, ([, _]) => _)[Symbol.iterator]()
+    return I.chain_(this.backingMap, ([, _]) => _)[Symbol.iterator]()
   }
 }
 

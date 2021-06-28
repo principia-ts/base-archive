@@ -407,7 +407,7 @@ export function map<B>(E: P.Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>)
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<B>(E: P.Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
+export function chain_<B>(E: P.Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => ReadonlySet<B>) => ReadonlySet<B> {
   const elemE = elem(E)
   return (set, f) => {
     const r = new Set<B>()
@@ -422,12 +422,12 @@ export function bind_<B>(E: P.Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => Read
   }
 }
 
-export function bind<B>(E: P.Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
-  return (f) => (set) => bind_(E)(set, f)
+export function chain<B>(E: P.Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
+  return (f) => (set) => chain_(E)(set, f)
 }
 
 export function flatten<A>(E: P.Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
-  const bindE = bind(E)
+  const bindE = chain(E)
   return bindE(P.identity)
 }
 

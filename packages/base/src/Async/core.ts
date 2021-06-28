@@ -419,7 +419,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, R1, E1, B, C>(
@@ -498,7 +498,7 @@ export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Eithe
  */
 
 export function map_<R, E, A, B>(fa: Async<R, E, A>, f: (a: A) => B): Async<R, E, B> {
-  return bind_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R, E, B> {
@@ -511,20 +511,20 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
+export function chain_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, B> {
   return new Chain(ma, f)
 }
 
-export function bind<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
+export function chain<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
   return (ma) => new Chain(ma, f)
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, A> {
-  return bind_(ma, (a) => bind_(f(a), (_) => succeed(a)))
+  return chain_(ma, (a) => chain_(f(a), (_) => succeed(a)))
 }
 
 export function tap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, A> {
@@ -535,7 +535,7 @@ export function tapError_<R, E, A, R1, E1, B>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, B>
 ): Async<R & R1, E | E1, A> {
-  return catchAll_(async, (e) => bind_(f(e), (_) => fail(e)))
+  return catchAll_(async, (e) => chain_(f(e), (_) => fail(e)))
 }
 
 export function tapError<E, R1, E1, B>(
@@ -550,12 +550,12 @@ export function tapError<E, R1, E1, B>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function asksM<R0, R, E, A>(f: (_: R0) => Async<R, E, A>): Async<R & R0, E, A> {
+export function asksAsync<R0, R, E, A>(f: (_: R0) => Async<R, E, A>): Async<R & R0, E, A> {
   return new Asks(f)
 }
 
 export function asks<R, A>(f: (_: R) => A): Async<R, never, A> {
-  return asksM((_: R) => succeed(f(_)))
+  return asksAsync((_: R) => succeed(f(_)))
 }
 
 export function ask<R>(): Async<R, never, R> {
@@ -571,7 +571,7 @@ export function giveAll<R>(env: R): <E, A>(ra: Async<R, E, A>) => Async<unknown,
 }
 
 export function gives_<R0, R, E, A>(ra: Async<R, E, A>, f: (_: R0) => R): Async<R0, E, A> {
-  return asksM((_: R0) => giveAll_(ra, f(_)))
+  return asksAsync((_: R0) => giveAll_(ra, f(_)))
 }
 
 export function gives<R0, R>(f: (_: R0) => R): <E, A>(ra: Async<R, E, A>) => Async<R0, E, A> {
@@ -595,7 +595,7 @@ export function give<R>(env: R): <R0, E, A>(ra: Async<R & R0, E, A>) => Async<R0
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesM<SS extends Record<string, Tag<any>>>(
+export function asksServicesAsync<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
@@ -605,13 +605,13 @@ export function asksServicesM<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asksM(
+    asksAsync(
       (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
         f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
-export function asksServicesTM<SS extends Tag<any>[]>(
+export function asksServicesTAsync<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
@@ -621,7 +621,7 @@ export function asksServicesTM<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asksM(
+    asksAsync(
       (
         r: P.UnionToIntersection<
           {
@@ -672,8 +672,8 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceM<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Async<R, E, B>) => Async<R & Has<T>, E, B> {
-  return (f) => asksM((r: Has<T>) => f(r[s.key as any]))
+export function asksServiceAsync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Async<R, E, B>) => Async<R & Has<T>, E, B> {
+  return (f) => asksAsync((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
@@ -688,58 +688,58 @@ export function asksServiceF<T>(
 ) => T[K] extends (...args: any[]) => Async<infer R, infer E, infer A> ? Async<R & Has<T>, E, A> : unknown[] {
   return (k) =>
     (...args) =>
-      asksServiceM(s)((t) => (t[k] as any)(...args)) as any
+      asksServiceAsync(s)((t) => (t[k] as any)(...args)) as any
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Async<Has<T>, never, B> {
-  return (f) => asksServiceM(s)((a) => pure(f(a)))
+  return (f) => asksServiceAsync(s)((a) => pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): Async<Has<T>, never, T> {
-  return asksServiceM(s)((a) => pure(a))
+  return asksServiceAsync(s)((a) => pure(a))
 }
 
 /**
  * Provides the service with the required Service Entry, depends on global HasRegistry
  */
-export function giveServiceM<T>(_: Tag<T>) {
+export function giveServiceAsync<T>(_: Tag<T>) {
   return <R, E>(f: Async<R, E, T>) =>
     <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>): Async<R & R1, E | E1, A1> =>
-      asksM((r: R & R1) => bind_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+      asksAsync((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry, depends on global HasRegistry
  */
 export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R1, E1, A1> {
-  return (f) => (ma) => giveServiceM(_)(pure(f))(ma)
+  return (f) => (ma) => giveServiceAsync(_)(pure(f))(ma)
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  */
-export function replaceServiceM<R, E, T>(
+export function replaceServiceAsync<R, E, T>(
   _: Tag<T>,
   f: (_: T) => Async<R, E, T>
 ): <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R & R1 & Has<T>, E1 | E, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return (ma) => asksServiceAsync(_)((t) => giveServiceAsync(_)(f(t))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  */
-export function replaceServiceM_<R, E, T, R1, E1, A1>(
+export function replaceServiceAsync_<R, E, T, R1, E1, A1>(
   ma: Async<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => Async<R, E, T>
 ): Async<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(f(t))(ma))
+  return asksServiceAsync(_)((t) => giveServiceAsync(_)(f(t))(ma))
 }
 
 /**
@@ -749,7 +749,7 @@ export function replaceService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
+  return (ma) => asksServiceAsync(_)((t) => giveServiceAsync(_)(pure(f(t)))(ma))
 }
 
 /**
@@ -760,7 +760,7 @@ export function replaceService_<R1, E1, A1, T>(
   _: Tag<T>,
   f: (_: T) => T
 ): Async<R1 & Has<T>, E1, A1> {
-  return asksServiceM(_)((t) => giveServiceM(_)(pure(f(t)))(ma))
+  return asksServiceAsync(_)((t) => giveServiceAsync(_)(pure(f(t)))(ma))
 }
 
 /**
@@ -960,7 +960,7 @@ export function runPromiseExitEnv_<R, E, A>(
             effectTotal(() => {
               pushEnv(I.env)
             }),
-            bind(() => I.async),
+            chain(() => I.async),
             tap(() =>
               effectTotal(() => {
                 popEnv()
@@ -1147,7 +1147,7 @@ export const Monad = P.Monad<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 

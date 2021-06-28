@@ -110,7 +110,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       } else {
         return pipe(
           I.result(head.finalizer(exit)),
-          I.bind((finExit) => this.unwindAllFinalizers(Ex.apr_(acc, finExit), L.tail(conts), exit))
+          I.chain((finExit) => this.unwindAllFinalizers(Ex.apr_(acc, finExit), L.tail(conts), exit))
         )
       }
     }
@@ -306,7 +306,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     cause: Cause<unknown>
   ): ChannelState<Env, unknown> | undefined {
     const closeEffect = maybeCloseBoth(exec.close(Ex.halt(cause)), rest.exec.close(Ex.halt(cause)))
-    return self.finishSubexecutorWithCloseEffect(Ex.halt(cause), closeEffect ? I.bind_(closeEffect, I.done) : undefined)
+    return self.finishSubexecutorWithCloseEffect(
+      Ex.halt(cause),
+      closeEffect ? I.chain_(closeEffect, I.done) : undefined
+    )
   }
 
   private drainFromKAndSubexecutor(
@@ -460,7 +463,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               })
             ),
             I.uninterruptible,
-            I.bind(() => I.succeedWith(() => this.doneSucceed(z)))
+            I.chain(() => I.succeedWith(() => this.doneSucceed(z)))
           )
         )
       }
@@ -503,7 +506,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               })
             ),
             I.uninterruptible,
-            I.bind(() => I.succeedWith(() => this.doneHalt(cause)))
+            I.chain(() => I.succeedWith(() => this.doneHalt(cause)))
           )
         )
       }
@@ -630,7 +633,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                     case State.ChannelStateTag.Emit: {
                       return pipe(
                         currentChannel.input.emit(inputExecutor.getEmit()),
-                        I.bind(() => drainer)
+                        I.chain(() => drainer)
                       )
                     }
                     case State.ChannelStateTag.Effect: {
@@ -651,13 +654,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 result = new State.Effect(
                   pipe(
                     I.fork(drainer),
-                    I.bind((fiber) =>
+                    I.chain((fiber) =>
                       I.succeedWith(() => {
                         this.addFinalizer(
                           new C.ContinuationFinalizer((exit) =>
                             pipe(
                               F.interrupt(fiber),
-                              I.bind(() => I.defer(() => this.restorePipe(exit, inputExecutor) || I.unit()))
+                              I.chain(() => I.defer(() => this.restorePipe(exit, inputExecutor) || I.unit()))
                             )
                           )
                         )

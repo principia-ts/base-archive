@@ -11,7 +11,7 @@ import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as O from '../../Option'
 import * as S from '../../Schedule'
-import { bind, fail, map, map_, matchIO, orDie } from '../core'
+import { chain, fail, map, map_, matchIO, orDie } from '../core'
 
 /**
  * Returns a new effect that repeats this effect according to the specified
@@ -115,7 +115,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return pipe(
     S.driver(sc),
-    bind((driver) => {
+    chain((driver) => {
       function loop(a: A): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
         return pipe(
           driver.next(a),

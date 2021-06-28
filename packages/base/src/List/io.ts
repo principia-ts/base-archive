@@ -28,7 +28,7 @@ export function dropWhileM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean
     L.forEach_(l, (a) => {
       dropping = pipe(
         dropping,
-        I.bind((d) => (d ? p(a) : I.succeed(false))),
+        I.chain((d) => (d ? p(a) : I.succeed(false))),
         I.map((d) => {
           if (d) {
             return true

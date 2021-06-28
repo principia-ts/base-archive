@@ -29,12 +29,10 @@ export class Acquisition {
  **/
 export class Semaphore {
   constructor(private readonly state: URef<State>) {
-    this.loop        = this.loop.bind(this)
-    this.restore     = this.restore.bind(this)
-    this.releaseN    = this.releaseN.bind(this)
-    this.restore     = this.restore.bind(this)
-    this.withPermits = this.withPermits.bind(this)
-    this.withPermit  = this.withPermit.bind(this)
+    this.loop     = this.loop.bind(this)
+    this.restore  = this.restore.bind(this)
+    this.releaseN = this.releaseN.bind(this)
+    this.restore  = this.restore.bind(this)
   }
 
   get available() {
@@ -42,18 +40,6 @@ export class Semaphore {
       this.state.get,
       E.getOrElse(() => 0)
     )
-  }
-
-  withPermits<R, E, A>(n: number, io: I.IO<R, E, A>): I.IO<R, E, A> {
-    return bracket_(
-      this.prepare(n),
-      (a) => a.waitAcquire['*>'](io),
-      (a) => a.release
-    )
-  }
-
-  withPermit<R, E, A>(io: I.IO<R, E, A>): I.IO<R, E, A> {
-    return this.withPermits(1, io)
   }
 
   private loop(n: number, state: State, acc: I.UIO<void>): [I.UIO<void>, State] {
@@ -67,9 +53,9 @@ export class Semaphore {
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.left(q), I.apl_(acc, p.succeed(undefined)))
+              return this.loop(n - m, E.left(q), I.apl_(acc, P.succeed_(p, undefined)))
             } else if (n === m) {
-              return [I.apl_(acc, p.succeed(undefined)), E.left(q)]
+              return [I.apl_(acc, P.succeed_(p, undefined)), E.left(q)]
             } else {
               return [acc, E.left(q.prepend([p, m - n]))]
             }
@@ -81,7 +67,7 @@ export class Semaphore {
 
   private releaseN(toRelease: number): I.UIO<void> {
     return I.flatten(
-      I.bind_(assertNonNegative(toRelease, 'Semaphore.releaseN'), () =>
+      I.chain_(assertNonNegative(toRelease, 'Semaphore.releaseN'), () =>
         pipe(
           this.state,
           Ref.modify((s) => this.loop(toRelease, s, I.unit()))
@@ -116,7 +102,7 @@ export class Semaphore {
     if (n === 0) {
       return I.pure(new Acquisition(I.unit(), I.unit()))
     } else {
-      return I.bind_(P.make<never, void>(), (p) =>
+      return I.chain_(P.make<never, void>(), (p) =>
         pipe(
           this.state,
           Ref.modify(
@@ -139,8 +125,16 @@ export class Semaphore {
   }
 }
 
+export function _withPermits<R, E, A>(s: Semaphore, n: number, io: I.IO<R, E, A>): I.IO<R, E, A> {
+  return bracket_(
+    s.prepare(n),
+    (a) => a.waitAcquire['*>'](io),
+    (a) => a.release
+  )
+}
+
 export function withPermits_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore, n: number): I.IO<R, E, A> {
-  return s.withPermits(n, io)
+  return _withPermits(s, n, io)
 }
 
 /**
@@ -149,11 +143,15 @@ export function withPermits_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore, n: number
  * @dataFirst withPermits_
  */
 export function withPermits(s: Semaphore, n: number): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R, E, A> {
-  return (io) => s.withPermits(n, io)
+  return (io) => _withPermits(s, n, io)
+}
+
+export function _withPermit<R, E, A>(s: Semaphore, io: I.IO<R, E, A>): I.IO<R, E, A> {
+  return _withPermits(s, 1, io)
 }
 
 export function withPermit_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore): I.IO<R, E, A> {
-  return s.withPermit(io)
+  return _withPermit(s, io)
 }
 
 /**
@@ -162,7 +160,7 @@ export function withPermit_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore): I.IO<R, E
  * @dataFirst withPermit_
  */
 export function withPermit(s: Semaphore): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R, E, A> {
-  return (io) => s.withPermit(io)
+  return (io) => _withPermit(s, io)
 }
 
 /**

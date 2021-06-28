@@ -7,7 +7,7 @@ import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
-import { bind_, done, halt, matchCauseIO_, result } from '../core'
+import { chain_, done, halt, matchCauseIO_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -29,10 +29,10 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
   release: (a: A, e: Exit<E1, A1>) => IO<R2, E2, any>
 ): IO<R & R1 & R2, E | E1 | E2, A1> {
   return uninterruptibleMask(({ restore }) =>
-    bind_(
+    chain_(
       acquire,
       traceAs(use, (a) =>
-        bind_(
+        chain_(
           result(restore(use(a))),
           traceAs(release, (e) =>
             matchCauseIO_(

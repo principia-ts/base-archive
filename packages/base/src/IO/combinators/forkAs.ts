@@ -8,7 +8,7 @@ import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'
 import { pipe } from '../../function'
 import * as O from '../../Option'
-import { bind, fork } from '../core'
+import { chain, fork } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -23,7 +23,7 @@ export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.F
       pipe(
         Fiber.fiberName,
         FiberRef.set(O.some(name)),
-        bind(() => fork(restore(ma)))
+        chain(() => fork(restore(ma)))
       )
     )
   )

@@ -329,7 +329,7 @@ function _intersect<A extends ReadonlyArray<Record<string, any>>>(
         if (R.UnknownRecordGuard.is(ak) && R.UnknownRecordGuard.is(mut_out[k])) {
           computation = pipe(
             computation,
-            Ev.bind((mut_out) =>
+            Ev.chain((mut_out) =>
               Ev.map_(_intersect(mut_out[k], ak), (intersected) => {
                 mut_out[k] = intersected
                 return mut_out

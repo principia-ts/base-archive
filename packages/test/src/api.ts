@@ -45,7 +45,7 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
   } else {
     const fragment = whole.result
     const result   = BA.isTrue(fragment.value) ? fragment.value : BA.not(fragment.value)
-    return BA.bind_(result, (fragment) =>
+    return BA.chain_(result, (fragment) =>
       traverseResultLoop(fragment, FailureDetails([whole, ...failureDetails.assertion], failureDetails.gen))
     )
   }
@@ -57,7 +57,7 @@ export function traverseResult<A>(
   assertion: AssertionIO<A>,
   showA?: Show<A>
 ): TestResult {
-  return BA.bind_(assertResult, (fragment) =>
+  return BA.chain_(assertResult, (fragment) =>
     traverseResultLoop(
       fragment,
       FailureDetails([new AssertionValue(value, Ev.now(assertion), Ev.now(assertResult), showA)])
@@ -78,7 +78,7 @@ export const assertCompletes = assert(true, isTrue)
 export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionIO<A>, showA?: Show<A>): IO<R, E, TestResult> {
   return I.gen(function* (_) {
     const value        = yield* _(io)
-    const assertResult = yield* _(assertion.runM(value))
+    const assertResult = yield* _(assertion.runIO(value))
     return traverseResult(value, assertResult, assertion, showA)
   })
 }
@@ -132,7 +132,7 @@ export function checkM<R, A, R1, E>(
 ): IO<R & R1 & Has<TestConfig>, E, TestResult> {
   return pipe(
     TestConfig.samples,
-    I.bind((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
+    I.chain((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
   )
 }
 
@@ -144,7 +144,7 @@ function checkStream<R, A, R1, E>(
 ): IO<R & R1 & Has<TestConfig>, E, TestResult> {
   return pipe(
     TestConfig.shrinks,
-    I.bind(
+    I.chain(
       shrinkStream(
         pipe(
           stream,
@@ -177,9 +177,9 @@ function shrinkStream<R, R1, E, A>(
       stream,
       S.dropWhile((_) => !E.match_(_.value, (_) => true, BA.isFalse)),
       S.take(1),
-      S.bind(flow(Sa.shrinkSearch(E.match(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
+      S.chain(flow(Sa.shrinkSearch(E.match(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
       S.runCollect,
-      I.bind(
+      I.chain(
         flow(
           C.filter(E.match(() => true, BA.isFalse)),
           C.last,

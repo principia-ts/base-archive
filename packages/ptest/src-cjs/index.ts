@@ -33,8 +33,8 @@ const program = pipe(
       return `${process.cwd()}/${parsed.dir}/${parsed.name}`
     })
   ),
-  I.bind(I.foreach((path) => I.try(() => require(path).default))),
-  I.bind(I.foreach((test) => (isRunnableSpec(test) ? I.succeedWith(() => test.main(testArgs)) : I.unit())))
+  I.chain(I.foreach((path) => I.try(() => require(path).default))),
+  I.chain(I.foreach((test) => (isRunnableSpec(test) ? I.succeedWith(() => test.main(testArgs)) : I.unit())))
 )
 
 I.run_(

@@ -156,7 +156,7 @@ export function unit(): Gen<unknown, void> {
  */
 
 export function crossWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A, b: B) => C): Gen<R & R1, C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R>(fa: Gen<R, A>) => Gen<R & R1, C> {
@@ -199,31 +199,31 @@ export function mapM<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<R, A, R1, B>(ma: Gen<R, A>, f: (a: A) => Gen<R1, B>): Gen<R & R1, B> {
+export function chain_<R, A, R1, B>(ma: Gen<R, A>, f: (a: A) => Gen<R1, B>): Gen<R & R1, B> {
   return new Gen(
     pipe(
       ma.sample,
-      S.bind((sample) => {
+      S.chain((sample) => {
         const values  = f(sample.value).sample
         const shrinks = pipe(
           new Gen(sample.shrink),
-          bind((a) => f(a))
+          chain((a) => f(a))
         ).sample
         return pipe(
           values,
-          S.map((sample) => Sa.bind_(sample, (b) => new Sample(b, shrinks)))
+          S.map((sample) => Sa.chain_(sample, (b) => new Sample(b, shrinks)))
         )
       })
     )
   )
 }
 
-export function bind<A, R1, B>(f: (a: A) => Gen<R1, B>): <R>(ma: Gen<R, A>) => Gen<R & R1, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, R1, B>(f: (a: A) => Gen<R1, B>): <R>(ma: Gen<R, A>) => Gen<R & R1, B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<R, R1, A>(mma: Gen<R, Gen<R1, A>>): Gen<R & R1, A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -238,7 +238,7 @@ export function filter_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A> {
   return new Gen(
     pipe(
       fa.sample,
-      S.bind((sample) => (f(sample.value) ? Sa.filter_(sample, f) : S.empty))
+      S.chain((sample) => (f(sample.value) ? Sa.filter_(sample, f) : S.empty))
     )
   )
 }
@@ -264,7 +264,7 @@ export function filterNot<A>(f: Predicate<A>): <R>(fa: Gen<R, A>) => Gen<R, A> {
  */
 
 export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R, A>): Gen<R & Has<Random>, A> {
-  return bind_(int({ min, max }), f)
+  return chain_(int({ min, max }), f)
 }
 
 export function memo<R, A>(builder: (maxDepth: number) => Gen<R, A>): (maxDepth?: number) => Gen<R, A> {
@@ -291,9 +291,9 @@ export function memo<R, A>(builder: (maxDepth: number) => Gen<R, A>): (maxDepth?
 export function medium<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<R & Has<Random> & Has<Sized>, A> {
   return pipe(
     size,
-    bind((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 10.0), min, max))),
+    chain((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 10.0), min, max))),
     reshrink(Sa.shrinkIntegral(min)),
-    bind(f)
+    chain(f)
   )
 }
 
@@ -301,7 +301,7 @@ export function oneOf<A extends ReadonlyArray<Gen<any, any>>>(
   ...gens: A
 ): Gen<_R<A[number]> & Has<Random>, _A<A[number]>> {
   if (A.isEmpty(gens)) return empty
-  else return bind_(int({ min: 0, max: gens.length - 1 }), (i) => gens[i])
+  else return chain_(int({ min: 0, max: gens.length - 1 }), (i) => gens[i])
 }
 
 export function reshrink_<R, A, R1, B>(gen: Gen<R, A>, f: (a: A) => Sample<R1, B>): Gen<R & R1, B> {
@@ -315,15 +315,15 @@ export function reshrink<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(gen: Gen<R, 
 export const size: Gen<Has<Sized>, number> = fromEffect(Sized.size)
 
 export function sized<R, A>(f: (size: number) => Gen<R, A>): Gen<R & Has<Sized>, A> {
-  return bind_(size, f)
+  return chain_(size, f)
 }
 
 export function small<R, A>(f: (n: number) => Gen<R, A>, min = 0): Gen<Has<Sized> & Has<Random> & R, A> {
   return pipe(
     size,
-    bind((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 25), min, max))),
+    chain((max) => map_(exponential, (n) => clamp(Math.round((n * max) / 25), min, max))),
     reshrink(Sa.shrinkIntegral(min)),
-    bind(f)
+    chain(f)
   )
 }
 
@@ -340,7 +340,7 @@ export function unfoldGenN<S, R, A>(n: number, s: S, f: (s: S) => Gen<R, readonl
   } else {
     return pipe(
       f(s),
-      bind(([s, a]) => pipe(unfoldGenN(n - 1, s, f), map(A.append(a))))
+      chain(([s, a]) => pipe(unfoldGenN(n - 1, s, f), map(A.append(a))))
     )
   }
 }
@@ -361,7 +361,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
   })
   return pipe(
     uniform(),
-    bind((n) => {
+    chain((n) => {
       return pipe(
         map,
         OM.getGte(n),

@@ -34,9 +34,9 @@ export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArra
  * Effectfully maps the elements of this Array in parallel.
  */
 export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.bind_(I.succeed<never, B[]>(Array(as.length)), (mut_bs) => {
+  return I.chain_(I.succeed<never, B[]>(Array(as.length)), (mut_bs) => {
     function fn([a, n]: [A, number]) {
-      return I.bind_(
+      return I.chain_(
         I.defer(() => f(a)),
         (b) =>
           I.succeedWith(() => {
@@ -44,7 +44,7 @@ export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R,
           })
       )
     }
-    return I.bind_(
+    return I.chain_(
       I.foreachUnitPar_(
         A.imap_(as, (n, a) => [a, n] as [A, number]),
         fn
@@ -77,7 +77,7 @@ export function mapAccumIO_<S, A, R, E, B>(
     const mut_out: Array<B> = Array(as.length)
     for (let i = 0; i < as.length; i++) {
       const v = as[i]
-      dest    = I.bind_(dest, (state) =>
+      dest    = I.chain_(dest, (state) =>
         I.map_(f(state, v), ([b, s2]) => {
           mut_out[i] = b
           return s2
@@ -111,7 +111,7 @@ export function dropWhileIO_<A, R, E>(
       const a  = as[i]
       dropping = pipe(
         dropping,
-        I.bind((d) => (d ? p(a) : I.succeed(false))),
+        I.chain((d) => (d ? p(a) : I.succeed(false))),
         I.map((d) => {
           if (d) {
             return true
@@ -144,7 +144,7 @@ export function takeWhileIO_<R, E, A>(
       const a = as[i]
       taking  = pipe(
         taking,
-        I.bind((t) => (t ? p(a) : I.succeed(false))),
+        I.chain((t) => (t ? p(a) : I.succeed(false))),
         I.map((t) => {
           if (t) {
             ret.push(a)
@@ -166,7 +166,7 @@ export function takeWhileIO<A, R, E>(
 }
 
 export function foldlIO_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
+  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
 }
 
 export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {

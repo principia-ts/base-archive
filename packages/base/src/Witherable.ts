@@ -46,6 +46,37 @@ export interface WitherFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
+export interface _WitherFn<F extends HKT.URIS, C = HKT.Auto> {
+  <
+    G extends HKT.URIS,
+    NF extends string,
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    NG extends string,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG,
+    A,
+    B,
+    GC = HKT.Auto
+  >(
+    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    A: Applicative<G, GC>,
+    f: (a: A) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+  ): HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+}
+
 export interface WitherFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NF extends string,
@@ -123,6 +154,54 @@ export function implementWither_<F extends HKT.URIS, C = HKT.Auto>(): (
 ) => WitherFn_<F, C>
 export function implementWither_() {
   return (i: any) => i()
+}
+
+export interface _WiltFn<F extends HKT.URIS, C = HKT.Auto> {
+  <
+    G extends HKT.URIS,
+    NF extends string,
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    NG extends string,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG,
+    B1,
+    A,
+    B,
+    CG = HKT.Auto
+  >(
+    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    A: Applicative<G, CG>,
+    f: (a: A) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B1>>
+  ): HKT.Kind<
+    G,
+    CG,
+    NG,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG,
+    readonly [
+      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>,
+      HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, B1>
+    ]
+  >
 }
 
 export interface WiltFn<F extends HKT.URIS, C = HKT.Auto> {

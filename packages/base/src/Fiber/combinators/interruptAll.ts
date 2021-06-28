@@ -9,7 +9,7 @@ import * as Iter from '../../Iterable'
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.
  */
 export function interruptAllAs_(fs: Iterable<Fiber<any, any>>, id: FiberId): UIO<void> {
-  return Iter.foldl_(fs, I.unit() as UIO<void>, (io, f) => I.asUnit(I.bind_(io, () => f.interruptAs(id))))
+  return Iter.foldl_(fs, I.unit() as UIO<void>, (io, f) => I.asUnit(I.chain_(io, () => f.interruptAs(id))))
 }
 
 /**
@@ -23,5 +23,5 @@ export function interruptAllAs(id: FiberId): (fs: Iterable<Fiber<any, any>>) => 
  * Interrupts all fibers and awaits their interruption
  */
 export function interruptAll(fs: Iterable<Fiber<any, any>>): UIO<void> {
-  return I.bind_(I.fiberId(), (id) => interruptAllAs_(fs, id))
+  return I.chain_(I.fiberId(), (id) => interruptAllAs_(fs, id))
 }

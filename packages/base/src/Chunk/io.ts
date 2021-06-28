@@ -73,7 +73,7 @@ export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>
 }
 
 export function foldlIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.bind_(acc, (b) => f(b, a)))
+  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
 }
 
 export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
@@ -91,7 +91,7 @@ export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
       const array = result.value
       for (let i = 0; i < array.length; i++) {
         const j = i
-        taking  = I.bind_(taking, (b) => {
+        taking  = I.chain_(taking, (b) => {
           const a = array[j]
           return I.map_(b ? p(a) : I.succeed(false), (b1) => {
             if (b1) {
@@ -123,7 +123,7 @@ export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
       const array = result.value
       for (let i = 0; i < array.length; i++) {
         const j  = i
-        dropping = I.bind_(dropping, (d) => {
+        dropping = I.chain_(dropping, (d) => {
           const a = array[j]
           return I.map_(d ? p(a) : I.succeed(false), (b) => {
             if (b) {

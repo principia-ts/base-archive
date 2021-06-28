@@ -58,7 +58,7 @@ export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface TraverseWithIndexFn__<F extends HKT.URIS, CF = HKT.Auto> {
+export interface _TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
   <
     G extends HKT.URIS,
     NG extends string,
@@ -92,7 +92,7 @@ export interface TraverseWithIndexFn__<F extends HKT.URIS, CF = HKT.Auto> {
   ): HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export function implementTraverseWithIndex__<F extends HKT.URIS, C = HKT.Auto>(): (
+export function _implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -111,8 +111,8 @@ export function implementTraverseWithIndex__<F extends HKT.URIS, C = HKT.Auto>()
     G: Applicative<HKT.UHKT<G>>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => TraverseWithIndexFn__<F, C>
-export function implementTraverseWithIndex__() {
+) => _TraverseWithIndexFn<F, C>
+export function _implementTraverseWithIndex() {
   return (i: any) => i()
 }
 

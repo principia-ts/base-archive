@@ -16,7 +16,7 @@ export class Handoff<A> {
 export function make<A>() {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) => Ref.make<State<A>>(new Empty(p))),
+    I.chain((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((_) => new Handoff(_))
   )
 }
@@ -42,7 +42,7 @@ export class Full<A> {
 export type State<A> = Empty | Full<A>
 
 export function offer<A>(handoff: Handoff<A>, a: A): I.UIO<void> {
-  return I.bind_(P.make<never, void>(), (p) => {
+  return I.chain_(P.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
@@ -58,7 +58,7 @@ export function offer<A>(handoff: Handoff<A>, a: A): I.UIO<void> {
 }
 
 export function take<A>(handoff: Handoff<A>): I.UIO<A> {
-  return I.bind_(P.make<never, void>(), (p) => {
+  return I.chain_(P.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
@@ -77,7 +77,7 @@ export function take<A>(handoff: Handoff<A>): I.UIO<A> {
 }
 
 export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
-  return I.bind_(P.make<never, void>(), (p) => {
+  return I.chain_(P.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {

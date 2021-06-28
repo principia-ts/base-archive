@@ -36,7 +36,7 @@ abstract class ZSyntax<W, S1, S2, R, E, A> {
     this: Z<W, S1, S2, R, E, A>,
     f: (a: A) => Z<W1, S2, S3, Q, D, B>
   ): Z<W | W1, S1, S3, Q & R, D | E, B> {
-    return new Bind(this, f)
+    return new Chain(this, f)
   }
   ['<$>']<B>(this: Z<W, S1, S2, R, E, A>, f: (a: A) => B): Z<W, S1, S2, R, E, B> {
     return this['>>=']((a) => new Succeed(f(a)))
@@ -104,7 +104,7 @@ const ZTag = {
   DeferPartial: 'DeferPartial',
   Fail: 'Fail',
   Modify: 'Modify',
-  Bind: 'Bind',
+  Chain: 'Chain',
   Match: 'Match',
   Asks: 'Asks',
   Give: 'Give',
@@ -162,8 +162,8 @@ class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
   }
 }
 
-class Bind<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
-  readonly _tag = ZTag.Bind
+class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
+  readonly _tag = ZTag.Chain
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -219,7 +219,7 @@ type Concrete =
   | Succeed<any>
   | Fail<any>
   | Modify<any, any, any>
-  | Bind<any, any, any, any, any, any, any, any, any, any, any>
+  | Chain<any, any, any, any, any, any, any, any, any, any, any>
   | Match<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any, any, any, any>
   | Give<any, any, any, any, any, any>
@@ -338,7 +338,7 @@ export function modifyEither<S1, S2, E, A>(
   return P.pipe(
     get<S1>(),
     map(f),
-    bind(
+    chain(
       E.match(fail, ([a, s2]) =>
         P.pipe(
           succeed(a),
@@ -356,7 +356,7 @@ export function transform_<W, S1, S2, R, E, A, S3, B>(
   ma: Z<W, S1, S2, R, E, A>,
   f: (s: S2, a: A) => readonly [B, S3]
 ): Z<W, S1, S3, R, E, B> {
-  return bind_(ma, (a) => modify((s) => f(s, a)))
+  return chain_(ma, (a) => modify((s) => f(s, a)))
 }
 
 /**
@@ -380,7 +380,7 @@ export function gets<S, A>(f: (s: S) => A): Z<never, S, S, unknown, never, A> {
 }
 
 export function getsZ<S, W, R, E, A>(f: (s: S) => Z<W, S, S, R, E, A>): Z<W, S, S, R, E, A> {
-  return P.pipe(get<S>(), bind(f))
+  return P.pipe(get<S>(), chain(f))
 }
 
 /**
@@ -411,7 +411,7 @@ export function contramapState_<S0, W, S1, S2, R, E, A>(
   fa: Z<W, S1, S2, R, E, A>,
   f: (s: S0) => S1
 ): Z<W, S0, S2, R, E, A> {
-  return bind_(update(f), () => fa)
+  return chain_(update(f), () => fa)
 }
 
 /**
@@ -666,7 +666,7 @@ export function crossWith_<W, S, R, E, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
 ): Z<W, S, S, R & R1, E | E1, C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<W, S, A, R1, E1, B, C>(
@@ -767,7 +767,7 @@ export function zipWith_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
   fb: Z<W1, S2, S3, Q, D, B>,
   f: (a: A, b: B) => C
 ): Z<W | W1, S1, S3, Q & R, D | E, C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function zipWith<W1, A, S2, S3, R1, E1, B, C>(
@@ -864,7 +864,7 @@ export function memento<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1,
 }
 
 export function absolve<W, S1, S2, R, E, E1, A>(fa: Z<W, S1, S2, R, E, E.Either<E1, A>>): Z<W, S1, S2, R, E | E1, A> {
-  return bind_(fa, E.match(fail, succeed))
+  return chain_(fa, E.match(fail, succeed))
 }
 
 /*
@@ -874,7 +874,7 @@ export function absolve<W, S1, S2, R, E, E1, A>(fa: Z<W, S1, S2, R, E, E.Either<
  */
 
 export function map_<W, S1, S2, R, E, A, B>(fa: Z<W, S1, S2, R, E, A>, f: (a: A) => B): Z<W, S1, S2, R, E, B> {
-  return bind_(fa, (a) => succeed(f(a)))
+  return chain_(fa, (a) => succeed(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): <W, S1, S2, R, E>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E, B> {
@@ -887,24 +887,24 @@ export function map<A, B>(f: (a: A) => B): <W, S1, S2, R, E>(fa: Z<W, S1, S2, R,
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
+export function chain_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   ma: Z<W, S1, S2, R, E, A>,
   f: (a: A) => Z<W1, S2, S3, R1, E1, B>
 ): Z<W | W1, S1, S3, R1 & R, E1 | E, B> {
-  return new Bind(ma, f)
+  return new Chain(ma, f)
 }
 
-export function bind<A, W1, S2, S3, R1, E1, B>(
+export function chain<A, W1, S2, S3, R1, E1, B>(
   f: (a: A) => Z<W1, S2, S3, R1, E1, B>
 ): <W, S1, R, E>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, R1 & R, E1 | E, B> {
-  return (ma) => bind_(ma, f)
+  return (ma) => chain_(ma, f)
 }
 
 export function tap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   ma: Z<W, S1, S2, R, E, A>,
   f: (a: A) => Z<W1, S2, S3, R1, E1, B>
 ): Z<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return bind_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<S2, A, W1, S3, R1, E1, B>(
@@ -916,7 +916,7 @@ export function tap<S2, A, W1, S3, R1, E1, B>(
 export function flatten<W, S1, S2, R, E, A, W1, S3, R1, E1>(
   mma: Z<W, S1, S2, R, E, Z<W1, S2, S3, R1, E1, A>>
 ): Z<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -1118,7 +1118,7 @@ export function catchSome<W, S1, E, S3, R1, E1, B>(
  * @since 1.0.0
  */
 export function repeatN_<W, S1, S2 extends S1, R, E, A>(ma: Z<W, S1, S2, R, E, A>, n: number): Z<W, S1, S2, R, E, A> {
-  return bind_(ma, (a) => (n <= 0 ? succeed(a) : repeatN_(ma, n - 1)))
+  return chain_(ma, (a) => (n <= 0 ? succeed(a) : repeatN_(ma, n - 1)))
 }
 
 /**
@@ -1145,7 +1145,7 @@ export function repeatUntil_<W, S1, S2 extends S1, R, E, A>(
   ma: Z<W, S1, S2, R, E, A>,
   predicate: Predicate<A>
 ): Z<W, S1, S2, R, E, A> {
-  return bind_(ma, (a) => (predicate(a) ? succeed(a) : repeatUntil_(ma, predicate)))
+  return chain_(ma, (a) => (predicate(a) ? succeed(a) : repeatUntil_(ma, predicate)))
 }
 
 /**
@@ -1251,7 +1251,7 @@ export function orElseEither<W, S3, S4, R1, E1, A1>(
  */
 
 function _MonoidBindUnit<W, S, R, E>(): P.Monoid<Z<W, S, S, R, E, void>> {
-  return P.Monoid<Z<W, S, S, R, E, void>>((x, y) => bind_(x, () => y), unit())
+  return P.Monoid<Z<W, S, S, R, E, void>>((x, y) => chain_(x, () => y), unit())
 }
 
 export function iforeachUnit_<A, W, S, R, E>(
@@ -1461,7 +1461,7 @@ export function runAll_<W, S1, S2, E, A>(
     concrete(Z)
 
     switch (Z._tag) {
-      case ZTag.Bind: {
+      case ZTag.Chain: {
         current = Z.z
         pushContinuation(new ApplyFrame(Z.cont))
         break
@@ -1734,7 +1734,7 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
   catchAll_
 })
 
-export const Monad = P.Monad<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, bind_, flatten })
+export const Monad = P.Monad<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
 export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
@@ -1743,7 +1743,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   fail,
   catchAll_
@@ -1756,7 +1756,7 @@ export const MonadEnv = P.MonadEnv<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   asks,
   giveAll_
@@ -1769,7 +1769,7 @@ export const MonadState = P.MonadState<URI, V>({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   get,
   gets,
@@ -1809,7 +1809,7 @@ export function gen<T extends GenZ<any, any, any, any, any>, A>(
       if (state.done) {
         return succeed(state.value)
       }
-      return bind_(state.value['Z'], (val) => {
+      return chain_(state.value['Z'], (val) => {
         const next = iterator.next(val)
         return run(next)
       })

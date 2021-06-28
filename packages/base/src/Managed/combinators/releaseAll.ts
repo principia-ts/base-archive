@@ -33,7 +33,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
                 execStrategy,
                 traceFrom(trace, ([, f]) => I.result(s.update(f)(exit)))
               ),
-              I.bind((e) =>
+              I.chain((e) =>
                 pipe(
                   execStrategy._tag === 'Sequential' ? Ex.collectAll(...e) : Ex.collectAllPar(...e),
                   O.getOrElse(() => Ex.succeed([])),

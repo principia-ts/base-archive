@@ -98,9 +98,9 @@ export class TestClock implements Clock {
       yield* _(
         I.defer(() => {
           if (wait) {
-            return self.warningStart['*>'](promise.await)
+            return self.warningStart['*>'](P.await(promise))
           } else {
-            return promise.succeed()['*>'](I.unit())
+            return P.succeed_(promise, undefined)['*>'](I.unit())
           }
         })
       )
@@ -185,7 +185,7 @@ export class TestClock implements Clock {
         return pipe(
           sorted,
           Li.head,
-          O.bind(([duration, promise]) =>
+          O.chain(([duration, promise]) =>
             duration <= end ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.none()
           ),
           O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
@@ -195,8 +195,7 @@ export class TestClock implements Clock {
       O.match(
         () => I.unit(),
         ([end, promise]) =>
-          promise
-            .succeed()
+          P.succeed_(promise, undefined)
             ['*>'](I.yieldNow)
             ['*>'](this.run((_) => end))
       )
@@ -206,8 +205,7 @@ export class TestClock implements Clock {
   private get suspended(): IO<unknown, void, HashMap<FiberId, FiberStatus>> {
     return this.freeze['<*>'](this.delay['*>'](this.freeze))['>>='](([first, last]) => {
       if (
-        /*
-         * first.size === last.size &&
+        /* first.size === last.size &&
          * HM.ifilterMap_(first, (i, s) =>
          *   pipe(
          *     last,

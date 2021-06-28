@@ -137,7 +137,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   that: STM<R1, E1, B>,
   f: (a: A, b: B) => C
 ): STM<R1 & R, E | E1, C> {
-  return bind_(stm, (a) => map_(that, (b) => f(a, b)))
+  return chain_(stm, (a) => map_(that, (b) => f(a, b)))
 }
 
 /**
@@ -150,7 +150,7 @@ export function crossWith<A, R1, E1, B, C>(
   that: STM<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(stm: STM<R, E, A>) => STM<R1 & R, E | E1, C> {
-  return (stm) => bind_(stm, (a) => map_(that, (b) => f(a, b)))
+  return (stm) => chain_(stm, (a) => map_(that, (b) => f(a, b)))
 }
 
 /*
@@ -188,7 +188,7 @@ export function asks<R, A>(f: (r: R) => A): STM<R, never, A> {
  * Accesses the environment of the transaction to perform a transaction.
  */
 export function asksSTM<R0, R, E, A>(f: (r: R0) => STM<R, E, A>) {
-  return bind_(ask<R0>(), f)
+  return chain_(ask<R0>(), f)
 }
 
 /**
@@ -237,24 +237,24 @@ export function giveAll<R>(r: R): <E, A>(stm: STM<R, E, A>) => STM<unknown, E, A
  * Feeds the value produced by this effect to the specified function,
  * and then runs the returned effect as well to produce its results.
  */
-export const bind_: <R, E, A, R1, E1, B>(self: STM<R, E, A>, f: (a: A) => STM<R1, E1, B>) => STM<R1 & R, E | E1, B> =
-  _.bind_
+export const chain_: <R, E, A, R1, E1, B>(self: STM<R, E, A>, f: (a: A) => STM<R1, E1, B>) => STM<R1 & R, E | E1, B> =
+  _.chain_
 
 /**
  * Feeds the value produced by this effect to the specified function,
  * and then runs the returned effect as well to produce its results.
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  */
-export function bind<A, R1, E1, B>(f: (a: A) => STM<R1, E1, B>): <R, E>(self: STM<R, E, A>) => STM<R1 & R, E | E1, B> {
-  return (self) => bind_(self, f)
+export function chain<A, R1, E1, B>(f: (a: A) => STM<R1, E1, B>): <R, E>(self: STM<R, E, A>) => STM<R1 & R, E | E1, B> {
+  return (self) => chain_(self, f)
 }
 
 /**
  * Flattens out a nested `STM` effect.
  */
 export function flatten<R, E, R1, E1, B>(stm: STM<R, E, STM<R1, E1, B>>): STM<R1 & R, E | E1, B> {
-  return bind_(stm, identity)
+  return chain_(stm, identity)
 }
 
 /*
@@ -374,7 +374,7 @@ export function catchSome<E, R1, E1, B>(
  * operation of `STM.either`.
  */
 export function absolve<R, E, E1, A>(z: STM<R, E, E.Either<E1, A>>): STM<R, E | E1, A> {
-  return bind_(z, fromEither)
+  return chain_(z, fromEither)
 }
 
 /*
@@ -467,7 +467,7 @@ export function bimap<R, E, A, E1, B>(g: (e: E) => E1, f: (a: A) => B): (stm: ST
  * Propagates the given environment to stm.
  */
 export function andThen_<R, E, A, E1, B>(stm: STM<R, E, A>, that: STM<A, E1, B>): STM<R, E | E1, B> {
-  return bind_(stm, (a) => giveAll_(that, a))
+  return chain_(stm, (a) => giveAll_(that, a))
 }
 
 /**
@@ -501,7 +501,7 @@ export function continueOrRetrySTM_<R, E, A, R2, E2, A2>(
   fa: STM<R, E, A>,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ): STM<R2 & R, E | E2, A2> {
-  return bind_(fa, (a): STM<R2, E2, A2> => O.getOrElse_(pf(a), () => retry))
+  return chain_(fa, (a): STM<R2, E2, A2> => O.getOrElse_(pf(a), () => retry))
 }
 
 /**
@@ -543,7 +543,7 @@ export function continueOrFailSTM_<R, E, E1, A, R2, E2, A2>(
   e: E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ) {
-  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => fail(e)))
+  return chain_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => fail(e)))
 }
 
 /**
@@ -583,7 +583,7 @@ export function continueOrFailWithSTM_<R, E, E1, A, R2, E2, A2>(
   e: () => E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ) {
-  return bind_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failWith(e)))
+  return chain_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failWith(e)))
 }
 
 /**
@@ -618,18 +618,18 @@ export function continueOrFailWith<E1, A, A2>(e: () => E1, pf: (a: A) => O.Optio
  * Creates a composite effect that represents this effect followed by another
  * one that may depend on the error produced by this one.
  *
- * @dataFirst bindError_
+ * @dataFirst chainError_
  */
-export function bindError<E, R2, E2>(f: (e: E) => STM<R2, never, E2>) {
-  return <R, A>(stm: STM<R, E, A>) => bindError_(stm, f)
+export function chainError<E, R2, E2>(f: (e: E) => STM<R2, never, E2>) {
+  return <R, A>(stm: STM<R, E, A>) => chainError_(stm, f)
 }
 
 /**
  * Creates a composite effect that represents this effect followed by another
  * one that may depend on the error produced by this one.
  */
-export function bindError_<R, E, A, R2, E2>(stm: STM<R, E, A>, f: (e: E) => STM<R2, never, E2>) {
-  return swapWith_(stm, (x) => bind_(x, f))
+export function chainError_<R, E, A, R2, E2>(stm: STM<R, E, A>, f: (e: E) => STM<R2, never, E2>) {
+  return swapWith_(stm, (x) => chain_(x, f))
 }
 
 /**
@@ -841,7 +841,7 @@ export function filterOrElse_<R, E, A, R2, E2, A2>(
   p: Predicate<A>,
   or: unknown
 ): STM<R & R2, E | E2, A | A2> {
-  return bind_(fa, (a): STM<R2, E2, A | A2> => (p(a) ? succeed(a) : defer(() => (or as (a: A) => STM<R2, E2, A2>)(a))))
+  return chain_(fa, (a): STM<R2, E2, A | A2> => (p(a) ? succeed(a) : defer(() => (or as (a: A) => STM<R2, E2, A2>)(a))))
 }
 
 /**
@@ -1051,7 +1051,7 @@ export function left<R, E, B, C>(stm: STM<R, E, E.Either<B, C>>): STM<R, O.Optio
  * Returns a successful effect if the value is `Left`, or fails with the error e.
  */
 export function leftOrFail_<R, E, B, C, E1>(stm: STM<R, E, E.Either<B, C>>, orFail: (c: C) => E1) {
-  return bind_(
+  return chain_(
     stm,
     E.match(succeed, (x) => failWith(() => orFail(x)))
   )
@@ -1140,7 +1140,7 @@ export function joinEither<R, E, A, R1, E1, A1>(
  * - Ensure repeating the STM effect will eventually satisfy the predicate.
  */
 export function repeatUntil_<R, E, A>(stm: STM<R, E, A>, f: (a: A) => boolean): STM<R, E, A> {
-  return bind_(stm, (a) => (f(a) ? succeed(a) : repeatUntil_(stm, f)))
+  return chain_(stm, (a) => (f(a) ? succeed(a) : repeatUntil_(stm, f)))
 }
 
 /**
@@ -1174,7 +1174,7 @@ export function repeatUntil<A>(f: (a: A) => boolean): <R, E>(stm: STM<R, E, A>) 
  * - Ensure repeating the STM effect will eventually not satisfy the predicate.
  */
 export function repeatWhile_<R, E, A>(stm: STM<R, E, A>, f: (a: A) => boolean): STM<R, E, A> {
-  return bind_(stm, (a) => (f(a) ? repeatWhile_(stm, f) : succeed(a)))
+  return chain_(stm, (a) => (f(a) ? repeatWhile_(stm, f) : succeed(a)))
 }
 
 /**
@@ -1206,7 +1206,7 @@ export function defer<R, E, A>(f: () => STM<R, E, A>): STM<R, E, A> {
  * "Peeks" at the success of transactional effect.
  */
 export function tap_<R, E, A, R1, E1, B>(stm: STM<R, E, A>, f: (a: A) => STM<R1, E1, B>): STM<R1 & R, E | E1, A> {
-  return bind_(stm, (a) => as_(f(a), a))
+  return chain_(stm, (a) => as_(f(a), a))
 }
 
 /**
@@ -1222,7 +1222,7 @@ export function tap<A, R1, E1, B>(f: (a: A) => STM<R1, E1, B>): <R, E>(stm: STM<
  * Returns an effect with the value on the left part.
  */
 export function toLeftWith<A>(a: () => A): STM<unknown, never, E.Either<A, never>> {
-  return bind_(succeedWith(a), (x) => succeed(E.left(x)))
+  return chain_(succeedWith(a), (x) => succeed(E.left(x)))
 }
 
 /**

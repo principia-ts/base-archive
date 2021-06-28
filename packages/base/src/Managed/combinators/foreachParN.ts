@@ -58,7 +58,7 @@ export function foreachParN_<R, E, A, B>(
         traceAs(f, (a) =>
           pipe(
             makeInnerMap,
-            I.bind((innerMap) =>
+            I.chain((innerMap) =>
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
@@ -113,7 +113,7 @@ export function foreachUnitParN_<R, E, A>(
         traceAs(f, (a) =>
           pipe(
             makeInnerMap,
-            I.bind((innerMap) =>
+            I.chain((innerMap) =>
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),

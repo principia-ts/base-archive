@@ -326,7 +326,7 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
  */
 
 export function map_<A, B>(fa: FreeBooleanAlgebra<A>, f: (a: A) => B): FreeBooleanAlgebra<B> {
-  return bind_(fa, flow(f, success))
+  return chain_(fa, flow(f, success))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
@@ -339,16 +339,16 @@ export function map<A, B>(f: (a: A) => B): (fa: FreeBooleanAlgebra<A>) => FreeBo
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: FreeBooleanAlgebra<A>, f: (a: A) => FreeBooleanAlgebra<B>): FreeBooleanAlgebra<B> {
+export function chain_<A, B>(ma: FreeBooleanAlgebra<A>, f: (a: A) => FreeBooleanAlgebra<B>): FreeBooleanAlgebra<B> {
   return fold_(ma, f, and_, or_, not)
 }
 
-export function bind<A, B>(f: (a: A) => FreeBooleanAlgebra<B>): (ma: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => FreeBooleanAlgebra<B>): (ma: FreeBooleanAlgebra<A>) => FreeBooleanAlgebra<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: FreeBooleanAlgebra<FreeBooleanAlgebra<A>>): FreeBooleanAlgebra<A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 /*

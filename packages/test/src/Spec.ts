@@ -96,7 +96,7 @@ export function countTests_<R, E, T>(spec: Spec<R, E, T>, f: (t: T) => boolean):
   return fold_(
     spec,
     matchTag({
-      Suite: ({ specs }) => M.bind_(specs, flow(M.foreach(identity), M.map(C.foldl(0, (b, a) => b + a)))),
+      Suite: ({ specs }) => M.chain_(specs, flow(M.foreach(identity), M.map(C.foldl(0, (b, a) => b + a)))),
       Test: ({ test }) => I.toManaged_(I.map_(test, (t) => (f(t) ? 1 : 0)))
     })
   )
@@ -112,7 +112,7 @@ export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) =
               s.label,
               M.map_(
                 s.specs,
-                A.bind((spec) =>
+                A.chain((spec) =>
                   O.match_(
                     filterLabels_(spec, f),
                     () => A.empty<Spec<R, E, T>>(),
@@ -167,7 +167,7 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
       )
     : pipe(
         filterTags_(spec, (tag) => A.elem_(Str.Eq)(args.tagSearchTerms, tag)),
-        O.bind((spec) =>
+        O.chain((spec) =>
           filterLabels_(spec, (label) =>
             pipe(
               args.testSearchTerms,
@@ -196,7 +196,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
             O.getOrElse_(exec, () => defExec),
             (spec) => M.release(foldM_(spec, f, defExec))
           ),
-          M.bind((z) => f(new SuiteCase(label, M.succeed(C.toArray(z)), exec)))
+          M.chain((z) => f(new SuiteCase(label, M.succeed(C.toArray(z)), exec)))
         )
       ),
     Test: f
@@ -330,7 +330,7 @@ export function giveSomeLayerShared<R1, E1, A1>(
           label,
           pipe(
             L.memoize(layer),
-            M.bind((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
+            M.chain((layer) => M.map_(specs, A.map(giveSomeLayer(layer)))),
             M.giveSomeLayer(layer)
           ),
           exec

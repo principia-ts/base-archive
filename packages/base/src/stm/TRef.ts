@@ -114,7 +114,7 @@ export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
   ): XTRef<EC, ED, C, D> {
     return new Derived(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => E.bind_(ca(c), (a) => E.match_(this.setEither(a), (e) => E.left(ea(e)), E.right)),
+      (c) => E.chain_(ca(c), (a) => E.match_(this.setEither(a), (e) => E.left(ea(e)), E.right)),
       this.value,
       this.atomic
     )
@@ -130,7 +130,7 @@ export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) =>
-        E.bind_(
+        E.chain_(
           E.match_(this.getEither(s), (e) => E.left(ec(e)), ca(c)),
           (a) => E.match_(this.setEither(a), (e) => E.left(ea(e)), E.right)
         ),
@@ -163,7 +163,7 @@ export class DerivedAll<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
   ): XTRef<EC, ED, C, D> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
-      (c) => (s) => E.bind_(ca(c), (a) => E.match_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right)),
+      (c) => (s) => E.chain_(ca(c), (a) => E.match_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right)),
       this.value,
       this.atomic
     )
@@ -179,7 +179,7 @@ export class DerivedAll<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) =>
-        E.bind_(
+        E.chain_(
           E.match_(this.getEither(s), (e) => E.left(ec(e)), ca(c)),
           (a) => E.match_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right)
         ),
@@ -211,10 +211,10 @@ export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): _.STM<unknown, EB,
       })
     }
     case 'Derived': {
-      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
+      return STM.chain_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
     }
     case 'DerivedAll': {
-      return STM.bind_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
+      return STM.chain_(get(self.value), (s) => E.match_(self.getEither(s), STM.fail, STM.succeed))
     }
   }
 }

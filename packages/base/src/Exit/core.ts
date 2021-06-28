@@ -186,7 +186,7 @@ export function pure<A>(a: A): Exit<never, A> {
  */
 
 export function ap_<E, A, G, B>(fab: Exit<G, (a: A) => B>, fa: Exit<E, A>): Exit<E | G, B> {
-  return bind_(fab, (f) => map_(fa, (a) => f(a)))
+  return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
 export function ap<E, A>(fa: Exit<E, A>): <G, B>(fab: Exit<G, (a: A) => B>) => Exit<E | G, B> {
@@ -346,20 +346,20 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: Exit<E, A>) => Exit<E, B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, B> {
+export function chain_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, B> {
   return isFailure(ma) ? ma : f(ma.value)
 }
 
-export function bind<A, G, B>(f: (a: A) => Exit<G, B>): <E>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => bind_(fa, f)
+export function chain<A, G, B>(f: (a: A) => Exit<G, B>): <E>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => chain_(fa, f)
 }
 
 export function flatten<E, G, A>(mma: Exit<E, Exit<G, A>>): Exit<E | G, A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 export function tap_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<E | G, A> {
-  return bind_(ma, (a) =>
+  return chain_(ma, (a) =>
     pipe(
       f(a),
       map(() => a)

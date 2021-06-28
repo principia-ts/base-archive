@@ -4,7 +4,7 @@ import type { MonadMin } from './Monad'
 
 import { pureF } from './Applicative'
 import { ApplicativeExcept } from './ApplicativeExcept'
-import { bindF_ } from './Bind'
+import { chainF_ } from './Bind'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
 import { Monad } from './Monad'
@@ -21,7 +21,7 @@ export function MonadExcept<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<
   return HKT.instance<MonadExcept<F, C>>({
     ...MonadF,
     ...ApplicativeExceptF,
-    absolve: MonadF.bind(E.match(ApplicativeExceptF.fail, ApplicativeExceptF.pure))
+    absolve: MonadF.chain(E.match(ApplicativeExceptF.fail, ApplicativeExceptF.pure))
   })
 }
 
@@ -32,7 +32,7 @@ export interface AbsolveFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export function absolveF<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<F, C>): AbsolveFn<F, C> {
-  const bind_ = bindF_(F)
-  const pure  = pureF(F)
-  return (fa) => bind_(fa, E.match(F.fail, pure))
+  const chain_ = chainF_(F)
+  const pure   = pureF(F)
+  return (fa) => chain_(fa, E.match(F.fail, pure))
 }

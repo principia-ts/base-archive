@@ -1,8 +1,6 @@
 import type { Cause } from '../../Cause'
 import type { Chunk } from '../../Chunk'
-import type { Console } from '../../Console'
 import type { Exit } from '../../Exit'
-import type { Has } from '../../Has'
 import type { IO, URIO } from '../../IO'
 import type { Predicate } from '../../Predicate'
 import type { Channel } from './core'
@@ -20,7 +18,6 @@ import * as F from '../../Fiber'
 import { flow, identity, pipe } from '../../function'
 import * as H from '../../Hub'
 import * as I from '../../IO'
-import { debug } from '../../IOAspect'
 import * as M from '../../Managed'
 import * as RM from '../../Managed/ReleaseMap'
 import * as O from '../../Option'
@@ -30,10 +27,10 @@ import * as Ref from '../../Ref'
 import * as Sem from '../../Semaphore'
 import { tuple } from '../../tuple'
 import {
-  bind,
-  bind_,
   BracketOut,
   Bridge,
+  chain,
+  chain_,
   ConcatAll,
   ContinuationK,
   Effect,
@@ -660,7 +657,7 @@ export function managedOut<R, E, A>(managed: M.Managed<R, E, A>): Channel<R, unk
         I.gives((r: R) => tuple(r, rm)),
         I.map(([, a]) => a),
         fromIO,
-        bind(write)
+        chain(write)
       )
   )
 }
@@ -702,7 +699,7 @@ export function flatten<
   OutElem | OutElem1,
   OutDone2
 > {
-  return bind_(self, identity)
+  return chain_(self, identity)
 }
 
 /**
@@ -1095,7 +1092,7 @@ export function interruptWhenP_<Env, InErr, InElem, InDone, OutErr, OutErr1, Out
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   promise: PR.Promise<OutErr1, OutDone1>
 ): Channel<Env, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone | OutDone1> {
-  return interruptWhen_(self, promise.await)
+  return interruptWhen_(self, PR.await(promise))
 }
 
 /**
@@ -1120,7 +1117,7 @@ export function interruptWhenP<OutErr1, OutDone1>(promise: PR.Promise<OutErr1, O
 export function emitCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, readonly [A.Chunk<OutElem>, OutDone], void> {
-  return bind_(doneCollect(self), (t) => write(t))
+  return chain_(doneCollect(self), (t) => write(t))
 }
 
 export function ensuring_<Env, Env1, InErr, InElem, InDone, OutErr, OutElem, OutDone, Z>(
@@ -1315,7 +1312,7 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
     State.concrete(channelState)
     switch (channelState._tag) {
       case State.ChannelStateTag.Effect: {
-        return I.bind_(channelState.effect, () => runManagedInterpret(exec.run(), exec))
+        return I.chain_(channelState.effect, () => runManagedInterpret(exec.run(), exec))
       }
       case State.ChannelStateTag.Emit: {
         // eslint-disable-next-line no-param-reassign
@@ -1337,7 +1334,7 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   State.concrete(channelState)
   switch (channelState._tag) {
     case State.ChannelStateTag.Effect: {
-      return I.bind_(I.mapError_(channelState.effect, E.left), () => toPullInterpret(exec.run(), exec))
+      return I.chain_(I.mapError_(channelState.effect, E.left), () => toPullInterpret(exec.run(), exec))
     }
     case State.ChannelStateTag.Emit: {
       return I.succeed(exec.getEmit())
@@ -1358,7 +1355,7 @@ export function mapIO_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutEle
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (o: OutDone) => IO<Env1, OutErr1, OutDone1>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone1> {
-  return bind_(self, flow(f, fromIO))
+  return chain_(self, flow(f, fromIO))
 }
 
 /**
@@ -1407,7 +1404,7 @@ export function mergeAllWith_<
   return managed_(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
-        yield* _(M.finalizer(getChildren['>>='](F.interruptAll)))
+        yield* _(M.finalizer(I.chain_(getChildren, F.interruptAll)))
         const queue       = yield* _(
           M.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
         )
@@ -1420,14 +1417,17 @@ export function mergeAllWith_<
         const evaluatePull = (pull: I.IO<Env & Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem>) =>
           pipe(
             pull,
-            I.bind((elem) => pipe(I.succeed(elem), queue.offer)),
+            I.chain((elem) => pipe(I.succeed(elem), (_) => Q.offer_(queue, _))),
             I.forever,
             I.catchAllCause(
               flow(
                 Ca.flipCauseEither,
                 E.match(
                   (cause) =>
-                    queue.offer(I.halt(Ca.map_(cause, E.left)))['*>'](I.asUnit(errorSignal.succeed(undefined))),
+                    I.apr_(
+                      Q.offer_(queue, I.halt(Ca.map_(cause, E.left))),
+                      I.asUnit(PR.succeed_(errorSignal, undefined))
+                    ),
                   (outDone) =>
                     Ref.update_(
                       lastDone,
@@ -1449,23 +1449,47 @@ export function mergeAllWith_<
                 Ca.flipCauseEither,
                 E.match(
                   (cause) =>
-                    getChildren['>>='](F.interruptAll)['*>'](
-                      queue.offer(I.halt(Ca.map_(cause, E.left)))['$>'](() => false)
+                    pipe(
+                      getChildren,
+                      I.chain(F.interruptAll),
+                      I.apr(
+                        pipe(
+                          queue,
+                          Q.offer(I.halt(Ca.map_(cause, E.left))),
+                          I.as(() => false)
+                        )
+                      )
                     ),
                   (outDone) =>
                     I.raceWith_(
-                      errorSignal.await,
-                      permits.withPermits(n, I.unit()),
+                      PR.await(errorSignal),
+                      Sem.withPermits(permits, n)(I.unit()),
                       (_, permitAcquisition) =>
-                        getChildren['>>='](F.interruptAll)['*>'](F.interrupt(permitAcquisition)['$>'](() => false)),
-                      (_, failureAwait) =>
-                        F.interrupt(failureAwait)['*>'](
-                          lastDone.get['>>='](
-                            O.match(
-                              () => queue.offer(I.fail(E.right(outDone))),
-                              (lastDone) => queue.offer(I.fail(E.right(f(lastDone, outDone))))
+                        pipe(
+                          getChildren,
+                          I.chain(F.interruptAll),
+                          I.apr(
+                            pipe(
+                              F.interrupt(permitAcquisition),
+                              I.as(() => false)
                             )
-                          )['$>'](() => false)
+                          )
+                        ),
+                      (_, failureAwait) =>
+                        pipe(
+                          F.interrupt(failureAwait),
+                          I.apr(
+                            pipe(
+                              Ref.get(lastDone),
+                              I.chain(
+                                O.match(
+                                  () => Q.offer_(queue, I.fail(E.right(outDone))),
+                                  (lastDone) => Q.offer_(queue, I.fail(E.right(f(lastDone, outDone))))
+                                )
+                              ),
+                              I.as(() => false)
+                            )
+                          )
                         )
                     )
                 )
@@ -1475,25 +1499,25 @@ export function mergeAllWith_<
                   case 'BackPressure':
                     return I.gen(function* (_) {
                       const latch   = yield* _(PR.make<never, void>())
-                      const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(errorSignal.await))))
-                      yield* _(I.fork(permits.withPermit(latch.succeed(undefined)['*>'](raceIOs))))
-                      yield* _(latch.await)
-                      return !(yield* _(errorSignal.isDone))
+                      const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
+                      yield* _(I.fork(Sem.withPermit(permits)(I.apr_(PR.succeed_(latch, undefined), raceIOs))))
+                      yield* _(PR.await(latch))
+                      return !(yield* _(PR.isDone(errorSignal)))
                     })
                   case 'BufferSliding':
                     return I.gen(function* (_) {
                       const canceler = yield* _(PR.make<never, void>())
                       const latch    = yield* _(PR.make<never, void>())
-                      const size     = yield* _(cancelers.size)
-                      yield* _(I.when(() => size >= n)(cancelers.take['>>='](PR.succeed<void>(undefined))))
-                      yield* _(cancelers.offer(canceler))
+                      const size     = yield* _(Q.size(cancelers))
+                      yield* _(I.when(() => size >= n)(I.chain_(Q.take(cancelers), PR.succeed<void>(undefined))))
+                      yield* _(Q.offer_(cancelers, canceler))
                       const raceIOs = pipe(
                         toPull(channel),
-                        M.use(flow(evaluatePull, I.race(errorSignal.await), I.race(canceler.await)))
+                        M.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
                       )
-                      yield* _(I.fork(permits.withPermit(latch.succeed(undefined)['*>'](raceIOs))))
-                      yield* _(latch.await)
-                      return !(yield* _(errorSignal.isDone))
+                      yield* _(I.fork(Sem.withPermit(permits)(I.apr_(PR.succeed_(latch, undefined), raceIOs))))
+                      yield* _(PR.await(latch))
+                      return !(yield* _(PR.isDone(errorSignal)))
                     })
                 }
               }
@@ -1508,7 +1532,7 @@ export function mergeAllWith_<
     (queue) => {
       const consumer: Channel<Env & Env1, unknown, unknown, unknown, OutErr | OutErr1, OutElem, OutDone> = unwrap(
         pipe(
-          queue.take,
+          Q.take(queue),
           I.flatten,
           I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => write(outElem)['*>'](consumer))
         )
@@ -1828,7 +1852,7 @@ export function mergeWith_<
             new MS.BothRunning<unknown, OutErr, OutErr1, unknown, OutElem | OutElem1, OutDone, OutDone1, unknown>(a, b)
         ),
         fromIO,
-        bind(go),
+        chain(go),
         embedInput(input)
       )
     })
@@ -1885,7 +1909,7 @@ export function mapOut_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Ou
     flow(
       f,
       write,
-      bind(() => reader)
+      chain(() => reader)
     ),
     halt,
     end
@@ -1936,7 +1960,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   return managed_(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
-        yield* _(M.finalizer(getChildren['>>='](F.interruptAll)))
+        yield* _(M.finalizer(pipe(getChildren, I.chain(F.interruptAll))))
         const queue       = yield* _(
           M.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
         )
@@ -1949,31 +1973,38 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             I.matchCauseIO(
               flow(
                 Ca.flipCauseEither,
-                E.match(flow(Ca.map(E.left), I.halt, queue.offer), (outDone) =>
-                  pipe(
-                    permits.withPermits(n, I.unit()),
-                    I.interruptible,
-                    I.apr(pipe(E.right(outDone), I.fail, queue.offer))
-                  )
+                E.match(
+                  flow(Ca.map(E.left), I.halt, (_) => Q.offer_(queue, _)),
+                  (outDone) =>
+                    pipe(
+                      Sem.withPermits(permits, n)(I.unit()),
+                      I.interruptible,
+                      I.apr(pipe(E.right(outDone), I.fail, (_) => Q.offer_(queue, _)))
+                    )
                 )
               ),
               (outElem) =>
                 I.gen(function* (_) {
                   const p     = yield* _(PR.make<OutErr1, OutElem1>())
                   const latch = yield* _(PR.make<never, void>())
-                  yield* _(queue.offer(pipe(p.await, I.mapError(E.left))))
+                  yield* _(Q.offer_(queue, pipe(PR.await(p), I.mapError(E.left))))
                   yield* _(
                     I.fork(
-                      permits.withPermit(
-                        latch
-                          .succeed(undefined)
-                          ['*>'](
-                            pipe(errorSignal.await, I.raceFirst(f(outElem)), I.tapCause(errorSignal.halt), I.fulfill(p))
+                      Sem.withPermit(permits)(
+                        I.apr_(
+                          PR.succeed_(latch, undefined),
+                          pipe(
+                            PR.await(errorSignal),
+                            I.raceFirst(f(outElem)),
+                            I.tapCause((cause) => PR.halt_(p, cause)),
+                            I.fulfill(p)
                           )
+                        )
                       )
                     )
                   )
-                  yield* _(latch.await)
+
+                  yield* _(PR.await(latch))
                 })
             ),
             I.forever,
@@ -1987,9 +2018,9 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     (queue) => {
       const consumer: Channel<Env & Env1, unknown, unknown, unknown, OutErr | OutErr1, OutElem1, OutDone> = unwrap(
         pipe(
-          queue.take,
+          Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => write(outElem)['*>'](consumer))
+          I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => zipr_(write(outElem), consumer))
         )
       )
       return consumer
@@ -2046,7 +2077,7 @@ export function orDieWith<OutErr, E>(f: (e: OutErr) => E) {
 export function repeated<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return bind_(self, () => repeated(self))
+  return chain_(self, () => repeated(self))
 }
 
 /**
@@ -2276,11 +2307,11 @@ export function bracketExit_<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDo
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem1, OutDone> {
   return pipe(
     fromIO(Ref.make<(exit: Ex.Exit<OutErr, OutDone>) => URIO<Env, any>>((_) => I.unit())),
-    bind((ref) =>
+    chain((ref) =>
       pipe(
         fromIO(I.uninterruptible(I.tap_(acquire, (a) => ref.set((_) => release(a, _))))),
-        bind(use),
-        ensuringWith((ex) => I.bind_(ref.get, (_) => _(ex)))
+        chain(use),
+        ensuringWith((ex) => I.chain_(ref.get, (_) => _(ex)))
       )
     )
   )
@@ -2379,7 +2410,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
             I.map(([, a]) => a)
           )
         ),
-        bind(use)
+        chain(use)
       )
     },
     (_) =>
@@ -2433,7 +2464,7 @@ export function fromInput<Err, Elem, Done>(
 export function fromQueue<Err, Elem, Done>(
   queue: Q.Dequeue<Ex.Exit<E.Either<Err, Done>, Elem>>
 ): Channel<unknown, unknown, unknown, unknown, Err, Elem, Done> {
-  return bind_(
+  return chain_(
     fromIO(Q.take(queue)),
     Ex.match(
       (cause) =>

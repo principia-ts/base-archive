@@ -384,7 +384,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
 function showRaw(value: object, typedArray?: string): ShowComputation {
   return pipe(
     Z.gets((context: ShowContext) => tuple(context, getInspectionInfo(context, value, typedArray))),
-    Z.bind(([context, info]) => {
+    Z.chain(([context, info]) => {
       if (info._tag === 'InspectionInfo' && context.recurseTimes > context.depth) {
         let constructorName = getPrefix(info.constructor, info.tag, 'Object').slice(0, -1)
         if (info.constructor !== null) {
@@ -465,7 +465,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                 ),
                 Z.apr(output),
                 Z.cross(baseWithRef),
-                Z.bind(([output, base]) =>
+                Z.chain(([output, base]) =>
                   Z.modify((context) => {
                     const res = reduceToSingleString(context, output, base, braces, extrasType, value)
 
@@ -698,7 +698,7 @@ function showArray(value: ReadonlyArray<unknown>): ShowComputationChunk {
       chunk           = C.take_(chunk, len)
       return tuple(remaining, chunk)
     }),
-    Z.bind(([remaining, chunk]) => {
+    Z.chain(([remaining, chunk]) => {
       let computation = Z.pure(C.empty()) as ShowComputationChunk
       for (let i = 0; i < chunk.length; i++) {
         if (!Object.prototype.hasOwnProperty.call(value, i)) {
@@ -723,7 +723,7 @@ function showChunk(value: Chunk<unknown>): ShowComputationChunk {
       let chunk       = C.take_(value, len)
       return tuple(remaining, chunk)
     }),
-    Z.bind(([remaining, chunk]) =>
+    Z.chain(([remaining, chunk]) =>
       pipe(
         C.traverse_(Z.Applicative)(chunk, _show),
         Z.map((chunk) => (remaining > 0 ? chunk[':+'](`... ${remaining} more item${pluralize(remaining)}`) : chunk))
@@ -748,7 +748,7 @@ export function showProperty(
           return pipe(
             Z.update((_: ShowContext): ShowContext => _.copy({ indentationLevel: _.indentationLevel + diff })),
             Z.apr(_show(descriptor.value)),
-            Z.bind((shown: string) =>
+            Z.chain((shown: string) =>
               Z.gets((_: ShowContext) =>
                 diff === 3 && _.breakLength < getStringWidth(shown, _.colors)
                   ? tuple(descriptor, `\n${' '.repeat(_.indentationLevel)}`, shown)

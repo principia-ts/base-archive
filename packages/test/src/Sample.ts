@@ -30,19 +30,19 @@ export function map<A, B>(f: (a: A) => B): <R>(ma: Sample<R, A>) => Sample<R, B>
   return (ma) => map_(ma, f)
 }
 
-export function bind_<R, A, R1, B>(ma: Sample<R, A>, f: (a: A) => Sample<R1, B>): Sample<R & R1, B> {
+export function chain_<R, A, R1, B>(ma: Sample<R, A>, f: (a: A) => Sample<R1, B>): Sample<R & R1, B> {
   const sample = f(ma.value)
   return new Sample(
     sample.value,
     S.concat_(
       sample.shrink,
-      S.map_(ma.shrink, (s) => bind_(s, f))
+      S.map_(ma.shrink, (s) => chain_(s, f))
     )
   )
 }
 
-export function bind<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(ma: Sample<R, A>) => Sample<R & R1, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(ma: Sample<R, A>) => Sample<R & R1, B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function shrinkSearch_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, never, A> {
@@ -55,7 +55,7 @@ export function shrinkSearch_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R
         pipe(
           ma.shrink,
           S.takeUntil((v) => f(v.value)),
-          S.bind((s) => shrinkSearch_(s, f))
+          S.chain((s) => shrinkSearch_(s, f))
         )
       )
     )
@@ -95,7 +95,7 @@ export function crossWith_<R, A, R1, B, C>(
 ): Sample<R & R1, C> {
   return pipe(
     ma,
-    bind((a) => map_(mb, (b) => f(a, b)))
+    chain((a) => map_(mb, (b) => f(a, b)))
   )
 }
 
@@ -122,7 +122,7 @@ export function filter_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, neve
           ma.value,
           pipe(
             ma.shrink,
-            S.bind((s) => filter_(s, f))
+            S.chain((s) => filter_(s, f))
           )
         )
       )
@@ -130,7 +130,7 @@ export function filter_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, neve
   } else {
     return pipe(
       ma.shrink,
-      S.bind((s) => filter_(s, f))
+      S.chain((s) => filter_(s, f))
     )
   }
 }

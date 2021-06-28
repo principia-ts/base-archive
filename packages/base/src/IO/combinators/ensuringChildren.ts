@@ -5,7 +5,7 @@ import type { IO } from '../core'
 
 import { pipe } from '../../function'
 import * as Supervisor from '../../Supervisor'
-import { bind, supervised } from '../core'
+import { chain, supervised } from '../core'
 import { ensuring } from './ensuring'
 
 /**
@@ -23,7 +23,7 @@ export function ensuringChildren_<R, E, A, R1>(
 ): IO<R & R1, E, A> {
   return pipe(
     Supervisor.track,
-    bind((s) => pipe(ma, supervised(s), ensuring(pipe(s.value, bind(children)))))
+    chain((s) => pipe(ma, supervised(s), ensuring(pipe(s.value, chain(children)))))
   )
 }
 

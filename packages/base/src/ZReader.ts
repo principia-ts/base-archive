@@ -112,12 +112,12 @@ export const map: <A, B>(f: (a: A) => B) => <R>(fa: ZReader<R, A>) => ZReader<R,
  * -------------------------------------------------------------------------------------------------
  */
 
-export const bind_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, B> = Z.bind_
+export const chain_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, B> = Z.chain_
 
-export const bind: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, B> = Z.bind
+export const chain: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, A>) => ZReader<R & R1, B> = Z.chain
 
 export function flatten<R, R1, A>(mma: ZReader<R, ZReader<R1, A>>): ZReader<R & R1, A> {
-  return bind_(mma, identity)
+  return chain_(mma, identity)
 }
 
 export const tap_: <R, A, R1, B>(ma: ZReader<R, A>, f: (a: A) => ZReader<R1, B>) => ZReader<R & R1, A> = Z.tap_
@@ -131,7 +131,7 @@ export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, 
  */
 
 export function compose_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
-  return bind_(ra, (a) => giveAll_(ab, a))
+  return chain_(ra, (a) => giveAll_(ab, a))
 }
 
 export function compose<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZReader<R, B> {
@@ -165,7 +165,7 @@ export const MonadEnv: P.MonadEnv<[HKT.URI<ZReaderURI>], V> = P.MonadEnv({
   ap_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten,
   asks,
   giveAll_

@@ -37,7 +37,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
     const key = yield* _(
       pipe(
         RelMap.addIfOpen(rm, (_) => I.unit()),
-        I.bind(O.match(() => I.interrupt, I.succeed)),
+        I.chain(O.match(() => I.interrupt, I.succeed)),
         M.fromIO
       )
     )
@@ -48,7 +48,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
             yield* _(
               pipe(
                 RelMap.replace(rm, key, (_) => I.unit()),
-                I.bind(
+                I.chain(
                   O.match(
                     () => I.unit(),
                     (fin) => fin(Ex.unit())

@@ -59,7 +59,7 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
     OutErr | OutErr1,
     OutElem | OutElem1,
     OutDone2
-  > => bind_(this, f);
+  > => chain_(this, f);
 
   readonly ['<*>'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
     that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
@@ -410,7 +410,7 @@ export function map_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, OutDo
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (out: OutDone) => OutDone2
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> {
-  return bind_(self, (z) => succeed(f(z)))
+  return chain_(self, (z) => succeed(f(z)))
 }
 
 /**
@@ -432,7 +432,7 @@ export function map<OutDone, OutDone2>(f: (out: OutDone) => OutDone2) {
  * The result is a channel that will first perform the functions of this channel, before
  * performing the functions of the created channel (including yielding its terminal value).
  */
-export function bind_<
+export function chain_<
   Env,
   InErr,
   InElem,
@@ -478,9 +478,9 @@ export function bind_<
  * The result is a channel that will first perform the functions of this channel, before
  * performing the functions of the created channel (including yielding its terminal value).
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  */
-export function bind<OutDone, Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>(
+export function chain<OutDone, Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>(
   f: (d: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>
 ): <Env, InErr, InElem, InDone, OutErr, OutElem>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
@@ -493,7 +493,7 @@ export function bind<OutDone, Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1,
   OutElem | OutElem1,
   OutDone2
 > {
-  return (self) => bind_(self, f)
+  return (self) => chain_(self, f)
 }
 
 /**
@@ -527,7 +527,7 @@ export function zip_<
   OutElem | OutElem1,
   readonly [OutDone, OutDone1]
 > {
-  return bind_(self, (z) => map_(that, (z2) => tuple(z, z2)))
+  return chain_(self, (z) => map_(that, (z2) => tuple(z, z2)))
 }
 
 /**

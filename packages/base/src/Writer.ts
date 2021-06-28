@@ -140,14 +140,14 @@ export function getApplicative<W>(M: P.Monoid<W>): P.Applicative<URI, HKT.Fix<'W
 }
 
 export function getMonad<W>(M: P.Monoid<W>): P.Monad<URI, HKT.Fix<'W', W>> {
-  const bind_: P.BindFn_<URI, HKT.Fix<'W', W>> = (ma, f) => () => {
+  const chain_: P.ChainFn_<URI, HKT.Fix<'W', W>> = (ma, f) => () => {
     const [a, w1] = ma()
     const [b, w2] = f(a)()
     return [b, M.combine_(w1, w2)]
   }
   return P.Monad({
     ...getApplicative(M),
-    bind_
+    chain_
   })
 }
 

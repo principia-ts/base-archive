@@ -163,12 +163,12 @@ export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, B> {
+export function chain_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>): Reader<R & R1, B> {
   return (r) => f(ma(r))(r)
 }
 
-export function bind<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<R, R1, A>(mma: Reader<R, Reader<R1, A>>): Reader<R & R1, A> {
@@ -255,7 +255,7 @@ export const Monad = P.Monad<URI, V>({
   crossWith_,
   unit,
   pure,
-  bind_,
+  chain_,
   flatten
 })
 
@@ -266,7 +266,7 @@ export const MonadEnv = P.MonadEnv<URI, V>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten,
   asks,
   giveAll_

@@ -345,9 +345,9 @@ export function runtime<R0>() {
 }
 
 export function withRuntimeM<R0, R, E, A>(f: (r: CustomRuntime<R0, unknown>) => I.IO<R, E, A>) {
-  return I.bind_(runtime<R0>(), f)
+  return I.chain_(runtime<R0>(), f)
 }
 
 export function withRuntime<R0, A>(f: (r: CustomRuntime<R0, unknown>) => A) {
-  return I.bind_(runtime<R0>(), (r) => I.succeed(f(r)))
+  return I.chain_(runtime<R0>(), (r) => I.succeed(f(r)))
 }

@@ -66,7 +66,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const startFailure = pipe(
       status,
       Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-      I.apl(result.fail(undefined))
+      I.apl(P.fail_(result, undefined))
     )
 
     const effect = (a: A) =>
@@ -82,7 +82,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         ),
         ensuring(
           pipe(
-            result.succeed(undefined),
+            P.succeed_(result, undefined),
             I.whenIO(
               Ref.modify_(status, ([started, done, failing]) => [
                 (failing ? started : size) === done + 1,
@@ -98,12 +98,12 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const fibers = yield* _(transplant((graft) => I.foreach_(arr, flow(effect, graft, I.fork))))
 
     const interruptor = pipe(
-      result.await,
+      P.await(result),
       I.catchAll(() =>
         pipe(
           fibers,
           I.foreach((f) => I.fork(f.interruptAs(parentId))),
-          I.bind(joinAllFibers)
+          I.chain(joinAllFibers)
         )
       ),
       fromIO,
@@ -113,8 +113,8 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     yield* _(
       useManaged_(interruptor, () =>
         pipe(
-          result.fail(undefined),
-          I.apr(I.bind_(causes.get, I.halt)),
+          P.fail_(result, undefined),
+          I.apr(I.chain_(causes.get, I.halt)),
           I.whenIO(
             pipe(
               fibers,
@@ -159,12 +159,12 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
 export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return pipe(
     I.succeedWith<B[]>(() => []),
-    I.bind((mut_array) =>
-      I.bind_(
+    I.chain((mut_array) =>
+      I.chain_(
         foreachUnitPar_(
           It.imap_(as, (n, a) => [a, n] as [A, number]),
           ([a, n]) =>
-            I.bind_(I.defer(traceAs(f, () => f(a))), (b) =>
+            I.chain_(I.defer(traceAs(f, () => f(a))), (b) =>
               I.succeedWith(() => {
                 mut_array[n] = b
               })
@@ -178,11 +178,11 @@ export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
 }
 
 function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Chunk<A>> {
-  return I.tap_(I.bind_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+  return I.tap_(I.chain_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
 }
 
 function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Chunk<A>>> {
-  return I.result(_foreachPar(as, (f) => I.bind_(f.await, I.done)))
+  return I.result(_foreachPar(as, (f) => I.chain_(f.await, I.done)))
 }
 
 function useManaged_<R, E, A, R2, E2, B>(
@@ -192,7 +192,7 @@ function useManaged_<R, E, A, R2, E2, B>(
   return bracketExit_(
     RM.make,
     (rm) =>
-      I.bind_(
+      I.chain_(
         I.gives_(self.io, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       ),
@@ -235,7 +235,7 @@ function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
         }
         case 'Running': {
           return [
-            I.bind_(
+            I.chain_(
               I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
               (e) => I.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),

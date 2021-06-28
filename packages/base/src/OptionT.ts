@@ -6,14 +6,14 @@ import * as P from './prelude'
 
 export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
 export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>> {
-  const bind_: OptionT<HKT.UHKT<M>>['bind_'] = (ma, f) =>
-    M.bind_(
+  const chain_: OptionT<HKT.UHKT<M>>['chain_'] = (ma, f) =>
+    M.chain_(
       ma,
       O.match(() => M.pure(O.none()), f)
     )
 
   return HKT.instance<OptionT<HKT.UHKT<M>>>({
-    ...P.Monad({ ...P.getApplicativeComposition(M, O.Applicative), bind_ }),
+    ...P.Monad({ ...P.getApplicativeComposition(M, O.Applicative), chain_ }),
     none: () => M.pure(O.none()),
     some: (a) => M.pure(O.some(a)),
     someM: (ma) => M.map_(ma, O.some),
@@ -24,23 +24,23 @@ export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UH
       onNone: () => HKT.HKT<M, A2>,
       onSome: (a: A1) => HKT.HKT<M, A3>
     ) =>
-      M.bind_(
+      M.chain_(
         ma,
         O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
       ),
     matchOptionM:
       <A1, A2, A3>(onNone: () => HKT.HKT<M, A2>, onSome: (a: A1) => HKT.HKT<M, A3>) =>
       (ma: HKT.HKT<M, O.Option<A1>>) =>
-        M.bind_(
+        M.chain_(
           ma,
           O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
         ),
     getOrElse_: <A, A1>(fa: HKT.HKT<M, O.Option<A>>, onNone: () => HKT.HKT<M, A1>) =>
-      M.bind_(
+      M.chain_(
         fa,
         O.match((): HKT.HKT<M, A | A1> => onNone(), M.pure)
       ),
-    getOrElse: (onNone) => M.bind(O.match(onNone, M.pure))
+    getOrElse: (onNone) => M.chain(O.match(onNone, M.pure))
   })
 }
 

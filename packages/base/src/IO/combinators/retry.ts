@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as S from '../../Schedule'
-import { bind, catchAll, fail, map, map_, matchIO, orDie } from '../core'
+import { catchAll, chain, fail, map, map_, matchIO, orDie } from '../core'
 
 /**
  * Retries with the specified retry policy.
@@ -87,7 +87,7 @@ const _loop = <R, E extends I, A, R1, I, O, R2, E2, A2>(
       pipe(
         driver.next(e),
         matchIO(
-          () => pipe(driver.last, orDie, bind(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.left))))),
+          () => pipe(driver.last, orDie, chain(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.left))))),
           () => _loop(fa, orElse, driver)
         )
       )
@@ -106,7 +106,7 @@ export function retryOrElseEither_<R, E extends I, A, R1, I, O, R2, E2, A2>(
   policy: S.Schedule<R1, I, O>,
   orElse: (e: E, o: O) => IO<R2, E2, A2>
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<A2, A>> {
-  return pipe(policy, S.driver, bind(traceAs(orElse, (a) => _loop(fa, orElse, a))))
+  return pipe(policy, S.driver, chain(traceAs(orElse, (a) => _loop(fa, orElse, a))))
 }
 
 /**

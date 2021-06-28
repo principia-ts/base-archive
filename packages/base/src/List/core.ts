@@ -470,7 +470,7 @@ export function ap<A, B>(fa: List<A>): (fab: List<(a: A) => B>) => List<B> {
 }
 
 export function crossWith_<A, B, C>(fa: List<A>, fb: List<B>, f: (a: A, b: B) => C): List<C> {
-  return bind_(fa, (a) => map_(fb, (b) => f(a, b)))
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(fb: List<B>, f: (a: A, b: B) => C): (fa: List<A>) => List<C> {
@@ -940,7 +940,7 @@ export function flatten<A>(mma: List<List<A>>): List<A> {
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function bind_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
+export function chain_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
   return flatten(map_(ma, f))
 }
 
@@ -948,8 +948,8 @@ export function bind_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
  * Maps a function over a list and concatenates all the resulting
  * lists together.
  */
-export function bind<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
+  return (ma) => chain_(ma, f)
 }
 
 /*
@@ -2390,7 +2390,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten
 })
 

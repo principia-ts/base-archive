@@ -14,7 +14,7 @@ export function Do<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>
 export function Do<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
   const bindS: BindSFn<HKT.UHKT<F>> = (name, f) =>
     flow(
-      M.bind((a) =>
+      M.chain((a) =>
         pipe(
           f(a),
           M.map((b) => Object.assign({}, a, { [name]: b } as any))
@@ -66,7 +66,7 @@ export interface BindSFn<F extends HKT.URIS, C = HKT.Auto> {
 
 export function bindSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): BindSFn<F, C> {
   return (name, f) =>
-    F.bind((a) =>
+    F.chain((a) =>
       pipe(
         f(a),
         F.map((b) => Object.assign({}, a, { [name]: b }))
@@ -82,7 +82,7 @@ export interface LetSFn<F extends HKT.URIS, C = HKT.Auto> {
 
 export function letSF<F extends HKT.URIS, C = HKT.Auto>(F: Monad<F, C>): LetSFn<F, C> {
   return (name, f) =>
-    F.bind((a) =>
+    F.chain((a) =>
       pipe(
         f(a),
         F.pure,

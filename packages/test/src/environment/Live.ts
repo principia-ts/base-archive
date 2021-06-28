@@ -35,7 +35,7 @@ export function withLive_<R, E, A, E1, B>(
 ): IO<P.Erase<R, Has<Live>>, E | E1, B> {
   return P.pipe(
     I.ask<R & Has<Live>>(),
-    I.bind((r) => Live.live(f(I.giveAll_(io, r))))
+    I.chain((r) => Live.live(f(I.giveAll_(io, r))))
   ) as any
 }
 

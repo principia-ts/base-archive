@@ -10,7 +10,7 @@ import * as Ev from './core'
  */
 
 export function foldl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => Eval<B>): Eval<B> {
-  return A.foldl_(as, Ev.now(b), (b, a) => Ev.bind_(b, (b) => f(b, a)))
+  return A.foldl_(as, Ev.now(b), (b, a) => Ev.chain_(b, (b) => f(b, a)))
 }
 
 export function foldl<A, B>(b: B, f: (b: B, a: A) => Eval<B>): (as: ReadonlyArray<A>) => Eval<B> {

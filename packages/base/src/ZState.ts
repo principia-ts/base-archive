@@ -86,9 +86,9 @@ export const map: <A, B>(f: (a: A) => B) => <S>(fa: ZState<S, A>) => ZState<S, B
  * -------------------------------------------------------------------------------------------------
  */
 
-export const bind_: <S, A, B>(ma: ZState<S, A>, f: (a: A) => ZState<S, B>) => ZState<S, B> = Z.bind_
+export const chain_: <S, A, B>(ma: ZState<S, A>, f: (a: A) => ZState<S, B>) => ZState<S, B> = Z.chain_
 
-export const bind: <S, A, B>(f: (a: A) => ZState<S, B>) => (ma: ZState<S, A>) => ZState<S, B> = Z.bind
+export const chain: <S, A, B>(f: (a: A) => ZState<S, B>) => (ma: ZState<S, A>) => ZState<S, B> = Z.chain
 
 export const tap_: <S, A, B>(ma: ZState<S, A>, f: (a: A) => ZState<S, B>) => ZState<S, A> = Z.tap_
 

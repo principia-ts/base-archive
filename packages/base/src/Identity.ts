@@ -166,16 +166,16 @@ export function map<A, B>(f: (a: A) => B): (fa: A) => B {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: A, f: (a: A) => B): B {
+export function chain_<A, B>(ma: A, f: (a: A) => B): B {
   return f(ma)
 }
 
-export function bind<A, B>(f: (a: A) => B): (ma: A) => B {
+export function chain<A, B>(f: (a: A) => B): (ma: A) => B {
   return (ma) => f(ma)
 }
 
 export function tap_<A, B>(ma: A, f: (a: A) => B): A {
-  return bind_(ma, (a) => map_(f(a), () => a))
+  return chain_(ma, (a) => map_(f(a), () => a))
 }
 
 export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
@@ -183,7 +183,7 @@ export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
 }
 
 export function flatten<A>(mma: A): A {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -255,7 +255,7 @@ export const Monad = P.Monad<URI>({
   cross_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten
 })
 

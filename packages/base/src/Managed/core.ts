@@ -45,7 +45,7 @@ export class Managed<R, E, A> {
   constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
 
   ['>>=']<R1, E1, B>(f: (a: A) => Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
-    return bind_(this, f)
+    return chain_(this, f)
   }
   ['*>']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> {
     return apr_(this, fb)
@@ -254,7 +254,7 @@ export function finalizerRef(initial: Finalizer) {
   const trace = accessCallTrace()
   return traceCall(bracketExit_, trace)(
     Ref.make(initial),
-    traceFrom(trace, (ref, exit) => I.bind_(ref.get, (f) => f(exit)))
+    traceFrom(trace, (ref, exit) => I.chain_(ref.get, (f) => f(exit)))
   )
 }
 
@@ -434,7 +434,7 @@ export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, 
  * @trace 0
  */
 export function fromEitherWith<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
-  return bind_(succeedWith(ea), E.match(fail, succeed))
+  return chain_(succeedWith(ea), E.match(fail, succeed))
 }
 
 /**
@@ -504,7 +504,7 @@ export function crossWith<A, R1, E1, B, C>(
  * @trace 2
  */
 export function crossWith_<R, E, A, R1, E1, B, C>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>, f: (a: A, b: B) => C) {
-  return bind_(fa, (a) =>
+  return chain_(fa, (a) =>
     map_(
       fb,
       traceAs(f, (a2) => f(a, a2))
@@ -703,7 +703,7 @@ export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Ma
  */
 export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Managed<R, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     fa,
     traceFrom(trace, (ea) => fromEitherWith(() => ea))
   )
@@ -889,7 +889,7 @@ export function mapIO_<R, E, A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
   return new Managed<R & R1, E | E1, B>(
-    I.bind_(
+    I.chain_(
       fa.io,
       traceAs(f, ([fin, a]) =>
         I.gives_(
@@ -924,13 +924,13 @@ export function mapIO<R1, E1, A, B>(
  * the passing of its value to the specified continuation function `f`,
  * followed by the managed that it returns.
  *
- * @dataFirst bind_
+ * @dataFirst chain_
  * @trace 0
  */
-export function bind<R1, E1, A, A1>(
+export function chain<R1, E1, A, A1>(
   f: (a: A) => Managed<R1, E1, A1>
 ): <R, E>(self: Managed<R, E, A>) => Managed<R & R1, E1 | E, A1> {
-  return (self) => bind_(self, f)
+  return (self) => chain_(self, f)
 }
 
 /**
@@ -940,18 +940,18 @@ export function bind<R1, E1, A, A1>(
  *
  * @trace 1
  */
-export function bind_<R, E, A, R1, E1, A1>(
+export function chain_<R, E, A, R1, E1, A1>(
   self: Managed<R, E, A>,
   f: (a: A) => Managed<R1, E1, A1>
 ): Managed<R & R1, E | E1, A1> {
   return new Managed<R & R1, E | E1, A1>(
-    I.bind_(
+    I.chain_(
       self.io,
       traceAs(f, ([releaseSelf, a]) =>
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
-            I.bind_(I.result(releaseThat(e)), (e1) =>
-              I.bind_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.apr_(e1, e2)))
+            I.chain_(I.result(releaseThat(e)), (e1) =>
+              I.chain_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.apr_(e1, e2)))
             ),
           b
         ])
@@ -966,7 +966,7 @@ export function bind_<R, E, A, R1, E1, A1>(
  * @trace 1
  */
 export function tap_<R, E, A, Q, D>(ma: Managed<R, E, A>, f: (a: A) => Managed<Q, D, any>): Managed<R & Q, E | D, A> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(f, (a) => map_(f(a), () => a))
   )
@@ -994,7 +994,7 @@ export function tap<R1, E1, A>(
  */
 export function flatten<R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>): Managed<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return bind_(mma, traceFrom(trace, flow(identityFn)))
+  return chain_(mma, traceFrom(trace, flow(identityFn)))
 }
 
 /**
@@ -1023,7 +1023,7 @@ export function tapBoth_<R, E, A, R1, E1, R2, E2>(
 ): Managed<R & R1 & R2, E | E1 | E2, A> {
   return matchManaged_(
     ma,
-    traceAs(f, (e) => bind_(f(e), () => fail(e))),
+    traceAs(f, (e) => chain_(f(e), () => fail(e))),
     traceAs(g, (a) => map_(g(a), () => a))
   )
 }
@@ -1054,7 +1054,7 @@ export function tapCause_<R, E, A, R1, E1>(
 ): Managed<R & R1, E | E1, A> {
   return catchAllCause_(
     ma,
-    traceAs(f, (c) => bind_(f(c), () => halt(c)))
+    traceAs(f, (c) => chain_(f(c), () => halt(c)))
   )
 }
 
@@ -1161,7 +1161,7 @@ export function asksIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R
  * @trace 0
  */
 export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
-  return bind_(ask<R0>(), f)
+  return chain_(ask<R0>(), f)
 }
 
 /**
@@ -1418,7 +1418,7 @@ export function collectManaged_<R, E, A, E1, R2, E2, B>(
   e: E1,
   pf: (a: A) => O.Option<Managed<R2, E2, B>>
 ): Managed<R & R2, E | E1 | E2, B> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(pf, (a) => O.getOrElse_(pf(a), () => fail<E1 | E2>(e)))
   )
@@ -1493,7 +1493,7 @@ export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Manage
  */
 export function pipeTo_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     ma,
     traceFrom(trace, (a) => giveAll_(mb, a))
   )
@@ -1514,7 +1514,7 @@ export function pipeTo<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E
  */
 export function compose_<R, E, A, R1, E1>(ma: Managed<R, E, A>, mr: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
   const trace = accessCallTrace()
-  return pipe(ask<R1>(), bind(traceFrom(trace, (r1) => give_(mr, r1))), bind(traceFrom(trace, (r) => give_(ma, r))))
+  return pipe(ask<R1>(), chain(traceFrom(trace, (r1) => give_(mr, r1))), chain(traceFrom(trace, (r) => give_(ma, r))))
 }
 
 /**
@@ -1542,23 +1542,23 @@ export function eventually<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> 
  *
  * @trace 1
  */
-export function bindError_<R, E, A, R1, E1>(
+export function chainError_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (e: E) => URManaged<R1, E1>
 ): Managed<R & R1, E1, A> {
-  return swapWith_(ma, bind(f))
+  return swapWith_(ma, chain(f))
 }
 
 /**
  * Effectfully map the error channel
  *
- * @dataFirst bindError_
+ * @dataFirst chainError_
  * @trace 0
  */
-export function bindError<E, R1, E1>(
+export function chainError<E, R1, E1>(
   f: (e: E) => URManaged<R1, E1>
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R & R1, E1, A> {
-  return (ma) => bindError_(ma, f)
+  return (ma) => chainError_(ma, f)
 }
 
 /**
@@ -1568,7 +1568,7 @@ export function bindError<E, R1, E1>(
  */
 export function foldl_<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => Managed<R, E, B>): Managed<R, E, B> {
   return A.foldl_(Array.from(as), succeed(b) as Managed<R, E, B>, (acc, v) =>
-    bind_(
+    chain_(
       acc,
       traceAs(f, (a) => f(a, v))
     )
@@ -1732,7 +1732,7 @@ export function ifManaged_<R, E, R1, E1, B, R2, E2, C>(
   onFalse: () => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E | E1 | E2, B | C> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     mb,
     traceFrom(trace, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
   )
@@ -1826,7 +1826,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
  */
 export function interrupt(): Managed<unknown, never, never> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     fromIO(I.descriptorWith((d) => I.succeed(d.id))),
     traceFrom(trace, (id) => halt(C.interrupt(id)))
   )
@@ -1877,7 +1877,7 @@ export function join_<R, E, A, R1, E1, A1>(
   that: Managed<R1, E1, A1>
 ): Managed<E.Either<R, R1>, E | E1, A | A1> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     ask<E.Either<R, R1>>(),
     traceFrom(
       trace,
@@ -1911,7 +1911,7 @@ export function joinEither_<R, E, A, R1, E1, A1>(
   that: Managed<R1, E1, A1>
 ): Managed<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     ask<E.Either<R, R1>>(),
     traceFrom(
       trace,
@@ -2333,9 +2333,9 @@ export function rejectManaged_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   pf: (a: A) => O.Option<Managed<R1, E1, E1>>
 ): Managed<R & R1, E | E1, A> {
-  return bind_(
+  return chain_(
     ma,
-    traceAs(pf, (a) => O.match_(pf(a), () => succeed(a), bind(fail)))
+    traceAs(pf, (a) => O.match_(pf(a), () => succeed(a), chain(fail)))
   )
 }
 
@@ -2381,11 +2381,11 @@ export function reject<A, E1>(pf: (a: A) => O.Option<E1>): <R, E>(ma: Managed<R,
  * @trace 1
  */
 export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E): Managed<R, E, A> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(
       error,
-      O.match(() => bind_(succeedWith(error), fail), succeed)
+      O.match(() => chain_(succeedWith(error), fail), succeed)
     )
   )
 }
@@ -2446,7 +2446,7 @@ export function someOrElseManaged_<R, E, A, R1, E1, B>(
   onNone: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     ma,
     traceFrom(
       trace,
@@ -2474,7 +2474,7 @@ export function someOrElseManaged<R1, E1, B>(
  * @trace 1
  */
 export function someOrFailWith_<R, E, A, E1>(ma: Managed<R, E, O.Option<A>>, e: () => E1): Managed<R, E | E1, A> {
-  return bind_(
+  return chain_(
     ma,
     traceAs(
       e,
@@ -2599,7 +2599,7 @@ export function unlessManaged_<R, E, A, R1, E1>(
   mb: Managed<R1, E1, boolean>
 ): Managed<R & R1, E | E1, void> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     mb,
     traceFrom(trace, (b) => (b ? unit() : asUnit(ma)))
   )
@@ -2670,7 +2670,7 @@ export function whenManaged_<R, E, A, R1, E1>(
   mb: Managed<R1, E1, boolean>
 ): Managed<R & R1, E | E1, void> {
   const trace = accessCallTrace()
-  return bind_(
+  return chain_(
     mb,
     traceFrom(trace, (b) => (b ? asUnit(ma) : unit()))
   )
@@ -2875,7 +2875,7 @@ export function bindS<R, E, A, K, N extends string>(
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
 > {
-  return bind((a) =>
+  return chain((a) =>
     pipe(
       f(a),
       map((b) => Object.assign(a, { [name]: b } as any))
@@ -2983,7 +2983,7 @@ export function gen<T extends GenManaged<any, any, any>, A>(
           // eslint-disable-next-line functional/immutable-data
           f['$trace'] = state.value._trace
         }
-        return bind_(state.value.M, f)
+        return chain_(state.value.M, f)
       }
 
       return run(state)

@@ -42,11 +42,11 @@ export function getAltValidation<F>(
 ): <E>(S: P.Semigroup<E>) => P.Alt<HKT.UHKT2<F>, HKT.Fix<'E', E>> {
   return <E>(S: P.Semigroup<E>) => {
     const alt_: P.AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
-      F.bind_(
+      F.chain_(
         F.memento(fa),
         E.match(
           (e) =>
-            F.bind_(
+            F.chain_(
               F.memento(that()),
               E.match(
                 (e1) => F.fail(S.combine_(e, e1)),

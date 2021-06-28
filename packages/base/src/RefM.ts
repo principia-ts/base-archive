@@ -84,7 +84,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
   ) {
     this.matchIO    = this.matchIO.bind(this)
     this.matchAllIO = this.matchAllIO.bind(this)
-    this.set       = this.set.bind(this)
+    this.set        = this.set.bind(this)
   }
 
   matchIO<RC, RD, EC, ED, C, D>(
@@ -99,7 +99,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
           f(
             value,
             P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
-            (a) => (s) => I.bind_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
+            (a) => (s) => I.chain_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
           )
         )
     )
@@ -119,7 +119,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
             value,
             P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
             (c) => (s) =>
-              I.bind_(
+              I.chain_(
                 I.matchIO_(getEither(s), (e) => I.fail(ec(e)), ca(c)),
                 (a) => I.mapError_(setEither(a)(s), ea)
               )
@@ -129,12 +129,12 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
   }
 
   get get(): I.IO<RB, EB, B> {
-    return this.use((value, getEither) => I.bind_(value.get, getEither))
+    return this.use((value, getEither) => I.chain_(value.get, getEither))
   }
 
   set(a: A): I.IO<RA, EA, void> {
     return this.use((value, _, setEither) =>
-      value.semaphore.withPermit(P.pipe(value.get, I.bind(setEither(a)), I.bind(value.set)))
+      S.withPermit(value.semaphore)(P.pipe(value.get, I.chain(setEither(a)), I.chain(value.set)))
     )
   }
 }
@@ -149,7 +149,7 @@ export class DerivedIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, 
   ) {
     this.matchIO    = this.matchIO.bind(this)
     this.matchAllIO = this.matchAllIO.bind(this)
-    this.set       = this.set.bind(this)
+    this.set        = this.set.bind(this)
   }
 
   matchIO<RC, RD, EC, ED, C, D>(
@@ -164,7 +164,7 @@ export class DerivedIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, 
           f(
             value,
             P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
-            P.flow(ca, I.bind(P.flow(setEither, I.mapError(ea))))
+            P.flow(ca, I.chain(P.flow(setEither, I.mapError(ea))))
           )
         )
     )
@@ -184,18 +184,18 @@ export class DerivedIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, 
             value,
             P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
             (c) => (s) =>
-              P.pipe(getEither(s), I.matchIO(P.flow(ec, I.fail), ca(c)), I.bind(P.flow(setEither, I.mapError(ea))))
+              P.pipe(getEither(s), I.matchIO(P.flow(ec, I.fail), ca(c)), I.chain(P.flow(setEither, I.mapError(ea))))
           )
         )
     )
   }
 
   get get(): I.IO<RB, EB, B> {
-    return this.use((value, getEither) => I.bind_(value.get, getEither))
+    return this.use((value, getEither) => I.chain_(value.get, getEither))
   }
 
   set(a: A): I.IO<RA, EA, void> {
-    return this.use((value, _, setEither) => value.semaphore.withPermit(I.bind_(setEither(a), value.set)))
+    return this.use((value, _, setEither) => S.withPermit(value.semaphore)(I.chain_(setEither(a), value.set)))
   }
 }
 
@@ -205,7 +205,7 @@ export class AtomicIO<A> implements RefM<unknown, unknown, never, never, A, A> {
   constructor(readonly ref: URef<A>, readonly semaphore: Semaphore) {
     this.matchIO    = this.matchIO.bind(this)
     this.matchAllIO = this.matchAllIO.bind(this)
-    this.set       = this.set.bind(this)
+    this.set        = this.set.bind(this)
   }
 
   matchIO<RC, RD, EC, ED, C, D>(
@@ -232,7 +232,7 @@ export class AtomicIO<A> implements RefM<unknown, unknown, never, never, A, A> {
   }
 
   set(a: A): I.IO<unknown, never, void> {
-    return this.semaphore.withPermit(this.set(a))
+    return S.withPermit(this.semaphore)(this.set(a))
   }
 }
 
@@ -290,7 +290,7 @@ export function dequeue<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
     return P.tuple(
       P.pipe(
         ref,
-        tapInput((a) => queue.offer(a))
+        tapInput((a) => Q.offer_(queue, a))
       ),
       queue
     )
@@ -758,53 +758,53 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
       Atomic: (atomic) =>
         P.pipe(
           atomic.ref.get,
-          I.bind(f),
-          I.bind(([b, a]) =>
+          I.chain(f),
+          I.chain(([b, a]) =>
             P.pipe(
               atomic.ref.set(a),
               I.as(() => b)
             )
           ),
-          atomic.semaphore.withPermit
+          S.withPermit(atomic.semaphore)
         ),
       Derived: (derived) =>
         derived.use((value, getEither, setEither) =>
           P.pipe(
             value.ref.get,
-            I.bind((a) =>
+            I.chain((a) =>
               P.pipe(
                 getEither(a),
-                I.bind(f),
-                I.bind(([b, a]) =>
+                I.chain(f),
+                I.chain(([b, a]) =>
                   P.pipe(
                     setEither(a),
-                    I.bind((a) => value.ref.set(a)),
+                    I.chain((a) => value.ref.set(a)),
                     I.as(() => b)
                   )
                 )
               )
             ),
-            value.semaphore.withPermit
+            S.withPermit(value.semaphore)
           )
         ),
       DerivedAll: (derivedAll) =>
         derivedAll.use((value, getEither, setEither) =>
           P.pipe(
             value.ref.get,
-            I.bind((s) =>
+            I.chain((s) =>
               P.pipe(
                 getEither(s),
-                I.bind(f),
-                I.bind(([b, a]) =>
+                I.chain(f),
+                I.chain(([b, a]) =>
                   P.pipe(
                     setEither(a)(s),
-                    I.bind((a) => value.ref.set(a)),
+                    I.chain((a) => value.ref.set(a)),
                     I.as(() => b)
                   )
                 )
               )
             ),
-            value.semaphore.withPermit
+            S.withPermit(value.semaphore)
           )
         )
     })

@@ -156,7 +156,7 @@ export function foldl<A, Z>(z: Z, f: (z: Z, a: A) => Z): (fa: OrderedSet<A>) => 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<B>(O: P.Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iterable<B>) => OrderedSet<B> {
+export function chain_<B>(O: P.Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iterable<B>) => OrderedSet<B> {
   return (ma, f) => {
     let r = make(O)
     forEach_(ma, (a) => {
@@ -170,8 +170,8 @@ export function bind_<B>(O: P.Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Itera
   }
 }
 
-export function bind<B>(O: P.Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: OrderedSet<A>) => OrderedSet<B> {
-  return (f) => (ma) => bind_(O)(ma, f)
+export function chain<B>(O: P.Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: OrderedSet<A>) => OrderedSet<B> {
+  return (f) => (ma) => chain_(O)(ma, f)
 }
 
 /*

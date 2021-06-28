@@ -86,7 +86,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
 
       const last = pipe(
         ref.get,
-        I.bind(([o, _]) =>
+        I.chain(([o, _]) =>
           O.match_(
             o,
             () => I.fail(new NoSuchElementError('Driver.last')),
@@ -109,7 +109,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
                 pipe(
                   ref.set(tuple(O.some(dec.out), dec.next)),
                   I.as(() => dec.interval - now),
-                  I.bind((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
+                  I.chain((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
                   I.as(() => dec.out)
                 )
               )
@@ -217,7 +217,7 @@ export function intersectMap<R1, I1, O, O1, O2>(
 const mapMLoop =
   <R, I, O, R1, O1>(self: StepFunction<R, I, O>, f: (o: O) => I.IO<R1, never, O1>): StepFunction<R & R1, I, O1> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.map_(f(d.out), (o): Decision<R & R1, I, O1> => makeDone(o))
@@ -381,7 +381,7 @@ const andThenEitherLoop =
   ): StepFunction<R & R1, I & I1, Either<O, O1>> =>
   (now, i) =>
     onLeft
-      ? I.bind_(sc(now, i), (d) => {
+      ? I.chain_(sc(now, i), (d) => {
           switch (d._tag) {
             case 'Continue': {
               return I.pure(makeContinue(E.left(d.out), d.interval, andThenEitherLoop(d.next, that, true)))
@@ -496,7 +496,7 @@ const checkIOLoop =
     test: (i: I, o: O) => I.IO<R1, never, boolean>
   ): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.pure(makeDone(d.out))
@@ -635,7 +635,7 @@ function composeLoop<R, I, O, R1, O1>(
   return (now, i) =>
     pipe(
       s1(now, i),
-      I.bind((d) => {
+      I.chain((d) => {
         switch (d._tag) {
           case 'Done': {
             return I.map_(s2(now, d.out), toDone)
@@ -742,7 +742,7 @@ export function unionWith<R1, I1, O1>(
 const ensuringLoop =
   <R, I, O, R1>(self: StepFunction<R, I, O>, finalizer: I.IO<R1, never, any>): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.as_(finalizer, () => makeDone(d.out))
@@ -820,7 +820,7 @@ const foldIOLoop =
     f: (b: B, o: O) => I.IO<R1, never, B>
   ): StepFunction<R & R1, I, B> =>
   (now, i) =>
-    I.bind_(sf(now, i), (d) => {
+    I.chain_(sf(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.pure(makeDone(b))
@@ -938,7 +938,7 @@ export function left<A>(): <R, I, O>(sc: Schedule<R, I, O>) => Schedule<R, Eithe
 const repeatLoop =
   <R, I, O>(init: StepFunction<R, I, O>, self: StepFunction<R, I, O> = init): StepFunction<R, I, O> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return repeatLoop(init, self)(now, i)
@@ -971,7 +971,7 @@ const modifyDelayIOLoop =
     f: (o: O, d: number) => I.IO<R1, never, number>
   ): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(sf(now, i), (d) => {
+    I.chain_(sf(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.pure(makeDone(d.out))
@@ -979,7 +979,9 @@ const modifyDelayIOLoop =
         case 'Continue': {
           const delay = d.interval - now
 
-          return I.map_(f(d.out, delay), (duration) => makeContinue(d.out, now + duration, modifyDelayIOLoop(d.next, f)))
+          return I.map_(f(d.out, delay), (duration) =>
+            makeContinue(d.out, now + duration, modifyDelayIOLoop(d.next, f))
+          )
         }
       }
     })
@@ -1025,7 +1027,7 @@ const onDecisionLoop =
     f: (d: Decision<R, I, O>) => I.IO<R1, never, any>
   ): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.as_(f(d), () => makeDone(d.out))
@@ -1078,7 +1080,7 @@ const reconsiderIOLoop =
     f: (_: Decision<R, I, O>) => I.IO<R1, never, E.Either<O1, readonly [O1, number]>>
   ): StepFunction<R & R1, I, O1> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.map_(
@@ -1195,7 +1197,7 @@ export function repetitions<R, I, O>(sc: Schedule<R, I, O>): Schedule<R, I, numb
 const resetWhenLoop =
   <R, I, O>(sc: Schedule<R, I, O>, step: StepFunction<R, I, O>, f: (o: O) => boolean): StepFunction<R, I, O> =>
   (now, i) =>
-    I.bind_(step(now, i), (d) => {
+    I.chain_(step(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return f(d.out) ? sc.step(now, i) : I.pure(makeDone(d.out))
@@ -1227,7 +1229,7 @@ const runLoop = <R, I, O>(
   acc: readonly O[]
 ): I.IO<R, never, readonly O[]> =>
   xs.length > 0
-    ? I.bind_(self(now, xs[0]), (d) => {
+    ? I.chain_(self(now, xs[0]), (d) => {
         switch (d._tag) {
           case 'Done': {
             return I.pure([...acc, d.out])
@@ -1269,7 +1271,7 @@ export const spaced = (duration: number) => addDelay_(forever, () => duration)
 const tapInputLoop =
   <R, I, O, R1>(self: StepFunction<R, I, O>, f: (i: I) => I.IO<R1, never, any>): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(f(i), () =>
+    I.chain_(f(i), () =>
       I.map_(self(now, i), (d) => {
         switch (d._tag) {
           case 'Done': {
@@ -1298,7 +1300,7 @@ export function tapInput<R1, I>(
 const tapOutputLoop =
   <R, I, O, R1>(self: StepFunction<R, I, O>, f: (o: O) => I.IO<R1, never, any>): StepFunction<R & R1, I, O> =>
   (now, i) =>
-    I.bind_(self(now, i), (d) => {
+    I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
           return I.as_(f(d.out), () => makeDone(d.out))
@@ -1401,7 +1403,7 @@ export function unfold<A>(f: (a: A) => A): (a: () => A) => Schedule<unknown, unk
 const unfoldIOLoop =
   <R, A>(a: A, f: (a: A) => I.IO<R, never, A>): StepFunction<R, unknown, A> =>
   (now, _) =>
-    I.pure(makeContinue(a, now, (n, i) => I.bind_(f(a), (x) => unfoldIOLoop(x, f)(n, i))))
+    I.pure(makeContinue(a, now, (n, i) => I.chain_(f(a), (x) => unfoldIOLoop(x, f)(n, i))))
 
 /**
  * Effectfully unfolds a schedule that repeats one time from the specified state and iterator.

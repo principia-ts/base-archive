@@ -1182,7 +1182,7 @@ export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, 
 }
 
 export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
-  return bind_(as, (a) => map_(bs, (b) => f(a, b)))
+  return chain_(as, (a) => map_(bs, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
@@ -1242,7 +1242,7 @@ export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
+export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   concrete(ma)
   const iterator = ma.arrayIterator()
   let result: IteratorResult<ArrayLike<A>>
@@ -1258,12 +1258,12 @@ export function bind_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   return out
 }
 
-export function bind<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -1583,22 +1583,28 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
+export function _ifoldMap<A, M>(fa: Chunk<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
+  return ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+}
+
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+  return (fa, f) => _ifoldMap(fa, M, f)
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Chunk<A>) => M {
-  const ifoldMapM_ = ifoldMap_(M)
-  return (f) => (fa) => ifoldMapM_(fa, f)
+  return (f) => (fa) => _ifoldMap(fa, M, f)
+}
+
+export function _foldMap<A, M>(fa: Chunk<A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (a: A) => M) => M {
-  return (fa, f) => foldl_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
+  return (fa, f) => _foldMap(fa, M, f)
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) => M {
-  const foldMapM_ = foldMap_(M)
-  return (f) => (fa) => foldMapM_(fa, f)
+  return (f) => (fa) => _foldMap(fa, M, f)
 }
 
 /*
@@ -1691,13 +1697,17 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const itraverse_: P.TraverseWithIndexFn_<URI> = (G) => (ta, f) =>
-  ifoldl_(ta, G.pure(empty()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
+export const _itraverse: P._TraverseWithIndexFn<URI> = (ta, A, f) =>
+  ifoldl_(ta, A.pure(empty()), (fbs, i, a) => A.crossWith_(fbs, f(i, a), append_))
+
+export const itraverse_: P.TraverseWithIndexFn_<URI> = (A) => (ta, f) => _itraverse(ta, A, f)
 
 export const itraverse: P.TraverseWithIndexFn<URI> = (G) => {
   const itraverseG_ = itraverse_(G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
+
+export const _traverse: P._TraverseFn<URI> = (ta, A, f) => _itraverse(ta, A, (_, a) => f(a))
 
 export const traverse_: P.TraverseFn_<URI> = (G) => {
   const itraverseG_ = itraverse_(G)
@@ -1746,73 +1756,73 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA_: P.WitherWithIndexFn_<URI> = (G) => {
-  const traverseG = itraverse_(G)
-  return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
-}
+export const _icompactA: P._WitherWithIndexFn<URI> = (wa, A, f) => pipe(_itraverse(wa, A, f), A.map(compact))
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA: P.WitherWithIndexFn<URI> = (G) => {
-  const icompactAG_ = icompactA_(G)
-  return (f) => (wa) => icompactAG_(wa, f)
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const compactA_: P.WitherFn_<URI> = (G) => {
-  const icompactAG_ = icompactA_(G)
-  return (wa, f) => icompactAG_(wa, (_, a) => f(a))
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const compactA: P.WitherFn<URI> = (G) => {
-  const compactAG_ = compactA_(G)
-  return (f) => (wa) => compactAG_(wa, f)
-}
+export const icompactA_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) => _icompactA(wa, A, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA_: P.WiltWithIndexFn_<URI> = (G) => {
-  const traverseG = itraverse_(G)
-  return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
-}
+export const icompactA: P.WitherWithIndexFn<URI> = (G) => (f) => (wa) => _icompactA(wa, G, f)
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const _compactA: P._WitherFn<URI> = (wa, A, f) => _icompactA(wa, A, (_, a) => f(a))
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const compactA_: P.WitherFn_<URI> = (G) => (wa, f) => _compactA(wa, G, f)
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const compactA: P.WitherFn<URI> = (G) => (f) => (wa) => _compactA(wa, G, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA: P.WiltWithIndexFn<URI> = (G) => {
-  const iseparateAG_ = iseparateA_(G)
-  return (f) => (wa) => iseparateAG_(wa, f)
-}
+export const _iseparateA: P._WiltWithIndexFn<URI> = (wa, A, f) => pipe(_itraverse(wa, A, f), A.map(separate))
+
+/**
+ * @category WitherableWithIndex
+ * @since 1.0.0
+ */
+export const iseparateA_: P.WiltWithIndexFn_<URI> = (G) => (wa, f) => _iseparateA(wa, G, f)
+
+/**
+ * @category WitherableWithIndex
+ * @since 1.0.0
+ */
+export const iseparateA: P.WiltWithIndexFn<URI> = (G) => (f) => (wa) => _iseparateA(wa, G, f)
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const separateA_: P.WiltFn_<URI> = (G) => {
-  const iseparateAG_ = iseparateA_(G)
-  return (wa, f) => iseparateAG_(wa, (_, a) => f(a))
-}
+export const _separateA: P._WitherFn<URI> = (wa, A, f) => _iseparateA(wa, A, (_, a) => f(a))
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const separateA: P.WiltFn<URI> = (G) => {
-  const separateAG_ = separateA_(G)
-  return (f) => (wa) => separateAG_(wa, f)
-}
+export const separateA_: P.WiltFn_<URI> = (G) => (wa, f) => _separateA(wa, G, f)
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const separateA: P.WiltFn<URI> = (G) => (f) => (wa) => _separateA(wa, G, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -2369,7 +2379,7 @@ export const Monad = P.Monad<URI>({
   ap_,
   pure,
   unit,
-  bind_,
+  chain_,
   flatten
 })
 
@@ -2433,8 +2443,8 @@ export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
  * @category utils
  * @since 1.0.0
  */
-export function elem_<A>(E: Eq<A>): (as: Chunk<A>, el: A) => boolean {
-  return (as, el) => exists_(as, (a) => E.equals_(a, el))
+export function _elem<A>(as: Chunk<A>, E: Eq<A>, a: A): boolean {
+  return exists_(as, (el) => E.equals_(el, a))
 }
 
 /**
@@ -2443,8 +2453,18 @@ export function elem_<A>(E: Eq<A>): (as: Chunk<A>, el: A) => boolean {
  * @category utils
  * @since 1.0.0
  */
-export function elem<A>(E: Eq<A>): (el: A) => (as: Chunk<A>) => boolean {
-  return (el) => (as) => elem_(E)(as, el)
+export function elem_<A>(E: Eq<A>): (as: Chunk<A>, a: A) => boolean {
+  return (as, a) => _elem(as, E, a)
+}
+
+/**
+ * Determines whether at least one element of the Chunk is equal to the given element
+ *
+ * @category utils
+ * @since 1.0.0
+ */
+export function elem<A>(E: Eq<A>): (a: A) => (as: Chunk<A>) => boolean {
+  return (a) => (as) => _elem(as, E, a)
 }
 
 /**

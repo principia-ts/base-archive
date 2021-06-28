@@ -2,7 +2,7 @@ import type { _E, _R } from '../../util/types'
 import type { STM } from './primitives'
 
 import { defer } from './core'
-import { bind_, succeed } from './primitives'
+import { chain_, succeed } from './primitives'
 
 export class GenSTM<R, E, A> {
   readonly _R!: (_: R) => void
@@ -33,7 +33,7 @@ export function gen<T extends GenSTM<any, any, any>, A>(
       if (state.done) {
         return succeed(state.value)
       }
-      return bind_(state.value.STM, (val) => {
+      return chain_(state.value.STM, (val) => {
         const next = iterator.next(val)
         return run(next)
       })

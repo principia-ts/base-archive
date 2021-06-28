@@ -198,14 +198,14 @@ export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple2<A, I>) => Tuple2<B, I>
  */
 
 export function getMonad<M>(M: P.Monoid<M>): P.Monad<URI, HKT.Fix<'I', M>> {
-  const bind_: P.BindFn_<URI, HKT.Fix<'I', M>> = (ma, f) => {
+  const chain_: P.ChainFn_<URI, HKT.Fix<'I', M>> = (ma, f) => {
     const mb = f(fst(ma))
     return [fst(mb), M.combine_(snd(ma), snd(mb))]
   }
 
   return P.Monad({
     ...getApplicative(M),
-    bind_
+    chain_
   })
 }
 

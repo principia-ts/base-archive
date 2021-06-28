@@ -5,7 +5,8 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import { bind_, result } from '../core'
+import * as P from '../../Promise'
+import { chain_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -17,7 +18,7 @@ import { uninterruptibleMask } from './interrupt'
  */
 export function fulfill_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
   const trace = accessCallTrace()
-  return uninterruptibleMask(traceFrom(trace, ({ restore }) => bind_(result(restore(effect)), p.done)))
+  return uninterruptibleMask(traceFrom(trace, ({ restore }) => chain_(result(restore(effect)), (ex) => P.done_(p, ex))))
 }
 
 /**

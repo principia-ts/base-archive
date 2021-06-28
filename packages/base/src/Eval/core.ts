@@ -119,7 +119,7 @@ class Defer<A> extends Eval<A> {
   }
 }
 
-class Bind<A, B> extends Eval<B> {
+class Chain<A, B> extends Eval<B> {
   readonly _evalTag: BindTag = EvalTag.Bind
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
@@ -229,7 +229,7 @@ export function pure<A>(a: A): Eval<A> {
  */
 
 export function crossWith_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
-  return bind_(ma, (a) => map_(mb, (b) => f(a, b)))
+  return chain_(ma, (a) => map_(mb, (b) => f(a, b)))
 }
 
 export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
@@ -259,7 +259,7 @@ export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
  */
 
 export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
-  return bind_(fa, (a) => now(f(a)))
+  return chain_(fa, (a) => now(f(a)))
 }
 
 export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
@@ -272,16 +272,16 @@ export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bind_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
-  return new Bind(ma, f)
+export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
+  return new Chain(ma, f)
 }
 
-export function bind<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
-  return (ma) => bind_(ma, f)
+export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return bind_(mma, P.identity)
+  return chain_(mma, P.identity)
 }
 
 /*
@@ -300,7 +300,7 @@ export function unit(): Eval<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Bind<any, any> | Memoize<any>
+type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Chain<any, any> | Memoize<any>
 
 export function evaluate<A>(e: Eval<A>): A {
   const addToMemo =
@@ -468,7 +468,7 @@ export const Monad = P.Monad<URI>({
   cross_,
   unit,
   pure,
-  bind_
+  chain_
 })
 
 export class GenEval<A> {
@@ -486,7 +486,7 @@ function _run<T extends GenEval<any>, A>(
   if (state.done) {
     return now(state.value)
   }
-  return bind_(state.value.ma, (val) => {
+  return chain_(state.value.ma, (val) => {
     const next = iterator.next(val)
     return _run(next, iterator)
   })

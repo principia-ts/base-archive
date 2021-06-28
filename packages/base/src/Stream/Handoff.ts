@@ -32,7 +32,7 @@ class Handoff<A> {
 export function make<A>(): I.UIO<Handoff<A>> {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) => Ref.make<State<A>>(new Empty(p))),
+    I.chain((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
   )
 }
@@ -41,18 +41,18 @@ export function offer<A>(a: A) {
   return (h: Handoff<A>): I.UIO<void> =>
     pipe(
       P.make<never, void>(),
-      I.bind((p) =>
+      I.chain((p) =>
         pipe(
           h.ref,
           Ref.modify<I.UIO<void>, State<A>>(
             matchTag({
               Empty: ({ notifyConsumer }) =>
-                [pipe(notifyConsumer.succeed(undefined), I.apr(p.await)), new Full(a, p)] as const,
+                [pipe(P.succeed_(notifyConsumer, undefined), I.apr(P.await(p))), new Full(a, p)] as const,
               Full: (s) =>
                 [
                   pipe(
-                    s.notifyProducer.await,
-                    I.bind(() => offer(a)(h))
+                    P.await(s.notifyProducer),
+                    I.chain(() => offer(a)(h))
                   ),
                   s
                 ] as const
@@ -67,7 +67,7 @@ export function offer<A>(a: A) {
 export function take<A>(h: Handoff<A>): I.UIO<A> {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) =>
+    I.chain((p) =>
       pipe(
         h.ref,
         Ref.modify<I.UIO<A>, State<A>>(
@@ -75,15 +75,15 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
             Empty: (s) =>
               [
                 pipe(
-                  s.notifyConsumer.await,
-                  I.bind(() => take(h))
+                  P.await(s.notifyConsumer),
+                  I.chain(() => take(h))
                 ),
                 s
               ] as const,
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
-                  notifyProducer.succeed(undefined),
+                  P.succeed_(notifyProducer, undefined),
                   I.as(() => a)
                 ),
                 new Empty(p)
@@ -99,7 +99,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
 export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
   return pipe(
     P.make<never, void>(),
-    I.bind((p) =>
+    I.chain((p) =>
       pipe(
         h.ref,
         Ref.modify<I.UIO<Option<A>>, State<A>>(
@@ -108,7 +108,7 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
             Full: ({ a, notifyProducer }) =>
               [
                 pipe(
-                  notifyProducer.succeed(undefined),
+                  P.succeed_(notifyProducer, undefined),
                   I.as(() => some(a))
                 ),
                 new Empty(p)

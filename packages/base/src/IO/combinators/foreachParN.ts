@@ -23,19 +23,19 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
     ref: Ref.URef<number>
   ): I.URIO<R, void> =>
     pipe(
-      q.take,
-      I.bind(
+      Q.take(q),
+      I.chain(
         traceAs(f, ([p, a]) =>
           pipe(
             f(a),
             I.matchCauseIO(
-              (c) => I.foreach_(pairs, (_) => _[0].halt(c)),
-              (b) => p.succeed(b)
+              (c) => I.foreach_(pairs, (_) => P.halt_(_[0], c)),
+              (b) => P.succeed_(p, b)
             )
           )
         )
       ),
-      I.bind(() => worker(q, pairs, ref)),
+      I.chain(() => worker(q, pairs, ref)),
       I.whenIO(Ref.modify_(ref, (n) => tuple(n > 0, n - 1)))
     )
 
@@ -53,7 +53,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
             )
           )
           const ref   = yield* _(Ref.make(pairs.length))
-          yield* _(I.fork(I.foreach_(pairs, (pair) => q.offer(pair))))
+          yield* _(I.fork(I.foreach_(pairs, (pair) => Q.offer_(q, pair))))
           yield* _(
             I.collectAllUnit(
               pipe(
@@ -62,11 +62,11 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
               )
             )
           )
-          const res = yield* _(I.foreach_(pairs, (_) => _[0].await))
+          const res = yield* _(I.foreach_(pairs, (_) => P.await(_[0])))
 
           return res
         }),
-      (q) => q.shutdown
+      Q.shutdown
     )
   )
 }
