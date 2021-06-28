@@ -1363,7 +1363,7 @@ export function mapIO_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutEle
  * returned channel is created by applying the specified effectful function to the terminal value
  * of this channel.
  *
- * @dataFirst mapM_
+ * @dataFirst mapIO_
  */
 export function mapIO<Env1, OutErr1, OutDone, OutDone1>(f: (o: OutDone) => IO<Env1, OutErr1, OutDone1>) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem>(

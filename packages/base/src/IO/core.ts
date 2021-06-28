@@ -2563,7 +2563,7 @@ export function getOrElseIO_<R, E, A, R1, E1, B>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst getOrElseM_
+ * @dataFirst getOrElseIO_
  * @trace call
  */
 export function getOrElseIO<R1, E1, B>(
@@ -3360,7 +3360,7 @@ export function rejectIO_<R, E, A, R1, E1>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst rejectM_
+ * @dataFirst rejectIO_
  * @trace 0
  */
 export function rejectIO<R1, E1, A>(
@@ -3946,7 +3946,7 @@ export function whenIO_<R, E, A, R1, E1>(ma: IO<R, E, A>, mb: IO<R1, E1, boolean
  * @category Combinators,
  * @since 1.0.0
  *
- * @dataFirst whenM_
+ * @dataFirst whenIO_
  * @trace call
  */
 export function whenIO<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, A>) => IO<R & R1, E | E1, void> {

@@ -904,7 +904,7 @@ export function mapIO_<R, E, A, R1, E1, B>(
 /**
  * Returns a managed whose success is mapped by the specified `f` function.
  *
- * @dataFirst mapM_
+ * @dataFirst mapIO_
  * @trace 0
  */
 export function mapIO<R1, E1, A, B>(
@@ -1741,7 +1741,7 @@ export function ifManaged_<R, E, R1, E1, B, R2, E2, C>(
 /**
  * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
  *
- * @dataFirst ifM_
+ * @dataFirst ifManaged_
  * @trace call
  */
 export function ifManaged<R1, E1, B, R2, E2, C>(onTrue: () => Managed<R1, E1, B>, onFalse: () => Managed<R2, E2, C>) {
@@ -2679,7 +2679,7 @@ export function whenManaged_<R, E, A, R1, E1>(
 /**
  * The moral equivalent of `if (p) exp` when `p` has side-effects
  *
- * @dataFirst whenM_
+ * @dataFirst whenManaged_
  * @trace call
  */
 export function whenManaged<R1, E1>(

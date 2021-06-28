@@ -540,7 +540,7 @@ function subscribersHashSet<A>(): HS.HashSet<HashedPair<SubscriptionInternal<A>,
  * Transforms messages taken from the hub using the specified effectual
  * function.
  */
-export function mapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
+export function mapIO_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): Hub<RA, RC & RB, EA, EB | EC, A, C> {
@@ -551,10 +551,10 @@ export function mapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
  * Transforms messages taken from the hub using the specified effectual
  * function.
  *
- * @dataFirst mapM_
+ * @dataFirst mapIO_
  */
-export function mapM<B, C, EC, RC>(f: (b: B) => I.IO<RC, EC, C>) {
-  return <A, EA, EB, RA, RB>(self: Hub<RA, RB, EA, EB, A, B>) => mapM_(self, f)
+export function mapIO<B, C, EC, RC>(f: (b: B) => I.IO<RC, EC, C>) {
+  return <A, EA, EB, RA, RB>(self: Hub<RA, RB, EA, EB, A, B>) => mapIO_(self, f)
 }
 
 /**
@@ -564,7 +564,7 @@ export function map_<RA, RB, EA, EB, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (b: B) => C
 ): Hub<RA, RB, EA, EB, A, C> {
-  return mapM_(self, (b) => I.succeed(f(b)))
+  return mapIO_(self, (b) => I.succeed(f(b)))
 }
 
 /**
@@ -586,7 +586,7 @@ export function map<B, C>(f: (b: B) => C) {
  * Transforms messages published to the hub using the specified effectual
  * function.
  */
-export function contramapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
+export function contramapIO_<RA, RB, RC, EA, EB, EC, A, B, C>(
   self: Hub<RA, RB, EA, EB, A, B>,
   f: (c: C) => I.IO<RC, EC, A>
 ): Hub<RC & RA, RB, EA | EC, EB, C, B> {
@@ -597,10 +597,10 @@ export function contramapM_<RA, RB, RC, EA, EB, EC, A, B, C>(
  * Transforms messages published to the hub using the specified effectual
  * function.
  *
- * @dataFirst contramapM_
+ * @dataFirst contramapIO_
  */
-export function contramapM<RC, EC, A, C>(f: (c: C) => I.IO<RC, EC, A>) {
-  return <RA, RB, EA, EB, B>(self: Hub<RA, RB, EA, EB, A, B>) => contramapM_(self, f)
+export function contramapIO<RC, EC, A, C>(f: (c: C) => I.IO<RC, EC, A>) {
+  return <RA, RB, EA, EB, B>(self: Hub<RA, RB, EA, EB, A, B>) => contramapIO_(self, f)
 }
 
 /*
@@ -651,7 +651,7 @@ export function dimapIO_<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D>(
  * Transforms messages published to and taken from the hub using the
  * specified effectual functions.
  *
- * @dataFirst dimapM_
+ * @dataFirst dimapIO_
  */
 export function dimapIO<A, B, C, D, EC, ED, RC, RD>(f: (c: C) => I.IO<RC, EC, A>, g: (b: B) => I.IO<RD, ED, D>) {
   return <RA, RB, EA, EB>(self: Hub<RA, RB, EA, EB, A, B>) => dimapIO_(self, f, g)
