@@ -2438,7 +2438,7 @@ export function foldr<A, B, R, E>(
  */
 export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
   const trace = accessCallTrace()
-  return pipe(ma, apr(yieldNow), traceCall(apr, trace)(forever(ma)))
+  return pipe(ma, apr(yieldNow), chain(traceFrom(trace, () => forever(ma))))
 }
 
 /**
