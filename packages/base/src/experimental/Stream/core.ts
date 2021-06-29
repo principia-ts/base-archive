@@ -1354,7 +1354,7 @@ export function unwrapManaged<R0, E0, R, E, A>(stream: M.Managed<R0, E0, Stream<
 /**
  * Submerges the error case of an `Either` into the `ZStream`.
  */
-export function absolve<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
+export function subsume<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
   return mapIO_(xs, (_) => I.fromEitherWith(() => _))
 }
 

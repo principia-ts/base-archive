@@ -9,7 +9,7 @@ import * as C from '../Chunk/core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function itraverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function imapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, N extends string, K, Q, W, X, I, S, R, E, B>(
     ta: Iterable<A>,
     f: (i: number, a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>
@@ -27,23 +27,23 @@ export function itraverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>)
   }
 }
 
-export function itraverseChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function imapAChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, N extends string, K, Q, W, X, I, S, R, E, B>(
       f: (i: number, a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>
     ) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
-      itraverseChunk_(G)(ta, f)
+      imapAChunk_(G)(ta, f)
 }
 
-export function traverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function mapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, N extends string, K, Q, W, X, I, S, R, E, B>(
     ta: Iterable<A>,
     f: (a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>
-  ): HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, C.Chunk<B>> => itraverseChunk_(G)(ta, (_, a) => f(a))
+  ): HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, C.Chunk<B>> => imapAChunk_(G)(ta, (_, a) => f(a))
 }
 
-export function traverseChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function mapAChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, N extends string, K, Q, W, X, I, S, R, E, B>(f: (a: A) => HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, B>) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, N, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
-      itraverseChunk_(G)(ta, (_, a) => f(a))
+      imapAChunk_(G)(ta, (_, a) => f(a))
 }

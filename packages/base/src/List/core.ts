@@ -958,25 +958,25 @@ export function chain<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
   ifoldr_(ta, A.pure(empty()), (a, i, fb) => A.crossWith_(f(i, a), fb, (b, l) => prepend_(l, b)))
 
-export const itraverse: P.TraverseWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (f) => (ta) => itraverseA_(ta, f)
+export const imapA: P.MapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+  const imapAG_ = imapA_(A)
+  return (f) => (ta) => imapAG_(ta, f)
 }
 
-export const traverse_: P.TraverseFn_<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (ta, f) => itraverseA_(ta, (_, a) => f(a))
+export const mapA_: P.MapAFn_<[HKT.URI<ListURI>]> = (A) => {
+  const imapAG_ = imapA_(A)
+  return (ta, f) => imapAG_(ta, (_, a) => f(a))
 }
 
-export const traverse: P.TraverseFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (f) => (ta) => itraverseA_(ta, (_, a) => f(a))
+export const mapA: P.MapAFn<[HKT.URI<ListURI>]> = (A) => {
+  const imapAG_ = imapA_(A)
+  return (f) => (ta) => imapAG_(ta, (_, a) => f(a))
 }
 
-export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => traverse(A)(identity)
+export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => mapA(A)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1007,42 +1007,42 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): List
  * -------------------------------------------------------------------------------------------------
  */
 
-export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
+export const icompactA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = imapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const icompactA: P.WitherWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
+export const icompactA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = imapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const compactA_: P.WitherFn_<[HKT.URI<ListURI>]> = (A) => {
-  const traverseG_ = traverse_(A)
+export const compactA_: P.FilterMapAFn_<[HKT.URI<ListURI>]> = (A) => {
+  const traverseG_ = mapA_(A)
   return (wa, f) => A.map_(traverseG_(wa, f), compact)
 }
 
-export const compactA: P.WitherFn<[HKT.URI<ListURI>]> = (A) => {
+export const compactA: P.FilterMapAFn<[HKT.URI<ListURI>]> = (A) => {
   const compactAA_ = compactA_(A)
   return (f) => (wa) => compactAA_(wa, f)
 }
 
-export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
+export const iseparateA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = imapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
 }
 
-export const iseparateA: P.WiltWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
+export const iseparateA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = imapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
 }
 
-export const separateA_: P.WiltFn_<[HKT.URI<ListURI>]> = (A) => {
-  const traverseA_ = traverse_(A)
+export const separateA_: P.PartitionMapAFn_<[HKT.URI<ListURI>]> = (A) => {
+  const traverseA_ = mapA_(A)
   return (wa, f) => A.map_(traverseA_(wa, f), separate)
 }
 
-export const separateA: P.WiltFn<[HKT.URI<ListURI>]> = (A) => {
+export const separateA: P.PartitionMapAFn<[HKT.URI<ListURI>]> = (A) => {
   const separateAA_ = separateA_(A)
   return (f) => (wa) => separateAA_(wa, f)
 }
@@ -2399,11 +2399,11 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  traverse_
+  mapA_: mapA_
 })
 
-export const mapAccumM_ = P.mapAccumMF_(Traversable)
-export const mapAccumM  = P.mapAccumMF(Traversable)
+export const mapAccumM_ = P.getMapAccumM_(Traversable)
+export const mapAccumM  = P.getMapAccumM(Traversable)
 
 export const Witherable = P.Witherable<URI>({
   map_,
@@ -2414,9 +2414,9 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  traverse_,
-  compactA_,
-  separateA_
+  mapA_: mapA_,
+  filterMapA_: compactA_,
+  partitionMapA_: separateA_
 })
 
 export const Unfolable = HKT.instance<P.Unfoldable<URI>>({

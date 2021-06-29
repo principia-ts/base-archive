@@ -373,7 +373,7 @@ export function catchSome<E, R1, E1, B>(
  * Submerges the error case of an `Either` into the `STM`. The inverse
  * operation of `STM.either`.
  */
-export function absolve<R, E, E1, A>(z: STM<R, E, E.Either<E1, A>>): STM<R, E | E1, A> {
+export function subsume<R, E, E1, A>(z: STM<R, E, E.Either<E1, A>>): STM<R, E | E1, A> {
   return chain_(z, fromEither)
 }
 
@@ -691,7 +691,7 @@ export function commit<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
  * is a success or a failure.
  */
 export function commitEither<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
-  return T.absolve(commit(memento(stm)))
+  return T.subsume(commit(attempt(stm)))
 }
 
 /**
@@ -715,7 +715,7 @@ export function dieMessageWith(message: () => string): STM<unknown, never, never
 /**
  * Converts the failure channel into an `Either`.
  */
-export function memento<R, E, A>(stm: STM<R, E, A>): STM<R, never, E.Either<E, A>> {
+export function attempt<R, E, A>(stm: STM<R, E, A>): STM<R, never, E.Either<E, A>> {
   return match_(
     stm,
     (x) => E.left(x),

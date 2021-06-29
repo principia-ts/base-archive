@@ -229,15 +229,13 @@ export function compose<C, B>(bc: Tuple2<C, B>): <A>(ab: Tuple2<B, A>) => Tuple2
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI, V>()(
-  (_) => (G) => (ta, f) => G.map_(f(fst(ta)), (b) => [b, snd(ta)])
-)
+export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => AG.map_(f(fst(ta)), (b) => [b, snd(ta)])
 
-export const traverse: P.TraverseFn<URI, V> = (G) => {
-  const traverseG_ = traverse_(G)
-  return (f) => (ta) => traverseG_(ta, f)
+export const mapA: P.MapAFn<URI, V> = (A) => {
+  const mapA__ = mapA_(A)
+  return (f) => (ta) => mapA__(ta, f)
 }
 
-export const sequence = P.implementSequence<URI, V>()((_) => (G) => (ta) => G.map_(fst(ta), (a) => [a, snd(ta)]))
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => AG.map_(fst(ta), (a) => [a, snd(ta)])
 
 export { Tuple2URI } from './Modules'

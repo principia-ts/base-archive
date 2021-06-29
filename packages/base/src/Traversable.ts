@@ -11,27 +11,27 @@ import * as F from './SafeFunction'
 import { getStateT } from './StateT'
 
 export interface Traversable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C>, Foldable<F, C> {
-  readonly traverse_: TraverseFn_<F, C>
-  readonly traverse: TraverseFn<F, C>
+  readonly mapA_: MapAFn_<F, C>
+  readonly mapA: MapAFn<F, C>
   readonly sequence: SequenceFn<F, C>
 }
 
 export type TraversableMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> &
   FoldableMin<F, C> & {
-    readonly traverse_: TraverseFn_<F, C>
+    readonly mapA_: MapAFn_<F, C>
   }
 
 export function Traversable<F extends HKT.URIS, C = HKT.Auto>(F: TraversableMin<F, C>): Traversable<F, C> {
   const sequence: SequenceFn<F, C> = (A) => {
-    const traverseA_ = F.traverse_(A)
-    return (ta) => traverseA_(ta, identity)
+    const mapA_ = F.mapA_(A)
+    return (ta) => mapA_(ta, identity)
   }
   return HKT.instance<Traversable<F, C>>({
     ...Functor(F),
     ...Foldable(F),
-    traverse_: F.traverse_,
-    traverse: (A) => {
-      const traverseA_ = F.traverse_(A)
+    mapA_: F.mapA_,
+    mapA: (A) => {
+      const traverseA_ = F.mapA_(A)
       return (f) => (ta) => traverseA_(ta, f)
     },
     sequence
@@ -40,8 +40,8 @@ export function Traversable<F extends HKT.URIS, C = HKT.Auto>(F: TraversableMin<
 
 export interface TraversableComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
   extends Functor2<F, G, CF, CG> {
-  readonly traverse_: TraverseFnComposition_<F, G, CF, CG>
-  readonly traverse: TraverseFnComposition<F, G, CF, CG>
+  readonly mapA_: MapAFnComposition_<F, G, CF, CG>
+  readonly mapA: MapAFnComposition<F, G, CF, CG>
   readonly sequence: SequenceFnComposition<F, G, CF, CG>
 }
 
@@ -49,17 +49,17 @@ export function getTraversableComposition<F extends HKT.URIS, G extends HKT.URIS
   F: Traversable<F, CF>,
   G: Traversable<G, CG>
 ): TraversableComposition<F, G, CF, CG> {
-  const traverse_: TraversableComposition<F, G, CF, CG>['traverse_'] = (H) => (tfga, f) =>
-    F.traverse_(H)(tfga, (tga) => G.traverse_(H)(tga, f))
+  const mapA_: TraversableComposition<F, G, CF, CG>['mapA_'] = (H) => (tfga, f) =>
+    F.mapA_(H)(tfga, (tga) => G.mapA_(H)(tga, f))
   return HKT.instance<TraversableComposition<F, G, CF, CG>>({
     ...getFunctorComposition(F, G),
-    traverse_,
-    traverse: (H) => flow(G.traverse(H), F.traverse(H)),
+    mapA_: mapA_,
+    mapA: (H) => flow(G.mapA(H), F.mapA(H)),
     sequence: (H) => flow(F.map(G.sequence(H)), F.sequence(H))
   })
 }
 
-export interface _TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
+export interface _MapAFn<F extends HKT.URIS, CF = HKT.Auto> {
   <
     G extends HKT.URIS,
     FN extends string,
@@ -90,7 +90,7 @@ export interface _TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
   ): HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 }
 
-export interface TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapAFn<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
     f: (a: A) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, B>
   ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE>(
@@ -98,7 +98,7 @@ export interface TraverseFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 }
 
-export interface TraverseFn_<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapAFn_<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
     FN extends string,
     FK,
@@ -126,7 +126,7 @@ export interface TraverseFn_<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 }
 
-export interface TraverseFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapAFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <HN extends string, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
     f: (a: A) => HKT.Kind<H, CH, HN, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE, GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE>(
@@ -147,7 +147,7 @@ export interface TraverseFnComposition<F extends HKT.URIS, G extends HKT.URIS, C
   >
 }
 
-export interface TraverseFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapAFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
     FN extends string,
     FK,
@@ -197,7 +197,7 @@ export interface TraverseFnComposition_<F extends HKT.URIS, G extends HKT.URIS, 
   >
 }
 
-export function implementTraverse_<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementMapA_<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -217,12 +217,12 @@ export function implementTraverse_<F extends HKT.URIS, C = HKT.Auto>(): (
     ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => TraverseFn_<F, C>
-export function implementTraverse_() {
+) => MapAFn_<F, C>
+export function implementMapA_() {
   return (i: any) => i()
 }
 
-export function implementTraverse<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementMapA<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -241,8 +241,8 @@ export function implementTraverse<F extends HKT.URIS, C = HKT.Auto>(): (
   ) => (
     f: (a: A) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => TraverseFn<F, C>
-export function implementTraverse() {
+) => MapAFn<F, C>
+export function implementMapA() {
   return (i: any) => i()
 }
 
@@ -400,10 +400,10 @@ export interface MapAccumMFn_<F extends HKT.URIS, CF = HKT.Auto> {
   >
 }
 
-export function mapAccumMF_<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F, C>): MapAccumMFn_<F, C> {
+export function getMapAccumM_<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F, C>): MapAccumMFn_<F, C> {
   return (M) => {
     const StateM          = getStateT(M)
-    const traverseStateM_ = T.traverse_(StateM)
+    const traverseStateM_ = T.mapA_(StateM)
     return (ta, s0, f) => traverseStateM_(ta, (a) => F.single((s: typeof s0) => f(s, a))).run(s0 as any)
   }
 }
@@ -430,9 +430,9 @@ export interface MapAccumMFn<F extends HKT.URIS, CF = HKT.Auto> {
   >
 }
 
-export function mapAccumMF<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F, C>): MapAccumMFn<F, C> {
+export function getMapAccumM<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F, C>): MapAccumMFn<F, C> {
   return (M) => {
-    const mapAccumM_ = mapAccumMF_(T)(M)
+    const mapAccumM_ = getMapAccumM_(T)(M)
     return (s, f) => (ta) => mapAccumM_(ta, s, f)
   }
 }

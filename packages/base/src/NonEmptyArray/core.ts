@@ -669,28 +669,28 @@ export function chain<A, B>(f: (a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = (G) => (ta, f) =>
-  _.ifoldl_(tail(ta), G.map_(f(0, ta[0]), pure), (fbs, i, a) => G.crossWith_(fbs, f(i + 1, a), appendW_))
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
+  _.ifoldl_(tail(ta), AG.map_(f(0, ta[0]), pure), (fbs, i, a) => AG.crossWith_(fbs, f(i + 1, a), appendW_))
 
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const itraverse: P.TraverseWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
-  const itraverseG_ = itraverse_(G)
-  return (f) => (ta) => itraverseG_(ta, f)
+export const imapA: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+  const imapAG_ = imapA_(AG)
+  return (f) => (ta) => imapAG_(ta, f)
 }
 
-export const imapAccumM_: P.MapAccumMWithIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
+export const imapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
   _.ifoldl_(
     tail(ta),
     M.map_(f(s, 0, head(ta)), ([b, s]) => [pure(b), s]),
     (b, i, a) => M.chain_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
   )
 
-export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
-  return (s, f) => (ta) => imapAccum_(ta, s, f)
+export const imapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+  const imapAccumMG_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccumMG_(ta, s, f)
 }
 
 /**
@@ -699,9 +699,9 @@ export const imapAccumM: P.MapAccumMWithIndexFn<[HKT.URI<NonEmptyArrayURI>]> = (
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
-  const itraverseG_ = itraverse_(G)
-  return (ta, f) => itraverseG_(ta, (_, a) => f(a))
+export const mapA_: P.MapAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+  const imapAG_ = imapA_(AG)
+  return (ta, f) => imapAG_(ta, (_, a) => f(a))
 }
 
 /**
@@ -711,19 +711,19 @@ export const traverse_: P.TraverseFn_<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<[HKT.URI<NonEmptyArrayURI>]> = (G) => {
-  const itraverseG_ = itraverse_(G)
+export const mapA: P.MapAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+  const itraverseG_ = imapA_(AG)
   return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
 }
 
 export const mapAccumM_: P.MapAccumMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
-  return (ta, s, f) => imapAccum_(ta, s, (s, _, a) => f(s, a))
+  const imapAccumMG_ = imapAccumM_(M)
+  return (ta, s, f) => imapAccumMG_(ta, s, (s, _, a) => f(s, a))
 }
 
 export const mapAccumM: P.MapAccumMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
-  return (s, f) => (ta) => imapAccum_(ta, s, (s, _, a) => f(s, a))
+  const imapAccumMG_ = imapAccumM_(M)
+  return (s, f) => (ta) => imapAccumMG_(ta, s, (s, _, a) => f(s, a))
 }
 
 /**
@@ -733,7 +733,7 @@ export const mapAccumM: P.MapAccumMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (G) => traverse(G)(P.identity)
+export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => mapA(AG)(P.identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1477,7 +1477,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  traverse_
+  mapA_: mapA_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
@@ -1485,7 +1485,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_,
-  itraverse_
+  imapA_: imapA_
 })
 
 /*

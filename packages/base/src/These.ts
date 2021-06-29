@@ -378,17 +378,15 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI, V>()(
-  (_) => (G) => (ta, f) =>
-    isLeft(ta) ? G.pure(ta) : isRight(ta) ? G.map_(f(ta.right), right) : G.map_(f(ta.right), (b) => both(ta.left, b))
-)
+export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) =>
+  isLeft(ta) ? AG.pure(ta) : isRight(ta) ? AG.map_(f(ta.right), right) : AG.map_(f(ta.right), (b) => both(ta.left, b))
 
-export const traverse: P.TraverseFn<URI, V> = (G) => {
-  const traverseG_ = traverse_(G)
-  return (f) => (ta) => traverseG_(ta, f)
+export const mapA: P.MapAFn<URI, V> = (AG) => {
+  const mapA__ = mapA_(AG)
+  return (f) => (ta) => mapA__(ta, f)
 }
 
-export const sequence = P.implementSequence<URI, V>()((_) => (G) => traverse(G)(P.identity))
+export const sequence: P.SequenceFn<URI, V> = (AG) => mapA(AG)(P.identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

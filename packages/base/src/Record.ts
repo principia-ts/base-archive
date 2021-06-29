@@ -736,7 +736,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _itraverse = P._implementTraverseWithIndex<[HKT.URI<RecordURI>]>()((_) => (ta, G, f) => {
+export const _imapA = P._implementMapWithIndexA<[HKT.URI<RecordURI>]>()((_) => (ta, G, f) => {
   type _ = typeof _
 
   const ks = keys(ta)
@@ -756,27 +756,27 @@ export const _itraverse = P._implementTraverseWithIndex<[HKT.URI<RecordURI>]>()(
 
 /**
  */
-export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => _itraverse(ta, G, f)
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => _imapA(ta, G, f)
 
 /**
  */
-export const itraverse: P.TraverseWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
+export const imapA: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => imapA_(G)(ta, f)
 
 /**
  */
-export const _traverse: P._TraverseFn<[HKT.URI<RecordURI>]> = (ta, G, f) => _itraverse(ta, G, (_, a) => f(a))
+export const _mapA: P._MapAFn<[HKT.URI<RecordURI>]> = (ta, G, f) => _imapA(ta, G, (_, a) => f(a))
 
 /**
  */
-export const traverse_: P.TraverseFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
+export const mapA_: P.MapAFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => imapA_(G)(ta, (_, a) => f(a))
 
 /**
  */
-export const traverse: P.TraverseFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const mapA: P.MapAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => mapA_(G)(ta, f)
 
 /**
  */
-export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itraverse_(G)(ta, (_, a) => a)
+export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => imapA_(G)(ta, (_, a) => a)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -784,51 +784,35 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => itrav
  * -------------------------------------------------------------------------------------------------
  */
 
-/**
- */
-export const _icompactA: P._WitherWithIndexFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
-  pipe(_itraverse(wa, A, f), A.map(compact))
+export const _ifilterMapA: P._FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
+  pipe(_imapA(wa, A, f), A.map(compact))
 
-/**
- */
-export const icompactA_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => _icompactA(wa, G, f)
+export const ifilterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => _ifilterMapA(wa, G, f)
 
-/**
- */
-export const icompactA: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _icompactA(wa, G, f)
+export const ifilterMapA: P.FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _ifilterMapA(wa, G, f)
 
-export const _compactA: P._WitherFn<[HKT.URI<RecordURI>]> = (wa, G, f) => _icompactA(wa, G, (_, a) => f(a))
+export const _filterMapA: P._FilterMapAFn<[HKT.URI<RecordURI>]> = (wa, G, f) => _ifilterMapA(wa, G, (_, a) => f(a))
 
-/**
- */
-export const compactA_: P.WitherFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
+export const filterMapA_: P.FilterMapAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => ifilterMapA_(G)(wa, (_, a) => f(a))
 
-/**
- */
-export const compactA: P.WitherFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
+export const filterMapA: P.FilterMapAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => filterMapA_(G)(wa, f)
 
-export const _iseparateA: P._WiltWithIndexFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
-  pipe(_itraverse(wa, A, f), A.map(separate))
+export const _ipartitionMapA: P._PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
+  pipe(_imapA(wa, A, f), A.map(separate))
 
-/**
- */
-export const iseparateA_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) => _iseparateA(wa, A, f)
+export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
+  _ipartitionMapA(wa, A, f)
 
-/**
- */
-export const iseparateA: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _iseparateA(wa, G, f)
+export const ipartitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) =>
+  _ipartitionMapA(wa, G, f)
 
-/**
- */
-export const _separateA: P._WiltFn<[HKT.URI<RecordURI>]> = (wa, A, f) => _iseparateA(wa, A, (_, a) => f(a))
+export const _partitionMapA: P._PartitionMapAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
+  _ipartitionMapA(wa, A, (_, a) => f(a))
 
-/**
- */
-export const separateA_: P.WiltFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
+export const partitionMapA_: P.PartitionMapAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) =>
+  ipartitionMapA_(G)(wa, (_, a) => f(a))
 
-/**
- */
-export const separateA: P.WiltFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
+export const partitionMapA: P.PartitionMapAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => partitionMapA_(G)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1028,7 +1012,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  traverse_
+  mapA_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
@@ -1036,7 +1020,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_,
-  itraverse_
+  imapA_
 })
 
 export const Witherable = P.Witherable<URI>({
@@ -1048,9 +1032,9 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  traverse_,
-  compactA_,
-  separateA_
+  mapA_,
+  filterMapA_,
+  partitionMapA_
 })
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
@@ -1062,9 +1046,9 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   ifilterMap_,
   ipartition_,
   ipartitionMap_,
-  itraverse_,
-  icompactA_,
-  iseparateA_
+  imapA_,
+  ifilterMapA_,
+  ipartitionMapA_
 })
 
 export { RecordURI } from './Modules'

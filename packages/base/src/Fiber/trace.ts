@@ -60,11 +60,11 @@ export function prettyLocation(traceElement: TraceElement) {
 }
 
 export function prettyTrace(trace: Trace): string {
-  return Ev.evaluate(prettyTraceSafe(trace))
+  return Ev.evaluate(prettyTraceEval(trace))
 }
 
-export function prettyTraceSafe(trace: Trace): Ev.Eval<string> {
-  return Ev.gen(function* ($) {
+export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
+  return Ev.gen(function* (_) {
     const execTrace  = !L.isEmpty(trace.executionTrace)
     const stackTrace = !L.isEmpty(trace.stackTrace)
 
@@ -89,7 +89,7 @@ export function prettyTraceSafe(trace: Trace): Ev.Eval<string> {
     const ancestry =
       parent._tag === 'None'
         ? [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
-        : [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`, yield* $(prettyTraceSafe(parent.value))]
+        : [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`, yield* _(prettyTraceEval(parent.value))]
 
     return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
   })

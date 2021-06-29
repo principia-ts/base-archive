@@ -6,7 +6,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { identity } from '../../function'
 import * as I from '../../Iterable'
-import { map_, memento } from '../core'
+import { attempt, map_ } from '../core'
 import { foreachParN_ } from './foreachParN'
 
 /**
@@ -27,7 +27,7 @@ export function partitionParN_<R, E, A, B>(
     foreachParN_(
       as,
       n,
-      traceAs(f, (a) => memento(f(a)))
+      traceAs(f, (a) => attempt(f(a)))
     ),
     I.partitionMap(identity)
   )

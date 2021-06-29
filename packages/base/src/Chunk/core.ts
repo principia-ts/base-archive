@@ -1697,30 +1697,30 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _itraverse: P._TraverseWithIndexFn<URI> = (ta, A, f) =>
+export const _imapA: P._MapWithIndexAFn<URI> = (ta, A, f) =>
   ifoldl_(ta, A.pure(empty()), (fbs, i, a) => A.crossWith_(fbs, f(i, a), append_))
 
-export const itraverse_: P.TraverseWithIndexFn_<URI> = (A) => (ta, f) => _itraverse(ta, A, f)
+export const imapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) => _imapA(ta, A, f)
 
-export const itraverse: P.TraverseWithIndexFn<URI> = (G) => {
-  const itraverseG_ = itraverse_(G)
+export const imapA: P.MapWithIndexAFn<URI> = (G) => {
+  const itraverseG_ = imapA_(G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
 
-export const _traverse: P._TraverseFn<URI> = (ta, A, f) => _itraverse(ta, A, (_, a) => f(a))
+export const _mapA: P._MapAFn<URI> = (ta, A, f) => _imapA(ta, A, (_, a) => f(a))
 
-export const traverse_: P.TraverseFn_<URI> = (G) => {
-  const itraverseG_ = itraverse_(G)
+export const mapA_: P.MapAFn_<URI> = (G) => {
+  const itraverseG_ = imapA_(G)
   return (ta, f) => itraverseG_(ta, (_, a) => f(a))
 }
 
-export const traverse: P.TraverseFn<URI> = (G) => {
-  const traverseG_ = traverse_(G)
+export const mapA: P.MapAFn<URI> = (G) => {
+  const traverseG_ = mapA_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
 export const sequence: P.SequenceFn<URI> = (G) => {
-  const traverseG_ = traverse_(G)
+  const traverseG_ = mapA_(G)
   return (ta) => traverseG_(ta, P.identity)
 }
 
@@ -1756,73 +1756,73 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const _icompactA: P._WitherWithIndexFn<URI> = (wa, A, f) => pipe(_itraverse(wa, A, f), A.map(compact))
+export const _ifilterMapA: P._FilterMapWithIndexAFn<URI> = (wa, A, f) => pipe(_imapA(wa, A, f), A.map(compact))
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) => _icompactA(wa, A, f)
+export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) => _ifilterMapA(wa, A, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA: P.WitherWithIndexFn<URI> = (G) => (f) => (wa) => _icompactA(wa, G, f)
+export const ifilterMapA: P.FilterMapWithIndexAFn<URI> = (G) => (f) => (wa) => _ifilterMapA(wa, G, f)
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const _compactA: P._WitherFn<URI> = (wa, A, f) => _icompactA(wa, A, (_, a) => f(a))
+export const _filterMapA: P._FilterMapAFn<URI> = (wa, A, f) => _ifilterMapA(wa, A, (_, a) => f(a))
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const compactA_: P.WitherFn_<URI> = (G) => (wa, f) => _compactA(wa, G, f)
+export const filterMapA_: P.FilterMapAFn_<URI> = (G) => (wa, f) => _filterMapA(wa, G, f)
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const compactA: P.WitherFn<URI> = (G) => (f) => (wa) => _compactA(wa, G, f)
+export const filterMapA: P.FilterMapAFn<URI> = (G) => (f) => (wa) => _filterMapA(wa, G, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const _iseparateA: P._WiltWithIndexFn<URI> = (wa, A, f) => pipe(_itraverse(wa, A, f), A.map(separate))
+export const _ipartitionMapA: P._PartitionMapWithIndexAFn<URI> = (wa, A, f) => pipe(_imapA(wa, A, f), A.map(separate))
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA_: P.WiltWithIndexFn_<URI> = (G) => (wa, f) => _iseparateA(wa, G, f)
+export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (G) => (wa, f) => _ipartitionMapA(wa, G, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA: P.WiltWithIndexFn<URI> = (G) => (f) => (wa) => _iseparateA(wa, G, f)
+export const ipartitionMapA: P.PartitionMapWithIndexAFn<URI> = (G) => (f) => (wa) => _ipartitionMapA(wa, G, f)
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const _separateA: P._WitherFn<URI> = (wa, A, f) => _iseparateA(wa, A, (_, a) => f(a))
+export const _partitionMapA: P._FilterMapAFn<URI> = (wa, A, f) => _ipartitionMapA(wa, A, (_, a) => f(a))
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const separateA_: P.WiltFn_<URI> = (G) => (wa, f) => _separateA(wa, G, f)
+export const partitionMapA_: P.PartitionMapAFn_<URI> = (G) => (wa, f) => _partitionMapA(wa, G, f)
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const separateA: P.WiltFn<URI> = (G) => (f) => (wa) => _separateA(wa, G, f)
+export const partitionMapA: P.PartitionMapAFn<URI> = (G) => (f) => (wa) => _partitionMapA(wa, G, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -2388,7 +2388,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  traverse_
+  mapA_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
@@ -2396,7 +2396,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_,
-  itraverse_
+  imapA_
 })
 
 export const Witherable = P.Witherable<URI>({
@@ -2404,9 +2404,9 @@ export const Witherable = P.Witherable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  compactA_,
-  separateA_,
-  traverse_,
+  filterMapA_,
+  partitionMapA_,
+  mapA_,
   filterMap_,
   filter_,
   partitionMap_,
@@ -2418,9 +2418,9 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   ifoldl_,
   ifoldr_,
   ifoldMap_,
-  icompactA_,
-  iseparateA_,
-  itraverse_,
+  ifilterMapA_,
+  ipartitionMapA_,
+  imapA_,
   ifilterMap_,
   ifilter_,
   ipartitionMap_,

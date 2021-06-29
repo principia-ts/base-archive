@@ -23,7 +23,7 @@ export interface RoseTree<A> {
 
 export type Forest<A> = ReadonlyArray<RoseTree<A>>
 
-export type URI = HKT.URI<RoseTreeURI, V>
+export type URI = [HKT.URI<RoseTreeURI, V>]
 
 export type V = HKT.Auto
 
@@ -84,7 +84,7 @@ export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
 export function unfoldForestM<M>(
   M: P.Monad<HKT.UHKT<M>>
 ): <A, B>(bs: ReadonlyArray<B>, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, Forest<A>> {
-  const traverseM = A.traverse_(M)
+  const traverseM = A.mapA_(M)
   return (bs, f) => traverseM(bs, (b) => unfoldTreeM(M)(b, f))
 }
 
@@ -298,20 +298,21 @@ export function getShow<A>(S: Show<A>): Show<RoseTree<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<[URI], V> = P.implementTraverse_<[URI], V>()((_) => (G) => {
-  const traverseG = A.traverse_(G)
-  const out       = <A, B>(ta: RoseTree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, RoseTree<B>> =>
-    G.crossWith_(
-      traverseG(ta.forest, (a) => out(a, f)),
+export const mapA_: P.MapAFn_<URI, V> = P.implementMapA_<URI, V>()((_) => (AG) => {
+  const mapArrayA_ = A.mapA_(AG)
+
+  const out = <A, B>(ta: RoseTree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, RoseTree<B>> =>
+    AG.crossWith_(
+      mapArrayA_(ta.forest, (a) => out(a, f)),
       f(ta.value),
       (forest, value) => ({ value, forest })
     )
   return out
 })
 
-export const traverse: P.TraverseFn<[URI], V> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<[URI], V> = (G) => (ta) => traverse_(G)(ta, P.identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, P.identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

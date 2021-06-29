@@ -721,16 +721,16 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
 
   const keysO = keys(O)
 
-  const itraverse_ = P.implementTraverseWithIndex_<URI, FixK>()((_) => (G) => (ta, f) => {
+  const imapA_ = P.implementMapWithIndexA_<URI, FixK>()((_) => (AG) => (ta, f) => {
     type _ = typeof _
-    let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = G.pure(empty())
+    let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = AG.pure(empty())
     const ks                                             = keysO(ta)
     const len                                            = ks.length
     for (let i = 0; i < len; i++) {
       const key = ks[i]
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const a = ta.get(key)!
-      gm      = G.crossWith_(gm, f(key, a), (m, b) => new Map(m).set(key, b))
+      gm      = AG.crossWith_(gm, f(key, a), (m, b) => new Map(m).set(key, b))
     }
     return gm
   })
@@ -738,7 +738,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
   return P.TraversableWithIndex({
     imap_,
     ...getFoldableWithIndex(O),
-    itraverse_
+    imapA_
   })
 }
 
@@ -758,11 +758,11 @@ export function getWitherableWithIndex<K>(O: P.Ord<K>) {
   const TraversableWithIndex = getTraversableWithindex(O)
 
   const icompactA_ = P.implementWitherWithIndex_<URI, CK>()(
-    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.itraverse_(G)(wa, f), G.map(compact))
+    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(compact))
   )
 
-  const iseparateA_ = P.implementWiltWithIndex_<URI, CK>()(
-    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.itraverse_(G)(wa, f), G.map(separate))
+  const iseparateA_ = P.implementPartitionMapWithIndexA_<URI, CK>()(
+    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(separate))
   )
 
   return P.WitherableWithIndex<URI, CK>({
@@ -771,8 +771,8 @@ export function getWitherableWithIndex<K>(O: P.Ord<K>) {
     ifilterMap_,
     ipartition_,
     ipartitionMap_,
-    iseparateA_,
-    icompactA_
+    ipartitionMapA_: iseparateA_,
+    ifilterMapA_: icompactA_
   })
 }
 

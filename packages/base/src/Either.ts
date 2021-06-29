@@ -376,7 +376,7 @@ export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<
   return (fa) => catchMap_(fa, f)
 }
 
-export function memento<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
+export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
   return right(fa)
 }
 
@@ -860,7 +860,7 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export const absolve = flatten
+export const subsume = flatten
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -919,7 +919,7 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _traverse: P._TraverseFn<URI, V> = (ta, A, f) => match_(ta, flow(left, A.pure), flow(f, A.map(right)))
+export const _mapA: P._MapAFn<URI, V> = (ta, AG, f) => match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -927,7 +927,7 @@ export const _traverse: P._TraverseFn<URI, V> = (ta, A, f) => match_(ta, flow(le
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<URI, V> = (A) => (ta, f) => _traverse(ta, A, f)
+export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => _mapA(ta, AG, f)
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -935,7 +935,7 @@ export const traverse_: P.TraverseFn_<URI, V> = (A) => (ta, f) => _traverse(ta, 
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<URI, V> = (F) => (f) => (ta) => traverse_(F)(ta, f)
+export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -943,7 +943,7 @@ export const traverse: P.TraverseFn<URI, V> = (F) => (f) => (ta) => traverse_(F)
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI, V> = (F) => (ta) => traverse_(F)(ta, identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -975,13 +975,13 @@ export function getWitherable<E>(M: P.Monoid<E>) {
 
   const Compactable = getCompactable(M)
 
-  const compactA_: P.WitherFn_<URI, V_> = (G) => (wa, f) => {
-    const traverseF = traverse_(G)
+  const filterMapA_: P.FilterMapAFn_<URI, V_> = (G) => (wa, f) => {
+    const traverseF = mapA_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.compact))
   }
 
-  const separateA_: P.WiltFn_<URI, V_> = (G) => (wa, f) => {
-    const traverseF = traverse_(G)
+  const partitionMapA_: P.PartitionMapAFn_<URI, V_> = (G) => (wa, f) => {
+    const traverseF = mapA_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
@@ -990,9 +990,9 @@ export function getWitherable<E>(M: P.Monoid<E>) {
     foldl_,
     foldr_,
     foldMap_,
-    traverse_,
-    compactA_: compactA_,
-    separateA_: separateA_
+    mapA_: mapA_,
+    filterMapA_,
+    partitionMapA_
   })
 }
 
@@ -1183,7 +1183,7 @@ export const Traversable = P.Traversable<URI, V>({
   foldl_,
   foldr_,
   foldMap_,
-  traverse_
+  mapA_: mapA_
 })
 
 /*

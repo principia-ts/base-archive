@@ -1126,7 +1126,7 @@ export function bimap<E, A, E1, A1>(f: (e: E) => E1, g: (a: A) => A1): <R>(pab: 
  * -------------------------------------------------------------------------------------------------
  */
 
-export const absolve: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>) => Stream<R, E | E1, A> = chain(
+export const subsume: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>) => Stream<R, E | E1, A> = chain(
   E.match(fail, succeed)
 )
 

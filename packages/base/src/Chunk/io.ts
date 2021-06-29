@@ -2,9 +2,9 @@
 import type { Chunk, ChunkBuilder } from './core'
 
 import { identity, pipe } from '../function'
-import * as I from '../IO/core'
+import * as I from '../IO'
 import * as O from '../Option'
-import { builder, concrete, foldl_ } from './core'
+import * as C from './core'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import { builder, concrete, foldl_ } from './core'
 
 export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return I.defer(() => {
-    const out = builder<B>()
+    const out = C.builder<B>()
     return pipe(
       as,
       I.foreachUnit((a) =>
@@ -29,6 +29,25 @@ export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.
 
 export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
   return (as) => mapIO_(as, f)
+}
+
+export function mapIOPar_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+  return I.chain_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
+    function fn([a, n]: readonly [A, number]) {
+      return I.chain_(
+        I.defer(() => f(a)),
+        (b) =>
+          I.succeedWith(() => {
+            mut_bs[n] = b
+          })
+      )
+    }
+    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedWith(() => C.from(mut_bs)))
+  })
+}
+
+export function mapIOPar<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+  return (as) => mapIOPar_(as, f)
 }
 
 export function collectAllIO<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
@@ -56,7 +75,7 @@ function findIOLoop_<R, E, A>(
 }
 
 export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
-  concrete(as)
+  C.concrete(as)
   const iterator = as.arrayIterator()
   let result
   if (!(result = iterator.next()).done) {
@@ -73,7 +92,7 @@ export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>
 }
 
 export function foldlIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
+  return C.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
 }
 
 export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
@@ -82,9 +101,9 @@ export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as
 
 export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
-    concrete(as)
+    C.concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
-    const out                       = builder<A>()
+    const out                       = C.builder<A>()
     const iterator                  = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
@@ -114,9 +133,9 @@ export function takeWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chu
 
 export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
-    concrete(as)
+    C.concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
-    const out                         = builder<A>()
+    const out                         = C.builder<A>()
     const iterator                    = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
@@ -146,8 +165,8 @@ export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chu
 
 export function filterIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
-    concrete(as)
-    const c                              = builder<A>()
+    C.concrete(as)
+    const c                              = C.builder<A>()
     let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
     const iterator                       = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>

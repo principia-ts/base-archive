@@ -10,13 +10,13 @@ import * as HKT from './HKT'
 export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>
   extends FunctorWithIndex<F, C>,
     FoldableWithIndex<F, C> {
-  readonly itraverse_: TraverseWithIndexFn_<F, C>
-  readonly itraverse: TraverseWithIndexFn<F, C>
+  readonly imapA_: MapWithIndexAFn_<F, C>
+  readonly imapA: MapWithIndexAFn<F, C>
 }
 
 export type TraversableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FunctorWithIndexMin<F, C> &
   FoldableWithIndexMin<F, C> & {
-    readonly itraverse_: TraverseWithIndexFn_<F, C>
+    readonly imapA_: MapWithIndexAFn_<F, C>
   }
 
 export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
@@ -25,15 +25,15 @@ export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
   return HKT.instance({
     ...FunctorWithIndex(F),
     ...FoldableWithIndex(F),
-    itraverse_: F.itraverse_,
-    itraverse: (A) => {
-      const itraverseA_ = F.itraverse_(A)
-      return (f) => (ta) => itraverseA_(ta, f)
+    imapA_: F.imapA_,
+    imapA: (AG) => {
+      const imapAG_ = F.imapA_(AG)
+      return (f) => (ta) => imapAG_(ta, f)
     }
   })
 }
 
-export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
     NG extends string,
     KG,
@@ -58,7 +58,7 @@ export interface TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface _TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
+export interface _MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   <
     G extends HKT.URIS,
     NG extends string,
@@ -92,7 +92,7 @@ export interface _TraverseWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
   ): HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export function _implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
+export function _implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -111,12 +111,12 @@ export function _implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>():
     G: Applicative<HKT.UHKT<G>>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => _TraverseWithIndexFn<F, C>
-export function _implementTraverseWithIndex() {
+) => _MapWithIndexAFn<F, C>
+export function _implementMapWithIndexA() {
   return (i: any) => i()
 }
 
-export interface TraverseWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
     NG extends string,
     KG,
@@ -147,7 +147,7 @@ export interface TraverseWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapWithIndexAFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
     FN extends string,
     FK,
@@ -190,7 +190,7 @@ export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HK
   >
 }
 
-export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface MapWithIndexAFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
     FN extends string,
     FK,
@@ -246,7 +246,7 @@ export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends H
   >
 }
 
-export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -265,12 +265,12 @@ export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): 
   ) => (
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => TraverseWithIndexFn<F, C>
-export function implementTraverseWithIndex() {
+) => MapWithIndexAFn<F, C>
+export function implementMapWithIndexA() {
   return (i: any) => i()
 }
 
-export function implementTraverseWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -290,12 +290,12 @@ export function implementTraverseWithIndex_<F extends HKT.URIS, C = HKT.Auto>():
     ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => TraverseWithIndexFn_<F, C>
-export function implementTraverseWithIndex_() {
+) => MapWithIndexAFn_<F, C>
+export function implementMapWithIndexA_() {
   return (i: any) => i()
 }
 
-export interface MapAccumMWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapAccumWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(M: Monad<G, CG>): <
     NG extends string,
     KG,
@@ -336,7 +336,7 @@ export interface MapAccumMWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
   >
 }
 
-export interface MapAccumMWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
+export interface MapAccumWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(M: Monad<G, CG>): <
     NG extends string,
     KG,

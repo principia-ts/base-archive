@@ -49,7 +49,7 @@ export abstract class Layer<R, E, A> {
   }
 
   ['>=>']<E1, A1>(that: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
-    return compose_(this, that)
+    return andThen_(this, that)
   }
 
   ['<=<']<R1, E1>(that: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
@@ -76,7 +76,7 @@ export abstract class Layer<R, E, A> {
   }
 
   ['+>>']<R1, E1, A1>(to: Layer<A & R1, E1, A1>): Layer<R & R1, E | E1, A1> {
-    return from_(this['+++'](identity<R1>()), to)
+    return andThen_(this['+++'](identity<R1>()), to)
   }
 
   /**
@@ -341,6 +341,13 @@ export function build<R, E, A>(layer: Layer<R, E, A>): M.Managed<R, E, A> {
 /**
  * Constructs a layer from the specified value.
  */
+export function succeed_<A>(a: A, tag: H.Tag<A>): Layer<unknown, never, H.Has<A>> {
+  return fromManaged(tag)(M.succeed(a))
+}
+
+/**
+ * Constructs a layer from the specified value.
+ */
 export function succeed<A>(tag: H.Tag<A>): (a: A) => Layer<unknown, never, H.Has<A>> {
   return (resource) => fromManaged(tag)(M.succeed(resource))
 }
@@ -381,15 +388,28 @@ export function create<T>(tag: H.Tag<T>) {
 /**
  * Constructs a layer from the specified effect.
  */
+export function fromIO_<R, E, T>(resource: I.IO<R, E, T>, tag: H.Tag<T>): Layer<R, E, H.Has<T>> {
+  return fromManaged_(M.fromIO(resource), tag)
+}
+
+/**
+ * Constructs a layer from the specified effect.
+ *
+ * @dataFirst fromIO_
+ */
 export function fromIO<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new FromManaged(M.chain_(M.fromIO(resource), (a) => environmentFor(tag, a)))
+  return (resource) => fromIO_(resource, tag)
+}
+
+export function fromManaged_<R, E, T>(resource: Managed<R, E, T>, has: H.Tag<T>): Layer<R, E, H.Has<T>> {
+  return new FromManaged(M.chain_(resource, (a) => environmentFor(has, a))).setKey(has.key)
 }
 
 /**
  * Constructs a layer from a managed resource.
  */
-export function fromManaged<T>(has: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => new FromManaged(M.chain_(resource, (a) => environmentFor(has, a))).setKey(has.key)
+export function fromManaged<T>(tag: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
+  return (resource) => fromManaged_(resource, tag)
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
@@ -412,14 +432,25 @@ export function fromRawFunctionManaged<R0, R, E, A>(f: (r0: R0) => Managed<R, E,
   return fromRawManaged(M.asksManaged(f))
 }
 
+export function fromFunctionManaged_<A, R, E, T>(
+  f: (a: A) => Managed<R, E, T>,
+  tag: H.Tag<T>
+): Layer<R & A, E, H.Has<T>> {
+  return fromManaged_(M.asksManaged(f), tag)
+}
+
 export function fromFunctionManaged<T>(
   tag: H.Tag<T>
 ): <A, R, E>(f: (a: A) => Managed<R, E, T>) => Layer<R & A, E, H.Has<T>> {
-  return (f) => fromManaged(tag)(M.fromFunctionManaged(f))
+  return (f) => fromFunctionManaged_(f, tag)
+}
+
+export function fromFunctionIO_<A, R, E, T>(f: (a: A) => I.IO<R, E, T>, tag: H.Tag<T>): Layer<R & A, E, H.Has<T>> {
+  return fromFunctionManaged_((a: A) => I.toManaged_(f(a)), tag)
 }
 
 export function fromFunctionIO<T>(tag: H.Tag<T>): <A, R, E>(f: (a: A) => I.IO<R, E, T>) => Layer<R & A, E, H.Has<T>> {
-  return <A, R, E>(f: (a: A) => I.IO<R, E, T>) => fromFunctionManaged(tag)((a: A) => I.toManaged_(f(a)))
+  return (f) => fromFunctionIO_(f, tag)
 }
 
 export function fromConstructor<S>(
@@ -438,7 +469,7 @@ export function fromConstructor<S>(
       fromIO(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
 }
 
-export function fromIOConstructor<S>(
+export function fromConstructorIO<S>(
   tag: H.Tag<S>
 ): <Services extends any[], R, E>(
   constructor: (...services: Services) => I.IO<R, E, S>
@@ -454,7 +485,7 @@ export function fromIOConstructor<S>(
       fromIO(tag)(I.asksServicesTIO(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
 }
 
-export function fromManagedConstructor<S>(
+export function fromConstructorManaged<S>(
   tag: H.Tag<S>
 ): <Services extends any[], R, E>(
   constructor: (...services: Services) => M.Managed<R, E, S>
@@ -499,7 +530,7 @@ export function bracketConstructor<S>(
         .release(release as any) as any
 }
 
-export function bracketIOConstructor<S>(
+export function bracketConstructorIO<S>(
   tag: H.Tag<S>
 ): <Services extends any[], S2 extends S, R0, E0>(
   constructor: (...services: Services) => I.IO<R0, E0, S2>
@@ -535,7 +566,7 @@ export function restrict<Tags extends H.Tag<any>[]>(
   UnionToIntersection<{ [k in keyof Tags]: [Tags[k]] extends [H.Tag<infer A>] ? H.Has<A> : never }[number]>
 > {
   return (layer) =>
-    from_(
+    andThen_(
       layer,
       fromRawIO(
         I.asksServicesT(...ts)((...services) =>
@@ -709,13 +740,13 @@ export function flatten<R, E, R1, E1, A>(mma: Layer<R, E, Layer<R1, E1, A>>): La
 export function all<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new AllPar(ls)
+  return new AllSeq(ls)
 }
 
 export function allPar<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new AllSeq(ls)
+  return new AllPar(ls)
 }
 
 /**
@@ -820,19 +851,6 @@ export function fresh<R, E, A>(layer: Layer<R, E, A>): Layer<R, E, A> {
 }
 
 /**
- * Feeds the output services of the `from` layer into the input of the `to` layer
- * layer, resulting in a new layer with the inputs of the `from`, and the
- * outputs of the `to` layer.
- */
-export function from_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
-  return matchLayer_(
-    from,
-    fromRawFunctionIO((_: readonly [unknown, Cause<E2>]) => I.halt(_[1])),
-    to
-  )
-}
-
-/**
  * Feeds the error or output services of this layer into the input of either
  * the specified `failure` or `success` layers, resulting in a new layer with
  * the inputs of this layer, and the error or outputs of the specified layer.
@@ -845,6 +863,11 @@ export function matchLayer_<R, E, A, R1, E1, B, E2, C>(
   return new Fold<R, E, A, R1, E1, B, E2, C>(layer, onFailure, onSuccess)
 }
 
+/**
+ * Feeds the error or output services of this layer into the input of either
+ * the specified `failure` or `success` layers, resulting in a new layer with
+ * the inputs of this layer, and the error or outputs of the specified layer.
+ */
 export function matchLayer<E, A, R1, E1, B, E2, C>(
   onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
   onSuccess: Layer<A, E2, C>
@@ -852,7 +875,12 @@ export function matchLayer<E, A, R1, E1, B, E2, C>(
   return (layer) => matchLayer_(layer, onFailure, onSuccess)
 }
 
-export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
+/**
+ * Feeds the output services of the `from` layer into the input of the `to` layer
+ * layer, resulting in a new layer with the inputs of the `from`, and the
+ * outputs of the `to` layer.
+ */
+export function andThen_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
   return matchLayer_(
     from,
     fromRawFunctionIO((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
@@ -860,8 +888,35 @@ export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1,
   )
 }
 
-export function compose<A, E1, A1>(to: Layer<A, E1, A1>): <R, E>(from: Layer<R, E, A>) => Layer<R, E | E1, A1> {
-  return (from) => compose_(from, to)
+/**
+ * Feeds the output services of the `from` layer into the input of the `to` layer
+ * layer, resulting in a new layer with the inputs of the `from`, and the
+ * outputs of the `to` layer.
+ *
+ * @dataFirst andThen_
+ */
+export function andThen<A, E1, A1>(to: Layer<A, E1, A1>): <R, E>(from: Layer<R, E, A>) => Layer<R, E | E1, A1> {
+  return (from) => andThen_(from, to)
+}
+
+/**
+ * Feeds the output services of the `from` layer into the input of the `to` layer
+ * layer, resulting in a new layer with the inputs of the `from`, and the
+ * outputs of the `to` layer.
+ */
+export function compose_<R, E, A, E1, A1>(to: Layer<A, E1, A1>, from: Layer<R, E, A>): Layer<R, E | E1, A1> {
+  return andThen_(from, to)
+}
+
+/**
+ * Feeds the output services of the `from` layer into the input of the `to` layer
+ * layer, resulting in a new layer with the inputs of the `from`, and the
+ * outputs of the `to` layer.
+ *
+ * @dataFirst compose_
+ */
+export function compose<R, E, A>(from: Layer<R, E, A>): <E1, A1>(to: Layer<A, E1, A1>) => Layer<R, E | E1, A1> {
+  return (to) => compose_(to, from)
 }
 
 /**
@@ -931,20 +986,22 @@ export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, 
 /**
  * Updates one of the services output by this layer.
  */
-export function update_<T>(
-  tag: H.Tag<T>
-): <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (a: T) => T) => Layer<R, E, A> {
-  return <R, E, A extends H.Has<T>>(la: Layer<R, E, A>, f: (_: T) => T) =>
-    la['>=>'](fromRawIO(pipe(I.ask<A>(), I.updateService(tag, f))))
+export function update_<R, E, A extends H.Has<T>, T>(
+  la: Layer<R, E, A>,
+  tag: H.Tag<T>,
+  f: (a: T) => T
+): Layer<R, E, A> {
+  return la['>=>'](fromRawIO(pipe(I.ask<A>(), I.updateService(tag, f))))
 }
 
 /**
  * Updates one of the services output by this layer.
  */
 export function update<T>(
-  tag: H.Tag<T>
-): (f: (_: T) => T) => <R, E, A extends H.Has<T>>(la: Layer<R, E, A>) => Layer<R, E, A> {
-  return (f) => (la) => update_(tag)(la, f)
+  tag: H.Tag<T>,
+  f: (_: T) => T
+): <R, E, A extends H.Has<T>>(la: Layer<R, E, A>) => Layer<R, E, A> {
+  return (la) => update_(la, tag, f)
 }
 
 /*

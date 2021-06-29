@@ -414,9 +414,9 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                   base       = Z.pure(info.base)
                   keys       = pipe(
                     C.from(info.keys),
-                    C.traverse(Z.Applicative)((key) => showProperty(value, key, info.extrasType)),
+                    C.mapA(Z.Applicative)((key) => showProperty(value, key, info.extrasType)),
                     Z.crossWith(
-                      C.traverse_(Z.Applicative)(info.protoProps, (key) => showProperty(value, key, PROTO_TYPE)),
+                      C.mapA_(Z.Applicative)(info.protoProps, (key) => showProperty(value, key, PROTO_TYPE)),
                       C.concat_
                     )
                   )
@@ -556,7 +556,7 @@ function removeColors(str: string): string {
 function showSet(value: Set<unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-    Z.apr(It.traverseChunk_(Z.Applicative)(value, _show)),
+    Z.apr(It.mapAChunk_(Z.Applicative)(value, _show)),
     Z.apl(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
   )
 }
@@ -564,9 +564,7 @@ function showSet(value: Set<unknown>): ShowComputationChunk {
 function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-    Z.apr(
-      It.traverseChunk_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))
-    ),
+    Z.apr(It.mapAChunk_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))),
     Z.apl(
       Z.update((_: ShowContext) =>
         _.copy({
@@ -599,7 +597,7 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
             Z.pure(output)['>>=']((output) =>
               pipe(
                 C.make('BYTES_PER_ELEMENT', 'length', 'byteLength', 'byteOffset', 'buffer'),
-                C.traverse(Z.Applicative)((key) => _show(value[key])['<$>']((shown) => `[${key}]: ${shown}`)),
+                C.mapA(Z.Applicative)((key) => _show(value[key])['<$>']((shown) => `[${key}]: ${shown}`)),
                 Z.map((shownKeys) => output['++'](shownKeys))
               )
             )
@@ -725,7 +723,7 @@ function showChunk(value: Chunk<unknown>): ShowComputationChunk {
     }),
     Z.chain(([remaining, chunk]) =>
       pipe(
-        C.traverse_(Z.Applicative)(chunk, _show),
+        C.mapA_(Z.Applicative)(chunk, _show),
         Z.map((chunk) => (remaining > 0 ? chunk[':+'](`... ${remaining} more item${pluralize(remaining)}`) : chunk))
       )
     )

@@ -192,14 +192,11 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_ = P.implementTraverse_<URI>()((_) => (G) => (ta, f) => P.pipe(f(ta), G.map(P.identity)))
+export const mapA_: P.MapAFn_<URI> = (AG) => (ta, f) => P.pipe(f(ta), AG.map(P.identity))
 
-export const traverse: P.TraverseFn<URI> = (G) => {
-  const traverseG_ = traverse_(G)
-  return (f) => (ta) => traverseG_(ta, f)
-}
+export const mapA: P.MapAFn<URI> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (G) => (ta) => P.pipe(ta, G.map(P.identity))
+export const sequence: P.SequenceFn<URI> = (AG) => (ta) => P.pipe(ta, AG.map(P.identity))
 
 /*
  * -------------------------------------------------------------------------------------------------

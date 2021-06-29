@@ -3,9 +3,7 @@ import type * as HKT from '../HKT'
 import type { IterableURI } from '../Modules'
 import type { Option } from '../Option'
 
-import * as A from '../Array/core'
 import * as Ev from '../Eval/core'
-import { memoize } from '../function'
 import * as O from '../Option'
 import * as P from '../prelude'
 
@@ -150,17 +148,12 @@ export function ifilter_<A, B extends A>(fa: Iterable<A>, refinement: P.Refineme
 export function ifilter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A>
 export function ifilter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A> {
   return iterable(function* () {
-    let i          = -1
-    const iterator = fa[Symbol.iterator]()
-    for (;;) {
-      const result = iterator.next()
-      if (result.done) {
-        break
+    let i = 0
+    for (const value of fa) {
+      if (predicate(i, value)) {
+        yield value
       }
-      i += 1
-      if (predicate(i, result.value)) {
-        yield result.value
-      }
+      i++
     }
   })
 }
@@ -187,15 +180,13 @@ export function filter<A>(predicate: P.Predicate<A>): (fa: Iterable<A>) => Itera
 
 export function ifilterMap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => Option<B>): Iterable<B> {
   return iterable(function* () {
-    let i          = -1
-    const iterator = fa[Symbol.iterator]()
-    let result
-    while (!(result = iterator.next()).done) {
-      i       += 1
-      const ob = f(i, result.value)
+    let i = 0
+    for (const value of fa) {
+      const ob = f(i, value)
       if (ob._tag === 'Some') {
         yield ob.value
       }
+      i++
     }
   })
 }
@@ -226,25 +217,21 @@ export function ipartition_<A>(
 ): readonly [Iterable<A>, Iterable<A>] {
   return P.tuple(
     iterable(function* () {
-      let n          = -1
-      const iterator = fa[Symbol.iterator]()
-      let result
-      while (!(result = iterator.next()).done) {
-        n += 1
-        if (!predicate(n, result.value)) {
-          yield result.value
+      let n = 0
+      for (const value of fa) {
+        if (!predicate(n, value)) {
+          yield value
         }
+        n++
       }
     }),
     iterable(function* () {
-      let n          = -1
-      const iterator = fa[Symbol.iterator]()
-      let result
-      while (!(result = iterator.next()).done) {
-        n += 1
-        if (predicate(n, result.value)) {
-          yield result.value
+      let n = 0
+      for (const value of fa) {
+        if (predicate(n, value)) {
+          yield value
         }
+        n++
       }
     })
   )
@@ -332,22 +319,26 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => {
-    let res        = M.nat
-    let n          = -1
-    const iterator = fa[Symbol.iterator]()
-    let result
-    while (!(result = iterator.next()).done) {
-      n  += 1
-      res = M.combine_(res, f(n, result.value))
-    }
-    return res
+export function _ifoldMap<A, M>(fa: Iterable<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
+  let res = M.nat
+  let n   = -1
+  for (const value of fa) {
+    n  += 1
+    res = M.combine_(res, f(n, value))
   }
+  return res
+}
+
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
+  return (fa, f) => _ifoldMap(fa, M, f)
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function _foldMap<A, M>(fa: Iterable<A>, M: P.Monoid<M>, f: (a: A) => M): M {
+  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
@@ -359,13 +350,11 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable
 }
 
 export function ifoldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, i: number, a: A) => B): B {
-  let res        = b
-  let n          = -1
-  const iterator = fa[Symbol.iterator]()
-  let result
-  while (!(result = iterator.next()).done) {
+  let res = b
+  let n   = -1
+  for (const value of fa) {
     n  += 1
-    res = f(res, n, result.value)
+    res = f(res, n, value)
   }
   return res
 }
@@ -423,12 +412,10 @@ export function foldr<A, B>(b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B
 
 export function imap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
   return iterable(function* () {
-    const iterator = fa[Symbol.iterator]()
-    let n          = -1
-    let result
-    while (!(result = iterator.next()).done) {
+    let n = -1
+    for (const value of fa) {
       n += 1
-      yield f(n, result.value)
+      yield f(n, value)
     }
   })
 }
@@ -457,14 +444,8 @@ export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iter
 
 export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
-    const ia = ma[Symbol.iterator]()
-    let result
-    while (!(result = ia.next()).done) {
-      const ib = f(result.value)[Symbol.iterator]()
-      let innerResult
-      while (!(innerResult = ib.next()).done) {
-        yield innerResult.value
-      }
+    for (const outer of ma) {
+      yield* f(outer)
     }
   })
 }
@@ -479,23 +460,18 @@ export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const itraverse_: P.TraverseWithIndexFn_<[HKT.URI<IterableURI>]> = (A) => (ta, f) =>
-  ifoldl_(ta, A.pure(never as Iterable<any>), (b, i, a) => A.crossWith_(b, f(i, a), append_))
+export const _imapA: P._MapWithIndexAFn<[HKT.URI<IterableURI>]> = (ta, AG, f) =>
+  ifoldl_(ta, AG.pure(never as Iterable<any>), (b, i, a) => AG.crossWith_(b, f(i, a), append_))
 
-export const itraverse: P.TraverseWithIndexFn<[HKT.URI<IterableURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (f) => (ta) => itraverseA_(ta, f)
-}
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) => _imapA(ta, AG, f)
 
-export const traverse_: P.TraverseFn_<[HKT.URI<IterableURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (ta, f) => itraverseA_(ta, (_, a) => f(a))
-}
+export const imapA: P.MapWithIndexAFn<[HKT.URI<IterableURI>]> = (AG) => (f) => (ta) => _imapA(ta, AG, f)
 
-export const traverse: P.TraverseFn<[HKT.URI<IterableURI>]> = (A) => {
-  const itraverseA_ = itraverse_(A)
-  return (f) => (ta) => itraverseA_(ta, (_, a) => f(a))
-}
+export const _mapA: P._MapAFn<[HKT.URI<IterableURI>]> = (ta, AG, f) => _imapA(ta, AG, (_, a) => f(a))
+
+export const mapA_: P.MapAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) => _mapA(ta, AG, f)
+
+export const mapA: P.MapAFn<[HKT.URI<IterableURI>]> = (AG) => (f) => (ta) => _mapA(ta, AG, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -545,11 +521,9 @@ export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
 export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Option<B>
 export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Option<A>
 export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Option<A> {
-  const as = ia[Symbol.iterator]()
-  let a: IteratorResult<A>
-  while (!(a = as.next()).done) {
-    if (predicate(a.value)) {
-      return O.some(a.value)
+  for (const value of ia) {
+    if (predicate(value)) {
+      return O.some(value)
     }
   }
   return O.none()
@@ -564,8 +538,8 @@ export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Op
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
   return iterable(function* () {
     let i = 0
-    for (const el of ia) {
-      yield el
+    for (const value of ia) {
+      yield value
       i++
       if (i >= n) break
     }
@@ -577,14 +551,9 @@ export function take(n: number): <A>(fa: Iterable<A>) => Iterable<A> {
 }
 
 export function toArray<A>(fa: Iterable<A>): ReadonlyArray<A> {
-  const as: A[]  = []
-  const iterator = fa[Symbol.iterator]()
-  for (;;) {
-    const result = iterator.next()
-    if (result.done) {
-      break
-    }
-    as.push(result.value)
+  const as: A[] = []
+  for (const value of fa) {
+    as.push(value)
   }
   return as
 }

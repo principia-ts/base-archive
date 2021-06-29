@@ -14,7 +14,7 @@ export interface ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto> extends App
   readonly catchAll: CatchAllFn<F, C>
   readonly catchSome_: CatchSomeFn_<F, C>
   readonly catchSome: CatchSomeFn<F, C>
-  readonly memento: MementoFn<F, C>
+  readonly attempt: AttemptFn<F, C>
 }
 
 export type ApplicativeExceptMin<F extends HKT.URIS, C = HKT.Auto> = ApplicativeMin<F, C> &
@@ -26,14 +26,14 @@ export function ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto>(
   F: ApplicativeExceptMin<F, C>
 ): ApplicativeExcept<F, C> {
   const ApplicativeF = Applicative(F)
-  const catchSome_   = catchSomeF_(F)
+  const catchSome_   = getCatchSome_(F)
   return HKT.instance<ApplicativeExcept<F, C>>({
     ...ApplicativeF,
     catchAll_: F.catchAll_,
     catchAll: (f) => (fa) => F.catchAll_(fa, f),
     catchSome_,
     catchSome: (f) => (fa) => catchSome_(fa, f),
-    memento: mementoF(F),
+    attempt: getAttempt(F),
     fail: F.fail
   })
 }
@@ -144,7 +144,7 @@ export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function catchSomeF_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn_<F, C> {
+export function getCatchSome_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn_<F, C> {
   return (fa, f) =>
     F.catchAll_(
       fa,
@@ -189,7 +189,7 @@ export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function catchSomeF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn<F, C> {
+export function getCatchSome<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn<F, C> {
   return (f) => (fa) =>
     F.catchAll_(
       fa,
@@ -200,7 +200,7 @@ export function catchSomeF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExcep
     )
 }
 
-export interface MementoFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface AttemptFn<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
@@ -217,7 +217,7 @@ export interface MementoFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function mementoF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): MementoFn<F, C> {
+export function getAttempt<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): AttemptFn<F, C> {
   const pure = pureF(F)
   return (fa) => F.catchAll_(F.map_(fa, E.right), (e) => pure(E.left(e)))
 }

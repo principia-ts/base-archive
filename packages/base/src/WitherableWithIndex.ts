@@ -11,16 +11,16 @@ import { TraversableWithIndex } from './TraversableWithIndex'
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
   extends FilterableWithIndex<F, C>,
     TraversableWithIndex<F, C> {
-  readonly icompactA_: WitherWithIndexFn_<F, C>
-  readonly icompactA: WitherWithIndexFn<F, C>
-  readonly iseparateA_: WiltWithIndexFn_<F, C>
-  readonly iseparateA: WiltWithIndexFn<F, C>
+  readonly ifilterMapA_: FilterMapWithIndexAFn_<F, C>
+  readonly ifilterMapA: FilterMapWithIndexAFn<F, C>
+  readonly ipartitionMapA_: PartitionMapWithIndexAFn_<F, C>
+  readonly ipartitionMapA: PartitionMapWithIndexAFn<F, C>
 }
 
 export type WitherableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FilterableWithIndexMin<F, C> &
   TraversableWithIndexMin<F, C> & {
-    readonly icompactA_: WitherWithIndexFn_<F, C>
-    readonly iseparateA_: WiltWithIndexFn_<F, C>
+    readonly ifilterMapA_: FilterMapWithIndexAFn_<F, C>
+    readonly ipartitionMapA_: PartitionMapWithIndexAFn_<F, C>
   }
 
 export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
@@ -29,20 +29,20 @@ export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
   return HKT.instance({
     ...FilterableWithIndex(F),
     ...TraversableWithIndex(F),
-    iseparateA_: F.iseparateA_,
-    iseparateA: (A) => {
-      const iseparateA_ = F.iseparateA_(A)
-      return (f) => (wa) => iseparateA_(wa, f)
+    ipartitionMapA_: F.ipartitionMapA_,
+    ipartitionMapA: (AG) => {
+      const ipartitionMapAG_ = F.ipartitionMapA_(AG)
+      return (f) => (wa) => ipartitionMapAG_(wa, f)
     },
-    icompactA_: F.icompactA_,
-    icompactA: (A) => {
-      const icompactA_ = F.icompactA_(A)
-      return (f) => (wa) => icompactA_(wa, f)
+    ifilterMapA_: F.ifilterMapA_,
+    ifilterMapA: (AG) => {
+      const ifilterMapAG_ = F.ifilterMapA_(AG)
+      return (f) => (wa) => ifilterMapAG_(wa, f)
     }
   })
 }
 
-export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NG extends string,
     KG,
@@ -67,7 +67,7 @@ export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface _WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface _FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     G extends HKT.URIS,
     NF extends string,
@@ -101,7 +101,7 @@ export interface _WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface WitherWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NF extends string,
     KF,
@@ -132,7 +132,7 @@ export interface WitherWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export function implementWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
     A: A
     B: B
@@ -153,8 +153,8 @@ export function implementWitherWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
   ) => (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
-) => WitherWithIndexFn<F, C>
-export function implementWitherWithIndex() {
+) => FilterMapWithIndexAFn<F, C>
+export function implementFilterMapWithIndexA() {
   return (i: any) => i()
 }
 
@@ -178,12 +178,12 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Option<B>>
   ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
-) => WitherWithIndexFn_<F, C>
+) => FilterMapWithIndexAFn_<F, C>
 export function implementWitherWithIndex_() {
   return (i: any) => i()
 }
 
-export interface _WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface _PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     G extends HKT.URIS,
     NF extends string,
@@ -234,7 +234,7 @@ export interface _WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NG extends string,
     KG,
@@ -276,7 +276,7 @@ export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NF extends string,
     KF,
@@ -324,7 +324,7 @@ export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function implementWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
     A: A
     B: B
@@ -352,12 +352,12 @@ export function implementWiltWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
     ]
   >
-) => WiltWithIndexFn<F, C>
-export function implementWiltWithIndex() {
+) => PartitionMapWithIndexAFn<F, C>
+export function implementPartitionMapWithIndexA() {
   return (i: any) => i()
 }
 
-export function implementWiltWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
     A: A
     B: B
@@ -384,7 +384,7 @@ export function implementWiltWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
       HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
     ]
   >
-) => WiltWithIndexFn_<F, C>
-export function implementWiltWithIndex_() {
+) => PartitionMapWithIndexAFn_<F, C>
+export function implementPartitionMapWithIndexA_() {
   return (i: any) => i()
 }

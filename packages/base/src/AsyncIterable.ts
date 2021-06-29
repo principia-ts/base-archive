@@ -377,20 +377,26 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (i: number, a: A) => M) => Promise<M> {
-  return async (fa, f) => {
-    let res = M.nat
-    let n   = -1
-    for await (const a of fa) {
-      n  += 1
-      res = M.combine_(res, f(n, a))
-    }
-    return res
+export async function _ifoldMap<A, M>(fa: AsyncIterable<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): Promise<M> {
+  let res = M.nat
+  let n   = 0
+  for await (const a of fa) {
+    res = M.combine_(res, f(n, a))
+    n++
   }
+  return res
+}
+
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (i: number, a: A) => M) => Promise<M> {
+  return async (fa, f) => _ifoldMap(fa, M, f)
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: AsyncIterable<A>) => Promise<M> {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function _foldMap<A, M>(fa: AsyncIterable<A>, M: P.Monoid<M>, f: (a: A) => M): Promise<M> {
+  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (a: A) => M) => Promise<M> {
@@ -403,10 +409,10 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: AsyncIte
 
 export async function ifoldl_<A, B>(fa: AsyncIterable<A>, b: B, f: (b: B, i: number, a: A) => B): Promise<B> {
   let res = b
-  let n   = -1
+  let n   = 0
   for await (const a of fa) {
-    n  += 1
     res = f(res, n, a)
+    n++
   }
   return res
 }
@@ -431,10 +437,10 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: AsyncIterable<A>) 
 
 export function imap_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => B): AsyncIterable<B> {
   return asyncIterable(async function* () {
-    let n = -1
+    let n = 0
     for await (const a of fa) {
-      n += 1
       yield f(n, a)
+      n++
     }
   })
 }
@@ -453,10 +459,10 @@ export function map<A, B>(f: (a: A) => B): (fa: AsyncIterable<A>) => AsyncIterab
 
 export function imapPromise_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => Promise<B>): AsyncIterable<B> {
   return asyncIterable(async function* () {
-    let n = -1
+    let n = 0
     for await (const a of fa) {
-      n += 1
       yield await f(n, a)
+      n++
     }
   })
 }

@@ -34,7 +34,7 @@ export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArra
  * Effectfully maps the elements of this Array in parallel.
  */
 export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.chain_(I.succeed<never, B[]>(Array(as.length)), (mut_bs) => {
+  return I.chain_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
     function fn([a, n]: [A, number]) {
       return I.chain_(
         I.defer(() => f(a)),

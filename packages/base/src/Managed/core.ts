@@ -701,7 +701,7 @@ export function mapErrorCause<E, D>(f: (e: Cause<E>) => Cause<D>): <R, A>(ma: Ma
  *
  * @trace call
  */
-export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Managed<R, E | E1, A> {
+export function subsume<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Managed<R, E | E1, A> {
   const trace = accessCallTrace()
   return chain_(
     fa,
@@ -712,7 +712,7 @@ export function absolve<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): Manage
 /**
  * @trace call
  */
-export function recover<R, E, A>(fa: Managed<R, E, A>): Managed<R, never, E.Either<E, A>> {
+export function attempt<R, E, A>(fa: Managed<R, E, A>): Managed<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
   return match_(fa, traceFrom(trace, flow(E.left)), traceFrom(trace, flow(E.right)))
 }
@@ -1712,7 +1712,7 @@ export function foreachUnit<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: 
 export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Option<never>, A> {
   const trace = accessCallTrace()
   return traceCall(
-    absolve,
+    subsume,
     trace
   )(
     map_(
@@ -2850,8 +2850,15 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 /**
  * Maps the success value of this Managed to a service.
  */
+export function asService_<R, E, A>(ma: Managed<R, E, A>, tag: Tag<A>): Managed<R, E, Has<A>> {
+  return map_(ma, tag.of)
+}
+
+/**
+ * Maps the success value of this Managed to a service.
+ */
 export function asService<A>(tag: Tag<A>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E, Has<A>> {
-  return (ma) => map_(ma, tag.of)
+  return (ma) => asService_(ma, tag)
 }
 
 /*

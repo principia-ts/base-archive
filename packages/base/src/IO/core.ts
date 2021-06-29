@@ -32,7 +32,7 @@ import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
 import { constant, flow, identity, pipe } from '../function'
-import { isTag, mergeEnvironments } from '../Has'
+import { isTag, mergeEnvironments, tag } from '../Has'
 import * as I from '../Iterable'
 import * as NEA from '../NonEmptyArray'
 import * as O from '../Option'
@@ -76,7 +76,7 @@ export * from './primitives'
  * @since 1.0.0
  * @trace call
  */
-export function succeed<E = never, A = never>(a: A): IO<unknown, E, A> {
+export function succeed<A>(a: A): IO<unknown, never, A> {
   return new Succeed(a, accessCallTrace())
 }
 
@@ -91,7 +91,7 @@ export function succeed<E = never, A = never>(a: A): IO<unknown, E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function succeedWith<A = never>(a: () => A): UIO<A> {
+export function succeedWith<A>(a: () => A): UIO<A> {
   return new EffectTotal(a)
 }
 
@@ -835,7 +835,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  *
  * @trace call
  */
-export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
+export function subsume<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   const trace = accessCallTrace()
   return chain_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
@@ -845,7 +845,7 @@ export function absolve<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
  *
  * @trace call
  */
-export function memento<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
+export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
   return traceFrom(trace, match_)(ma, E.left, E.right)
 }
@@ -3205,7 +3205,7 @@ export function partition_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreach_(as, traceAs(f, flow(f, memento))), I.partitionMap(identity))
+  return map_(foreach_(as, traceAs(f, flow(f, attempt))), I.partitionMap(identity))
 }
 
 /**
@@ -3994,8 +3994,15 @@ export function zipEnvSecond<R, E, A>(io: IO<R, E, A>): IO<R, E, readonly [A, R]
 /**
  * Maps the success value of this effect to a service.
  */
-export function asService<A>(has: Tag<A>): <R, E>(fa: IO<R, E, A>) => IO<R, E, Has<A>> {
-  return (fa) => map_(fa, has.of)
+export function asService_<R, E, T>(ma: IO<R, E, T>, tag: Tag<T>): IO<R, E, Has<T>> {
+  return map_(ma, tag.of)
+}
+
+/**
+ * Maps the success value of this effect to a service.
+ */
+export function asService<T>(tag: Tag<T>): <R, E>(ma: IO<R, E, T>) => IO<R, E, Has<T>> {
+  return (ma) => asService_(ma, tag)
 }
 
 /**
@@ -4017,13 +4024,13 @@ export function askServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS): IO<H
  */
 export function asksServicesIO<SS extends Record<string, Tag<any>>>(
   s: SS
-): <R = unknown, E = never, B = unknown>(f: (a: ServicesStruct<SS>) => IO<R, E, B>) => IO<R & HasStruct<SS>, E, B> {
+): <R, E, A>(f: (a: ServicesStruct<SS>) => IO<R, E, A>) => IO<R & HasStruct<SS>, E, A> {
   return (f) => asksIO((r: HasStruct<SS>) => f(R.map_(s, (v) => v.read(r as Has<any>)) as any))
 }
 
 export function asksServicesTIO<SS extends ReadonlyArray<Tag<any>>>(
   ...s: SS
-): <R = unknown, E = never, B = unknown>(f: (...a: ServicesTuple<SS>) => IO<R, E, B>) => IO<R & HasTuple<SS>, E, B> {
+): <R, E, A>(f: (...a: ServicesTuple<SS>) => IO<R, E, A>) => IO<R & HasTuple<SS>, E, A> {
   return (f) => asksIO((r: HasTuple<SS>) => f(...(A.map_(s, (v) => v.read(r as Has<any>)) as any)))
 }
 
@@ -4038,7 +4045,7 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 
 export function asksServicesT<SS extends ReadonlyArray<Tag<any>>>(
   ...s: SS
-): <B = unknown>(f: (...a: ServicesTuple<SS>) => B) => URIO<HasTuple<SS>, B> {
+): <A>(f: (...a: ServicesTuple<SS>) => A) => URIO<HasTuple<SS>, A> {
   return (f) => asks((r: HasTuple<SS>) => f(...(A.map_(s, (v) => v.read(r as Has<any>)) as any)))
 }
 
@@ -4060,7 +4067,7 @@ export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => IO<Has<T>, nev
  * Access a service with the required Service Entry
  */
 export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
-  return asksServiceIO(s)((a) => pure(a))
+  return asksServiceIO(s)(succeed)
 }
 
 /**
@@ -4104,6 +4111,34 @@ export function giveServicesSIO<SS extends Record<string, Tag<any>>>(s: SS) {
 /**
  * Provides the IO with the required services
  */
+export function _giveServicesT<SS extends ReadonlyArray<readonly [Tag<any>, any]>>(
+  ...s: { [K in keyof SS]: SS[K] extends [Tag<infer T>, infer T1] ? (T1 extends T ? SS[K] : never) : never }
+): <R, E, A>(
+  io: IO<
+    R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<infer T>, any] ? Has<T> : never }[number]>,
+    E,
+    A
+  >
+) => IO<R, E, A> {
+  return (io) =>
+    asksIO((r: any) =>
+      giveAll_(
+        io,
+        Object.assign(
+          {},
+          r,
+          A.foldl_(s as ReadonlyArray<readonly [Tag<any>, any]>, {}, (services, [tag, service]) => ({
+            ...services,
+            [tag.key]: service
+          }))
+        )
+      )
+    )
+}
+
+/**
+ * Provides the IO with the required services
+ */
 export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
   return (...services: ServicesTuple<SS>) =>
     <R, E, A>(io: IO<R & HasTuple<SS>, E, A>): IO<R, E, A> =>
@@ -4117,6 +4152,39 @@ export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
           )
         )
       )
+}
+
+/**
+ * Effectfully provides the IO with the required services
+ */
+export function _giveServicesTIO<SS extends ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>>(
+  ...s: {
+    [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, infer T1>] ? (T1 extends T ? SS[K] : never) : never
+  }
+): <R, E, A>(
+  io: IO<
+    R &
+      P.UnionToIntersection<
+        { [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, any>] ? Has<T> : never }[number]
+      >,
+    E,
+    A
+  >
+) => IO<
+  R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<any>, IO<infer R, any, any>] ? R : never }[number]>,
+  E | { [K in keyof SS]: SS[K] extends [Tag<any>, IO<any, infer E, any>] ? E : never }[number],
+  A
+> {
+  return (io) =>
+    asksIO((env: any) =>
+      pipe(
+        s as ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>,
+        A.foldl(succeed({}) as IO<any, any, any>, (all, [tag, svc]) =>
+          crossWith_(all, svc, (services, service) => ({ ...services, [tag.key]: service }))
+        ),
+        chain((all) => giveAll_(io, Object.assign({}, env, all)))
+      )
+    )
 }
 
 /**
@@ -4139,39 +4207,55 @@ export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
       )
 }
 
+export function giveService_<T, R, E, A>(ma: IO<R & Has<T>, E, A>, tag: Tag<T>, service: T): IO<R, E, A> {
+  return giveServiceIO_<R, E, A, unknown, never, T>(ma, tag, pure(service))
+}
+
 /**
  * Provides the IO with the required service
  */
-export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R1, E1, A1> {
-  return (f) => (ma) => giveServiceIO(_)(pure(f))(ma)
+export function giveService<T>(tag: Tag<T>, service: T) {
+  return <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R, E, A> => giveService_<T, R, E, A>(ma, tag, service)
 }
 
 /**
  * Effectfully provides the IO with the required service
  */
-export function giveServiceIO<T>(
-  _: Tag<T>
-): <R, E>(f: IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>) => IO<R & R1, E | E1, A1> {
-  return <R, E>(f: IO<R, E, T>) =>
-    <R1, E1, A1>(ma: IO<R1 & Has<T>, E1, A1>): IO<R & R1, E | E1, A1> =>
-      asksIO((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+export function giveServiceIO_<R, E, A, R1, E1, T>(
+  ma: IO<R & Has<T>, E, A>,
+  tag: Tag<T>,
+  service: IO<R1, E1, T>
+): IO<R & R1, E | E1, A> {
+  return asksIO((r: R & R1) => chain_(service, (t) => giveAll_(ma, mergeEnvironments(tag, r, t))))
+}
+
+/**
+ * Effectfully provides the IO with the required service
+ */
+export function giveServiceIO<R1, E1, T>(tag: Tag<T>, service: IO<R1, E1, T>) {
+  return <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R1 & R, E1 | E, A> =>
+    giveServiceIO_<R, E, A, R1, E1, T>(ma, tag, service)
 }
 
 /**
  * Replaces the service in the environment
  */
-export function updateService_<R1, E1, A1, T>(ma: IO<R1, E1, A1>, _: Tag<T>, f: (_: T) => T): IO<R1 & Has<T>, E1, A1> {
-  return asksServiceIO(_)((t) => giveServiceIO(_)(pure(f(t)))(ma))
+export function updateService_<R1, E1, A1, T>(
+  ma: IO<R1, E1, A1>,
+  tag: Tag<T>,
+  f: (service: T) => T
+): IO<R1 & Has<T>, E1, A1> {
+  return asksServiceIO(tag)((service) => giveServiceIO_(ma, tag, pure(f(service))))
 }
 
 /**
  * Replaces the service in the environment
  */
 export function updateService<T>(
-  _: Tag<T>,
-  f: (_: T) => T
-): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceIO(_)((t) => giveServiceIO(_)(pure(f(t)))(ma))
+  tag: Tag<T>,
+  f: (service: T) => T
+): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<T>, E, A> {
+  return (ma) => asksServiceIO(tag)((service) => giveServiceIO_(ma, tag, pure(f(service))))
 }
 
 /**
@@ -4179,20 +4263,20 @@ export function updateService<T>(
  */
 export function updateServiceIO_<R, E, T, R1, E1, A1>(
   ma: IO<R1, E1, A1>,
-  _: Tag<T>,
-  f: (_: T) => IO<R, E, T>
+  tag: Tag<T>,
+  f: (service: T) => IO<R, E, T>
 ): IO<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceIO(_)((t) => giveServiceIO(_)(f(t))(ma))
+  return asksServiceIO(tag)((t) => giveServiceIO(tag, f(t))(ma))
 }
 
 /**
  * Effectfully replaces the service in the environment
  */
 export function updateServiceIO<R, E, T>(
-  _: Tag<T>,
-  f: (_: T) => IO<R, E, T>
+  tag: Tag<T>,
+  f: (service: T) => IO<R, E, T>
 ): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
-  return (ma) => asksServiceIO(_)((t) => giveServiceIO(_)(f(t))(ma))
+  return (ma) => asksServiceIO(tag)((t) => giveServiceIO(tag, f(t))(ma))
 }
 
 /**

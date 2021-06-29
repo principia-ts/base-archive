@@ -483,11 +483,11 @@ export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Asyn
  * -------------------------------------------------------------------------------------------------
  */
 
-export function absolve<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async<R, E | E1, A> {
+export function subsume<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async<R, E | E1, A> {
   return matchM_(async, fail, E.match(fail, succeed))
 }
 
-export function recover<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
+export function attempt<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
   return match_(async, E.left, E.right)
 }
 

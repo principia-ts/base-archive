@@ -10,7 +10,7 @@ import * as E from './internal/Either'
 import { Monad } from './Monad'
 
 export interface MonadExcept<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C>, ApplicativeExcept<F, C> {
-  readonly absolve: AbsolveFn<F, C>
+  readonly subsume: SubsumeFn<F, C>
 }
 
 export type MonadExceptMin<F extends HKT.URIS, C = HKT.Auto> = MonadMin<F, C> & ApplicativeExceptMin<F, C>
@@ -21,17 +21,17 @@ export function MonadExcept<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<
   return HKT.instance<MonadExcept<F, C>>({
     ...MonadF,
     ...ApplicativeExceptF,
-    absolve: MonadF.chain(E.match(ApplicativeExceptF.fail, ApplicativeExceptF.pure))
+    subsume: MonadF.chain(E.match(ApplicativeExceptF.fail, ApplicativeExceptF.pure))
   })
 }
 
-export interface AbsolveFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface SubsumeFn<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, E1, A>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<HKT.OrFix<'E', C, E1>, A>>
   ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, HKT.Mix<C, 'E', [E, E1]>, A>
 }
 
-export function absolveF<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<F, C>): AbsolveFn<F, C> {
+export function getSubsume<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<F, C>): SubsumeFn<F, C> {
   const chain_ = chainF_(F)
   const pure   = pureF(F)
   return (fa) => chain_(fa, E.match(F.fail, pure))

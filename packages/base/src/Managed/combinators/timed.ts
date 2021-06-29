@@ -26,7 +26,7 @@ export function timed<R, E, A>(ma: Managed<R, E, A>): Managed<R & Has<Clock>, E,
               I.giveAll([r, releaseMap] as const),
               I.timed,
               I.map(([duration, [fin, a]]) => [fin, [duration, a]] as const),
-              I.giveService(ClockTag)(clock)
+              I.giveService(ClockTag, clock)
             )
           )
         )

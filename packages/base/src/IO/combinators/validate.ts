@@ -9,7 +9,7 @@ import { traceAs } from '@principia/compile/util'
 
 import * as Ch from '../../Chunk/core'
 import * as E from '../../Either'
-import { absolve, foreach_, map_, memento } from '../core'
+import { attempt, foreach_, map_, subsume } from '../core'
 import { foreachExec_ } from './foreachExec'
 import { foreachPar_ } from './foreachPar'
 import { foreachParN_ } from './foreachParN'
@@ -43,11 +43,11 @@ const mergeExits =
  * @trace 1
  */
 export function validate_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, Chunk<E>, Chunk<B>> {
-  return absolve(
+  return subsume(
     map_(
       foreach_(
         as,
-        traceAs(f, (a) => memento(f(a)))
+        traceAs(f, (a) => attempt(f(a)))
       ),
       mergeExits<E, B>()
     )
@@ -71,11 +71,11 @@ export function validate<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>
  * @trace 1
  */
 export function validatePar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) {
-  return absolve(
+  return subsume(
     map_(
       foreachPar_(
         as,
-        traceAs(f, (a) => memento(f(a)))
+        traceAs(f, (a) => attempt(f(a)))
       ),
       mergeExits<E, B>()
     )
@@ -103,12 +103,12 @@ export function validateParN_<A, R, E, B>(
   n: number,
   f: (a: A) => IO<R, E, B>
 ): IO<R, Chunk<E>, Chunk<B>> {
-  return absolve(
+  return subsume(
     map_(
       foreachParN_(
         as,
         n,
-        traceAs(f, (a) => memento(f(a)))
+        traceAs(f, (a) => attempt(f(a)))
       ),
       mergeExits<E, B>()
     )
@@ -139,12 +139,12 @@ export function validateExec_<R, E, A, B>(
   es: ExecutionStrategy,
   f: (a: A) => IO<R, E, B>
 ): IO<R, Chunk<E>, Chunk<B>> {
-  return absolve(
+  return subsume(
     map_(
       foreachExec_(
         as,
         es,
-        traceAs(f, (a) => memento(f(a)))
+        traceAs(f, (a) => attempt(f(a)))
       ),
       mergeExits<E, B>()
     )
