@@ -4190,29 +4190,27 @@ export function giveServicesSIO<SS extends Record<string, Tag<any>>>(s: SS) {
 /**
  * Provides the IO with the required services
  */
-export function _giveServicesT<SS extends ReadonlyArray<readonly [Tag<any>, any]>>(
-  ...s: { [K in keyof SS]: SS[K] extends [Tag<infer T>, infer T1] ? (T1 extends T ? SS[K] : never) : never }
-): <R, E, A>(
+export function _giveServicesT<R, E, A, SS extends ReadonlyArray<readonly [Tag<any>, any]>>(
   io: IO<
     R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<infer T>, any] ? Has<T> : never }[number]>,
     E,
     A
-  >
-) => IO<R, E, A> {
-  return (io) =>
-    asksIO((r: any) =>
-      giveAll_(
-        io,
-        Object.assign(
-          {},
-          r,
-          A.foldl_(s as ReadonlyArray<readonly [Tag<any>, any]>, {}, (services, [tag, service]) => ({
-            ...services,
-            [tag.key]: service
-          }))
-        )
+  >,
+  ...s: { [K in keyof SS]: SS[K] extends [Tag<infer T>, infer T1] ? (T1 extends T ? SS[K] : never) : never }
+): IO<R, E, A> {
+  return asksIO((r: any) =>
+    giveAll_(
+      io,
+      Object.assign(
+        {},
+        r,
+        A.foldl_(s as ReadonlyArray<readonly [Tag<any>, any]>, {}, (services, [tag, service]) => ({
+          ...services,
+          [tag.key]: service
+        }))
       )
     )
+  )
 }
 
 /**
@@ -4236,11 +4234,7 @@ export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
 /**
  * Effectfully provides the IO with the required services
  */
-export function _giveServicesTIO<SS extends ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>>(
-  ...s: {
-    [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, infer T1>] ? (T1 extends T ? SS[K] : never) : never
-  }
-): <R, E, A>(
+export function _giveServicesTIO<R, E, A, SS extends ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>>(
   io: IO<
     R &
       P.UnionToIntersection<
@@ -4248,22 +4242,24 @@ export function _giveServicesTIO<SS extends ReadonlyArray<readonly [Tag<any>, IO
       >,
     E,
     A
-  >
-) => IO<
+  >,
+  ...s: {
+    [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, infer T1>] ? (T1 extends T ? SS[K] : never) : never
+  }
+): IO<
   R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<any>, IO<infer R, any, any>] ? R : never }[number]>,
   E | { [K in keyof SS]: SS[K] extends [Tag<any>, IO<any, infer E, any>] ? E : never }[number],
   A
 > {
-  return (io) =>
-    asksIO((env: any) =>
-      pipe(
-        s as ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>,
-        A.foldl(succeed({}) as IO<any, any, any>, (all, [tag, svc]) =>
-          crossWith_(all, svc, (services, service) => ({ ...services, [tag.key]: service }))
-        ),
-        chain((all) => giveAll_(io, Object.assign({}, env, all)))
-      )
+  return asksIO((env: any) =>
+    pipe(
+      s as ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>,
+      A.foldl(succeed({}) as IO<any, any, any>, (all, [tag, svc]) =>
+        crossWith_(all, svc, (services, service) => ({ ...services, [tag.key]: service }))
+      ),
+      chain((all) => giveAll_(io, Object.assign({}, env, all)))
     )
+  )
 }
 
 /**
