@@ -305,7 +305,7 @@ export function catchMap<B>(f: () => B): <A>(fa: Option<A>) => Option<A | B> {
   return (fa) => catchMap_(fa, f)
 }
 
-export function attempt<A>(fa: Option<A>): Option<Either<void, A>> {
+export function either<A>(fa: Option<A>): Option<Either<void, A>> {
   return catchAll_(
     map_(fa, (a) => E.right(a)),
     () => some(E.left(undefined))
@@ -673,7 +673,7 @@ export function flatten<A>(mma: Option<Option<A>>): Option<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function subsume<E, A>(fa: Option<Either<E, A>>): Option<A> {
+export function subsumeEither<E, A>(fa: Option<Either<E, A>>): Option<A> {
   return chain_(fa, E.match(none, some))
 }
 

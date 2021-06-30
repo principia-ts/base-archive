@@ -364,7 +364,7 @@ export function filterInputIO_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
       (ea) => O.some<EA | EC>(ea),
       P.identity,
       (a: A1) =>
-        I.ifIO_(
+        I.ifIOWith_(
           I.asSomeError(f(a)),
           () => I.pure(a),
           () => I.fail<O.Option<EA | EC>>(O.none())
@@ -423,7 +423,7 @@ export function filterOutputIO_<RA, RB, EA, EB, A, B, RC, EC>(
     (eb) => O.some<EB | EC>(eb),
     (a) => I.pure(a),
     (b) =>
-      I.ifIO_(
+      I.ifIOWith_(
         I.asSomeError(f(b)),
         () => I.pure(b),
         () => I.fail(O.none())

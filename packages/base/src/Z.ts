@@ -855,15 +855,9 @@ export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function attempt<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, never, E.Either<E, A>> {
-  return matchZ_(
-    fa,
-    (e) => succeed(E.left(e)),
-    (a) => succeed(E.right(a))
-  )
-}
-
-export function subsume<W, S1, S2, R, E, E1, A>(fa: Z<W, S1, S2, R, E, E.Either<E1, A>>): Z<W, S1, S2, R, E | E1, A> {
+export function subsumeEither<W, S1, S2, R, E, E1, A>(
+  fa: Z<W, S1, S2, R, E, E.Either<E1, A>>
+): Z<W, S1, S2, R, E | E1, A> {
   return chain_(fa, E.match(fail, succeed))
 }
 

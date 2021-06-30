@@ -376,7 +376,7 @@ export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<
   return (fa) => catchMap_(fa, f)
 }
 
-export function attempt<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
+export function either<E, A>(fa: Either<E, A>): Either<never, Either<E, A>> {
   return right(fa)
 }
 
@@ -860,7 +860,7 @@ export function flatten<E, G, A>(mma: Either<E, Either<G, A>>): Either<E | G, A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export const subsume = flatten
+export const subsumeEither = flatten
 
 /*
  * -------------------------------------------------------------------------------------------------

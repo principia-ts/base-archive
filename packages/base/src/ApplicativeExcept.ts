@@ -14,7 +14,7 @@ export interface ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto> extends App
   readonly catchAll: CatchAllFn<F, C>
   readonly catchSome_: CatchSomeFn_<F, C>
   readonly catchSome: CatchSomeFn<F, C>
-  readonly attempt: AttemptFn<F, C>
+  readonly either: EitherFn<F, C>
 }
 
 export type ApplicativeExceptMin<F extends HKT.URIS, C = HKT.Auto> = ApplicativeMin<F, C> &
@@ -33,7 +33,7 @@ export function ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto>(
     catchAll: (f) => (fa) => F.catchAll_(fa, f),
     catchSome_,
     catchSome: (f) => (fa) => catchSome_(fa, f),
-    attempt: getAttempt(F),
+    either: getEither(F),
     fail: F.fail
   })
 }
@@ -200,7 +200,7 @@ export function getCatchSome<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExc
     )
 }
 
-export interface AttemptFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface EitherFn<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
@@ -217,7 +217,7 @@ export interface AttemptFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function getAttempt<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): AttemptFn<F, C> {
+export function getEither<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): EitherFn<F, C> {
   const pure = pureF(F)
   return (fa) => F.catchAll_(F.map_(fa, E.right), (e) => pure(E.left(e)))
 }

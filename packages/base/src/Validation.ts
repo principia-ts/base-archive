@@ -12,7 +12,7 @@ export function getApplicativeValidation<F>(
   return <E>(S: P.Semigroup<E>) => {
     const crossWith_: P.CrossWithFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, fb, f) =>
       F.flatten(
-        F.crossWith_(F.attempt(fa), F.attempt(fb), (ea, eb) =>
+        F.crossWith_(F.either(fa), F.either(fb), (ea, eb) =>
           E.match_(
             ea,
             (e) =>
@@ -43,11 +43,11 @@ export function getAltValidation<F>(
   return <E>(S: P.Semigroup<E>) => {
     const alt_: P.AltFn_<HKT.UHKT2<F>, HKT.Fix<'E', E>> = (fa, that) =>
       F.chain_(
-        F.attempt(fa),
+        F.either(fa),
         E.match(
           (e) =>
             F.chain_(
-              F.attempt(that()),
+              F.either(that()),
               E.match(
                 (e1) => F.fail(S.combine_(e, e1)),
                 (a) => F.pure(a)

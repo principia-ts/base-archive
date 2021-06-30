@@ -127,7 +127,7 @@ export class DerivedAll<EA, EB, A, B> implements Ref<EA, EB, A, B> {
             (s) => [E.right(undefined), s]
           )
         ),
-        I.subsume
+        I.subsumeEither
       )
     )
   }
@@ -647,7 +647,7 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
                 )
               )
             ),
-            I.subsume
+            I.subsumeEither
           )
         ),
       DerivedAll: (derivedAll) =>
@@ -673,7 +673,7 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
                 )
               )
             ),
-            I.subsume
+            I.subsumeEither
           )
         )
     })

@@ -835,7 +835,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fea: IO<R, E, A>) => IO
  *
  * @trace call
  */
-export function subsume<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
+export function subsumeEither<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E1, A> {
   const trace = accessCallTrace()
   return chain_(ma, traceFrom(trace, E.match(fail, succeed)))
 }
@@ -845,7 +845,7 @@ export function subsume<R, E, E1, A>(ma: IO<R, E, E.Either<E1, A>>): IO<R, E | E
  *
  * @trace call
  */
-export function attempt<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
+export function either<R, E, A>(ma: IO<R, E, A>): IO<R, never, E.Either<E, A>> {
   const trace = accessCallTrace()
   return traceFrom(trace, match_)(ma, E.left, E.right)
 }
@@ -2578,33 +2578,33 @@ export function getOrElseIO<R1, E1, B>(
  *
  * @trace 0
  */
-export function getOrFail<A>(v: () => Option<A>): FIO<NoSuchElementError, A> {
+export function getOrFail<A>(option: Option<A>): FIO<NoSuchElementError, A> {
   return getOrFailWith_(
-    v,
-    traceAs(v, () => new NoSuchElementError('IO.getOrFail'))
+    option,
+    traceAs(option, () => new NoSuchElementError('IO.getOrFail'))
   )
 }
 
 /**
- * Lifts an Option into an IO. If the option is `None`, fail with the `e` value.
+ * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
  *
  * @trace 0
  */
-export function getOrFailWith_<E, A>(v: () => Option<A>, e: () => E): FIO<E, A> {
-  return defer(traceAs(v, () => O.match_(v(), () => fail(e()), succeed)))
+export function getOrFailWith_<E, A>(option: Option<A>, onNone: () => E): FIO<E, A> {
+  return defer(traceAs(option, () => O.match_(option, () => fail(onNone()), succeed)))
 }
 
 /**
- * Lifts an Option into an IO. If the option is `None`, fail with the `e` value.
+ * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
  *
  * @dataFirst getOrFailWith_
  */
-export function getOrFailWith<E>(e: () => E) {
+export function getOrFailWith<E>(onNone: () => E) {
   return (
     /**
      * @trace 0
      */
-    <A>(v: () => Option<A>): FIO<E, A> => getOrFailWith_(v, e)
+    <A>(option: Option<A>): FIO<E, A> => getOrFailWith_(option, onNone)
   )
 }
 
@@ -2613,8 +2613,63 @@ export function getOrFailWith<E>(e: () => E) {
  *
  * @trace 0
  */
-export function getOrFailUnit<A>(v: () => Option<A>): FIO<void, A> {
-  return getOrFailWith_(v, () => undefined)
+export function getOrFailUnit<A>(option: Option<A>): FIO<void, A> {
+  return getOrFailWith_(option, () => undefined)
+}
+
+/**
+ * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * The moral equivalent of
+ * ```typescript
+ * if (b) {
+ *    onTrue();
+ * } else {
+ *    onFalse();
+ * }
+ * ```
+ *
+ * @category Combinators
+ * @since 1.0.0
+ *
+ * @trace call
+ */
+export function ifIO_<R, E, R1, E1, A1, R2, E2, A2>(
+  mb: IO<R, E, boolean>,
+  onTrue: IO<R1, E1, A1>,
+  onFalse: IO<R2, E2, A2>
+): IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
+  const trace = accessCallTrace()
+  return chain_(
+    mb,
+    traceFrom(trace, (b) => (b ? (onTrue as IO<R & R1 & R2, E | E1 | E2, A1 | A2>) : onFalse))
+  )
+}
+
+/**
+ * Runs `onTrue` if the result of `b` is `true` and `onFalse` otherwise.
+ *
+ * The moral equivalent of
+ * ```typescript
+ * if (b) {
+ *    onTrue();
+ * } else {
+ *    onFalse();
+ * }
+ * ```
+ *
+ * @category Combinators
+ * @since 1.0.0
+ *
+ * @dataFirst ifIO_
+ * @trace call
+ */
+export function ifIO<R1, E1, A1, R2, E2, A2>(
+  onTrue: IO<R1, E1, A1>,
+  onFalse: IO<R2, E2, A2>
+): <R, E>(mb: IO<R, E, boolean>) => IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
+  const trace = accessCallTrace()
+  return (mb) => traceCall(ifIO_, trace)(mb, onTrue, onFalse)
 }
 
 /**
@@ -2635,7 +2690,7 @@ export function getOrFailUnit<A>(v: () => Option<A>): FIO<void, A> {
  * @trace 1
  * @trace 2
  */
-export function ifIO_<R, E, R1, E1, A1, R2, E2, A2>(
+export function ifIOWith_<R, E, R1, E1, A1, R2, E2, A2>(
   mb: IO<R, E, boolean>,
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
@@ -2662,27 +2717,52 @@ export function ifIO_<R, E, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst ifIO_
+ * @dataFirst ifIOWith_
  * @trace 0
  * @trace 1
  */
-export function ifIO<R1, E1, A1, R2, E2, A2>(
+export function ifIOWith<R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): <R, E>(b: IO<R, E, boolean>) => IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return (b) => ifIO_(b, onTrue, onFalse)
+  return (b) => ifIOWith_(b, onTrue, onFalse)
 }
+
+/**
+ * @trace call
+ */
+export function if_<R, E, A, R1, E1, A1>(
+  b: boolean,
+  onTrue: IO<R, E, A>,
+  onFalse: IO<R1, E1, A1>
+): IO<R & R1, E | E1, A | A1> {
+  const trace = accessCallTrace()
+  return traceCall(ifIO_, trace)(succeed(b), onTrue, onFalse)
+}
+
+/**
+ * @trace call
+ */
+function _if<R, E, A, R1, E1, A1>(
+  onTrue: IO<R, E, A>,
+  onFalse: IO<R1, E1, A1>
+): (b: boolean) => IO<R & R1, E | E1, A | A1> {
+  const trace = accessCallTrace()
+  return (b) => traceCall(if_, trace)(b, onTrue, onFalse)
+}
+
+export { _if as if }
 
 /**
  * @trace 1
  * @trace 2
  */
-export function if_<R, E, A, R1, E1, A1>(
+export function ifWith_<R, E, A, R1, E1, A1>(
   b: () => boolean,
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return ifIO_(succeedWith(b), onTrue, onFalse)
+  return ifIOWith_(succeedWith(b), onTrue, onFalse)
 }
 
 /**
@@ -2690,13 +2770,12 @@ export function if_<R, E, A, R1, E1, A1>(
  * @trace 0
  * @trace 1
  */
-function _if<R, E, A, R1, E1, A1>(
+export function ifWith<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): (b: () => boolean) => IO<R & R1, E | E1, A | A1> {
-  return (b) => if_(b, onTrue, onFalse)
+  return (b) => ifWith_(b, onTrue, onFalse)
 }
-export { _if as if }
 
 /**
  * Folds a `IO` to a boolean describing whether or not it is a failure
@@ -2923,7 +3002,7 @@ export function loopUnit_<A, R, E>(
 /**
  * @trace 1
  */
-export function mapEffectCatch_<R, E, A, E1, B>(
+export function mapTryCatch_<R, E, A, E1, B>(
   io: IO<R, E, A>,
   f: (a: A) => B,
   onThrow: (u: unknown) => E1
@@ -2935,11 +3014,11 @@ export function mapEffectCatch_<R, E, A, E1, B>(
 }
 
 /**
- * @dataFirst mapEffectCatch_
+ * @dataFirst mapTryCatch_
  * @trace 0
  */
-export function mapEffectCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) => E1) {
-  return <R, E>(io: IO<R, E, A>): IO<R, E | E1, B> => mapEffectCatch_(io, f, onThrow)
+export function mapTryCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) => E1) {
+  return <R, E>(io: IO<R, E, A>): IO<R, E | E1, B> => mapTryCatch_(io, f, onThrow)
 }
 
 /**
@@ -3205,7 +3284,7 @@ export function partition_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreach_(as, traceAs(f, flow(f, attempt))), I.partitionMap(identity))
+  return map_(foreach_(as, traceAs(f, flow(f, either))), I.partitionMap(identity))
 }
 
 /**
@@ -4314,7 +4393,7 @@ const adapter = (_: any, __?: any) => {
     )
   }
   if (O.isOption(_)) {
-    return new GenIO(__ ? (_._tag === 'None' ? fail(__()) : pure(_.value)) : getOrFail(() => _), adapter['$trace'])
+    return new GenIO(__ ? (_._tag === 'None' ? fail(__()) : pure(_.value)) : getOrFail(_), adapter['$trace'])
   }
   if (isTag(_)) {
     return new GenIO(askService(_), adapter['$trace'])

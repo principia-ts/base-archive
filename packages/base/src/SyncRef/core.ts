@@ -210,7 +210,7 @@ export class DerivedAll<EA, EB, A, B> implements SyncRef<EA, EB, A, B> {
             (s) => [E.right(undefined), s]
           )
         ),
-        S.subsume
+        S.subsumeEither
       )
     )
   }
@@ -535,7 +535,7 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 )
               )
             ),
-            S.subsume
+            S.subsumeEither
           )
         ),
       DerivedAll: (derivedAll) =>
@@ -561,7 +561,7 @@ export function modify_<EA, EB, B, A>(ref: SyncRef<EA, EB, A, A>, f: (a: A) => r
                 )
               )
             ),
-            S.subsume
+            S.subsumeEither
           )
         )
     })
