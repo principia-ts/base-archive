@@ -26,8 +26,8 @@ export function partial<P extends Record<string, Gen<any, any>>>(
       Random.next,
       I.map((n) => n > 0.5),
       I.ifIO(
-        () => I.succeed(G.crossWith_(b, genV, (r, v) => ({ ...r, [k]: v }))),
-        () => I.succeed(b)
+        I.succeed(G.crossWith_(b, genV, (r, v) => ({ ...r, [k]: v }))),
+        I.succeed(b)
       ),
       G.unwrap
     )

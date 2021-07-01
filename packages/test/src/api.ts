@@ -158,7 +158,7 @@ function checkStream<R, A, R1, E>(
                   I.map(
                     BA.map((fd) => FailureDetails(fd.assertion, O.some(GenFailureDetails(initial.value, input, index))))
                   ),
-                  I.attempt
+                  I.either
                 )
               )
             )
