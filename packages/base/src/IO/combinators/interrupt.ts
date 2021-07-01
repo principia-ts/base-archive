@@ -30,7 +30,7 @@ import {
   pure,
   SetInterrupt,
   succeed,
-  succeedWith,
+  succeedLazy,
   unit
 } from '../core'
 import { forkDaemon } from './core-scope'
@@ -263,7 +263,7 @@ export function asyncInterruptEither<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return pipe(
-    succeedWith(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
+    succeedLazy(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
     chain(([started, cancel]) =>
       pipe(
         asyncOption<R, E, IO<R, E, A>>(

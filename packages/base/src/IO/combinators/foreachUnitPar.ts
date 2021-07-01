@@ -158,19 +158,19 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  */
 export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return pipe(
-    I.succeedWith<B[]>(() => []),
+    I.succeedLazy<B[]>(() => []),
     I.chain((mut_array) =>
       I.chain_(
         foreachUnitPar_(
           It.imap_(as, (n, a) => [a, n] as [A, number]),
           ([a, n]) =>
             I.chain_(I.defer(traceAs(f, () => f(a))), (b) =>
-              I.succeedWith(() => {
+              I.succeedLazy(() => {
                 mut_array[n] = b
               })
             )
         ),
-        () => I.succeedWith(() => mut_array)
+        () => I.succeedLazy(() => mut_array)
       )
     ),
     I.map(Ch.from)

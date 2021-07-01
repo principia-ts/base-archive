@@ -18,7 +18,7 @@ export const ClockTag = tag<Clock>()
  * Live clock implementation
  */
 export class LiveClock implements Clock {
-  currentTime: I.UIO<number> = I.succeedWith(() => new Date().getTime())
+  currentTime: I.UIO<number> = I.succeedLazy(() => new Date().getTime())
 
   sleep = (ms: number): I.UIO<void> =>
     asyncInterrupt((cb) => {
@@ -26,7 +26,7 @@ export class LiveClock implements Clock {
         cb(I.unit())
       }, ms)
 
-      return I.succeedWith(() => {
+      return I.succeedLazy(() => {
         clearTimeout(timeout)
       })
     })

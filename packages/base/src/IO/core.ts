@@ -22,7 +22,6 @@ import type { Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
-import { RSA_X931_PADDING } from 'constants'
 
 import * as A from '../Array/core'
 import { runAsyncEnv } from '../Async'
@@ -84,15 +83,13 @@ export function succeed<A>(a: A): IO<unknown, never, A> {
 /**
  * Imports a total synchronous effect into a pure `IO` value.
  * The effect must not throw any exceptions. If you wonder if the effect
- * throws exceptions, then do not use this method, use `IO.effect`
- *
- * An alias for `effectTotal`
+ * throws exceptions, then do not use this method, use `IO.try`
  *
  * @category Constructors
  * @since 1.0.0
  * @trace 0
  */
-export function succeedWith<A>(a: () => A): UIO<A> {
+export function succeedLazy<A>(a: () => A): UIO<A> {
   return new EffectTotal(a)
 }
 
@@ -357,7 +354,7 @@ export function haltWithTrace<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, ne
  * @since 1.0.0
  * @trace 0
  */
-export function haltWith<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E, A> {
+export function haltLazy<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E, A> {
   return haltWithTrace(cause)
 }
 
@@ -382,7 +379,7 @@ export function fail<E = never, A = never>(e: E): IO<unknown, E, A> {
  *
  * @trace 0
  */
-export function failWith<E = never, A = never>(e: () => E): IO<unknown, E, A> {
+export function failLazy<E = never, A = never>(e: () => E): IO<unknown, E, A> {
   return haltWithTrace(traceAs(e, (trace) => C.traced(C.fail(e()), trace())))
 }
 
@@ -411,7 +408,7 @@ export function die(e: unknown): UIO<never> {
  *
  * @trace 0
  */
-export function dieWith<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
+export function dieLazy<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
   return haltWithTrace(traceAs(e, (trace) => C.traced(C.die(e()), trace())))
 }
 
@@ -443,7 +440,7 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
+export function doneLazy<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
   return defer(traceAs(exit, () => Ex.match_(exit(), halt, succeed)))
 }
 
@@ -452,8 +449,8 @@ export function doneWith<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
  *
  * @trace 0
  */
-export function fromEitherWith<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
-  return chain_(succeedWith(f), E.match(fail, succeed))
+export function fromEitherLazy<E, A>(f: () => E.Either<E, A>): IO<unknown, E, A> {
+  return chain_(succeedLazy(f), E.match(fail, succeed))
 }
 
 /**
@@ -471,7 +468,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
  */
 export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
   const trace = accessCallTrace()
-  return succeedWith(traceFrom(trace, () => ma.value))
+  return succeedLazy(traceFrom(trace, () => ma.value))
 }
 
 /**
@@ -480,9 +477,9 @@ export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
  *
  * @trace 0
  */
-export function fromOptionWith<A>(m: () => Option<A>): FIO<Option<never>, A> {
+export function fromOptionLazy<A>(m: () => Option<A>): FIO<Option<never>, A> {
   return chain_(
-    succeedWith(m),
+    succeedLazy(m),
     O.match(() => fail(O.none()), succeed)
   )
 }
@@ -1839,7 +1836,7 @@ export function collectIO<A, R1, E1, A1, E2>(
 /**
  * @trace call
  */
-export function composel_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
+export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
   return chain_(
     that,
@@ -1848,29 +1845,29 @@ export function composel_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>)
 }
 
 /**
- * @dataFirst composel_
+ * @dataFirst compose_
  * @trace call
  */
-export function composel<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
+export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
-  return (me) => traceCall(composel_, trace)(me, that)
+  return (me) => traceCall(compose_, trace)(me, that)
 }
 
 /**
  * @trace call
  */
-export function composer_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
+export function andThen_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
   const trace = accessCallTrace()
   return pipe(ra, chain(traceFrom(trace, (a) => giveAll_(ab, a))))
 }
 
 /**
- * @dataFirst composer_
+ * @dataFirst andThen_
  * @trace call
  */
-export function composer<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
+export function andThen<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
   const trace = accessCallTrace()
-  return (ra) => traceCall(composer_, trace)(ra, ab)
+  return (ra) => traceCall(andThen_, trace)(ra, ab)
 }
 
 export function condIO_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
@@ -1963,7 +1960,7 @@ export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>)
  */
 export function evaluate<A>(a: Eval<A>): UIO<A> {
   const trace = accessCallTrace()
-  return succeedWith(traceFrom(trace, () => a.value))
+  return succeedLazy(traceFrom(trace, () => a.value))
 }
 
 /**
@@ -2691,7 +2688,7 @@ export function ifIO<R1, E1, A1, R2, E2, A2>(
  * @trace 1
  * @trace 2
  */
-export function ifIOWith_<R, E, R1, E1, A1, R2, E2, A2>(
+export function ifIOLazy_<R, E, R1, E1, A1, R2, E2, A2>(
   mb: IO<R, E, boolean>,
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
@@ -2718,15 +2715,15 @@ export function ifIOWith_<R, E, R1, E1, A1, R2, E2, A2>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst ifIOWith_
+ * @dataFirst ifIOLazy_
  * @trace 0
  * @trace 1
  */
-export function ifIOWith<R1, E1, A1, R2, E2, A2>(
+export function ifIOLazy<R1, E1, A1, R2, E2, A2>(
   onTrue: () => IO<R1, E1, A1>,
   onFalse: () => IO<R2, E2, A2>
 ): <R, E>(b: IO<R, E, boolean>) => IO<R & R1 & R2, E | E1 | E2, A1 | A2> {
-  return (b) => ifIOWith_(b, onTrue, onFalse)
+  return (b) => ifIOLazy_(b, onTrue, onFalse)
 }
 
 /**
@@ -2758,12 +2755,12 @@ export { _if as if }
  * @trace 1
  * @trace 2
  */
-export function ifWith_<R, E, A, R1, E1, A1>(
+export function ifLazy_<R, E, A, R1, E1, A1>(
   b: () => boolean,
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): IO<R & R1, E | E1, A | A1> {
-  return ifIOWith_(succeedWith(b), onTrue, onFalse)
+  return ifIOLazy_(succeedLazy(b), onTrue, onFalse)
 }
 
 /**
@@ -2771,11 +2768,11 @@ export function ifWith_<R, E, A, R1, E1, A1>(
  * @trace 0
  * @trace 1
  */
-export function ifWith<R, E, A, R1, E1, A1>(
+export function ifLazy<R, E, A, R1, E1, A1>(
   onTrue: () => IO<R, E, A>,
   onFalse: () => IO<R1, E1, A1>
 ): (b: () => boolean) => IO<R & R1, E | E1, A | A1> {
-  return (b) => ifWith_(b, onTrue, onFalse)
+  return (b) => ifLazy_(b, onTrue, onFalse)
 }
 
 /**
@@ -2925,7 +2922,7 @@ export function joinEither<R1, E1, A1>(
  *  @trace 0
  */
 export function left<A>(a: () => A): UIO<E.Either<A, never>> {
-  return chain_(succeedWith(a), flow(E.left, pure))
+  return chain_(succeedLazy(a), flow(E.left, pure))
 }
 
 /**
@@ -3593,7 +3590,7 @@ export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO
     ma,
     traceAs(
       error,
-      O.match(() => chain_(succeedWith(error), fail), succeed)
+      O.match(() => chain_(succeedLazy(error), fail), succeed)
     )
   )
 }
@@ -4038,7 +4035,7 @@ export function whenIO<R, E>(mb: IO<R, E, boolean>): <R1, E1, A>(ma: IO<R1, E1, 
  * @trace 1
  */
 export function when_<R, E, A>(ma: IO<R, E, A>, b: () => boolean) {
-  return whenIO_(ma, succeedWith(b))
+  return whenIO_(ma, succeedLazy(b))
 }
 
 /**
@@ -4363,7 +4360,7 @@ export class GenIO<R, E, A> {
 const adapter = (_: any, __?: any) => {
   if (E.isEither(_)) {
     return new GenIO(
-      fromEitherWith(() => _),
+      fromEitherLazy(() => _),
       adapter['$trace']
     )
   }

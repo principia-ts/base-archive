@@ -395,7 +395,7 @@ export function asyncOption<R, E, A>(
       const output      = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime     = yield* _(I.runtime<R>())
       const maybeStream = yield* _(
-        M.succeedWith(() =>
+        M.succeedLazy(() =>
           register((k, cb) =>
             pipe(
               Take.fromPull(k),
@@ -474,7 +474,7 @@ export function asyncInterruptEither<R, E, A>(
       const output       = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
-        M.succeedWith(() =>
+        M.succeedLazy(() =>
           register((k, cb) =>
             pipe(
               Take.fromPull(k),
@@ -766,7 +766,7 @@ class StreamEnd extends Error {}
  */
 export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, unknown, A> {
   return pipe(
-    fromIO(I.succeedWith(() => iterable()[Symbol.iterator]())),
+    fromIO(I.succeedLazy(() => iterable()[Symbol.iterator]())),
     chain((it) =>
       repeatIOOption(
         pipe(
@@ -1864,7 +1864,7 @@ export function distributedWithDynamic_<R, E, A>(
           Ref.make<I.UIO<readonly [symbol, Q.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
               const queue = yield* _(Q.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
-              const id    = yield* _(I.succeedWith(() => Symbol()))
+              const id    = yield* _(I.succeedLazy(() => Symbol()))
               yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
               return tuple(id, queue)
             })
@@ -5870,7 +5870,7 @@ const adapter = (_: any, __?: any) => {
     if (O.isOption(x)) {
       return x._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Stream.gen')) : succeed(x.value)
     } else if (E.isEither(x)) {
-      return fromIO(I.fromEitherWith(() => x))
+      return fromIO(I.fromEitherLazy(() => x))
     } else if (x instanceof Stream) {
       return x
     } else if (isTag(x)) {

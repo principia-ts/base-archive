@@ -163,7 +163,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     const runInProgressFinalizer = this.inProgressFinalizer
       ? I.ensuring_(
           this.inProgressFinalizer,
-          I.succeedWith(() => this.clearInProgressFinalizer())
+          I.succeedLazy(() => this.clearInProgressFinalizer())
         )
       : undefined
 
@@ -193,7 +193,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     if (selfFinalizers) {
       closeSelf = I.ensuring_(
         selfFinalizers,
-        I.succeedWith(() => this.clearInProgressFinalizer())
+        I.succeedLazy(() => this.clearInProgressFinalizer())
       )
     }
 
@@ -363,7 +363,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                       return this.finishWithExit(Ex.halt(cause))
                     }
                   },
-                  () => I.succeedWith(() => this.replaceSubexecutor(modifiedRest))
+                  () => I.succeedLazy(() => this.replaceSubexecutor(modifiedRest))
                 )
               )
             } else {
@@ -458,12 +458,12 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           pipe(
             finalizerEffect,
             I.ensuring(
-              I.succeedWith(() => {
+              I.succeedLazy(() => {
                 this.clearInProgressFinalizer()
               })
             ),
             I.uninterruptible,
-            I.chain(() => I.succeedWith(() => this.doneSucceed(z)))
+            I.chain(() => I.succeedLazy(() => this.doneSucceed(z)))
           )
         )
       }
@@ -501,12 +501,12 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           pipe(
             finalizerEffect,
             I.ensuring(
-              I.succeedWith(() => {
+              I.succeedLazy(() => {
                 this.clearInProgressFinalizer()
               })
             ),
             I.uninterruptible,
-            I.chain(() => I.succeedWith(() => this.doneHalt(cause)))
+            I.chain(() => I.succeedLazy(() => this.doneHalt(cause)))
           )
         )
       }
@@ -525,12 +525,12 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     State.concrete(state)
     switch (state._tag) {
       case State.ChannelStateTag.Emit: {
-        return I.succeedWith(() => {
+        return I.succeedLazy(() => {
           this.currentChannel = read.more(input.getEmit())
         })
       }
       case State.ChannelStateTag.Done: {
-        return I.succeedWith(() => {
+        return I.succeedLazy(() => {
           this.currentChannel = read.done.onExit(input.getDone())
         })
       }
@@ -538,7 +538,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         return I.matchCauseIO_(
           state.effect,
           (cause) =>
-            I.succeedWith(() => {
+            I.succeedLazy(() => {
               this.currentChannel = read.done.onHalt(cause)
             }),
           () => this.runReadGo(input.run(), read, input)
@@ -570,7 +570,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             I.matchCauseIO_(
               state.effect,
               (cause) =>
-                I.succeedWith(() => {
+                I.succeedLazy(() => {
                   this.currentChannel = read.done.onHalt(cause)
                 }),
               () => this.runReadGo(input.run(), read, input)
@@ -591,11 +591,11 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         I.matchCauseIO_(
           restore(bracketOut.acquire),
           (cause) =>
-            I.succeedWith(() => {
+            I.succeedLazy(() => {
               this.currentChannel = new C.Halt(() => cause)
             }),
           (out) =>
-            I.succeedWith(() => {
+            I.succeedLazy(() => {
               this.addFinalizer(new C.ContinuationFinalizer((e) => bracketOut.finalizer(out, e)))
               this.currentChannel = new C.Emit(() => out)
             })
@@ -655,7 +655,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   pipe(
                     I.fork(drainer),
                     I.chain((fiber) =>
-                      I.succeedWith(() => {
+                      I.succeedLazy(() => {
                         this.addFinalizer(
                           new C.ContinuationFinalizer((exit) =>
                             pipe(
@@ -768,7 +768,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               this.currentChannel = currentChannel.inner
               this.addFinalizer(
                 new C.ContinuationFinalizer((_) =>
-                  I.succeedWith(() => {
+                  I.succeedLazy(() => {
                     this.providedEnv = previousEnv
                   })
                 )

@@ -1387,7 +1387,7 @@ const unfoldLoop =
 export function unfold_<A>(a: () => A, f: (a: A) => A): Schedule<unknown, unknown, A> {
   return new Schedule((now) =>
     pipe(
-      I.succeedWith(a),
+      I.succeedLazy(a),
       I.map((a) => makeContinue(a, now, unfoldLoop(f(a), f)))
     )
   )

@@ -126,7 +126,7 @@ export function concrete<RA, RB, EA, EB, A, B>(
  */
 export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.chain_(
-    I.succeedWith(() => _makeBounded<A>(requestedCapacity)),
+    I.succeedLazy(() => _makeBounded<A>(requestedCapacity)),
     (_) => _make(_, new BackPressure())
   )
 }
@@ -159,7 +159,7 @@ export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
  */
 export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.chain_(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
     (_) => _make(_, new Dropping())
@@ -193,7 +193,7 @@ export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
  */
 export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.chain_(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
     (_) => _make(_, new Sliding())
@@ -224,7 +224,7 @@ export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
  */
 export function makeUnbounded<A>(): I.UIO<UHub<A>> {
   return I.chain_(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       return _makeUnbounded<A>()
     }),
     (_) => _make(_, new Dropping())
@@ -269,7 +269,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
 
   awaitShutdown = P.await(this.shutdownHook)
   capacity      = this.hub.capacity
-  isShutdown    = I.succeedWith(() => this.shutdownFlag.get)
+  isShutdown    = I.succeedLazy(() => this.shutdownFlag.get)
   shutdown      = pipe(
     I.fiberId(),
     I.chain((fiberId) =>
@@ -418,7 +418,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
 
   capacity: number = this.hub.capacity
 
-  isShutdown: I.UIO<boolean> = I.succeedWith(() => this.shutdownFlag.get)
+  isShutdown: I.UIO<boolean> = I.succeedLazy(() => this.shutdownFlag.get)
 
   shutdown: I.UIO<void> = pipe(
     I.fiberId(),
@@ -427,7 +427,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
         this.shutdownFlag.set(true)
         return pipe(
           I.foreachPar_(_unsafePollAllQueue(this.pollers), P.interruptAs(fiberId))['*>'](
-            I.succeedWith(() => this.subscription.unsubscribe())
+            I.succeedLazy(() => this.subscription.unsubscribe())
           ),
           I.whenIO(P.succeed_(this.shutdownHook, undefined))
         )
@@ -473,7 +473,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
               }
             }),
             () =>
-              I.succeedWith(() => {
+              I.succeedLazy(() => {
                 _unsafeRemove(this.pollers, promise)
               })
           )
@@ -1016,7 +1016,7 @@ export class BackPressure<A> extends Strategy<A> {
 
               return isShutdown.get ? I.interrupt : P.await(promise)
             }),
-            I.onInterrupt(() => I.succeedWith(() => this.unsafeRemove(promise)))
+            I.onInterrupt(() => I.succeedLazy(() => this.unsafeRemove(promise)))
           )
         })
       )
@@ -1027,7 +1027,7 @@ export class BackPressure<A> extends Strategy<A> {
     return pipe(
       I.do,
       I.bindS('fiberId', () => I.fiberId()),
-      I.bindS('publishers', () => I.succeedWith(() => _unsafePollAllQueue(this.publishers))),
+      I.bindS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
         I.foreachPar_(publishers, ([_, promise, last]) =>
           last ? I.asUnit(P.interruptAs_(promise, fiberId)) : I.unit()
@@ -1145,7 +1145,7 @@ export class Sliding<A> extends Strategy<A> {
     as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.succeedWith(() => {
+    return I.succeedLazy(() => {
       this.unsafeSlidingPublish(hub, as)
       this.unsafeCompleteSubscribers(hub, subscribers)
       return true

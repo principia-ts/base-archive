@@ -22,23 +22,23 @@ export class LiveRandom implements Random {
     this.PRNG = new prand.Random(prand.mersenne(seed))
   }
 
-  next: I.UIO<number> = I.succeedWith(() => this.PRNG.nextDouble())
+  next: I.UIO<number> = I.succeedLazy(() => this.PRNG.nextDouble())
 
-  nextBoolean: I.UIO<boolean> = I.chain_(this.next, (n) => I.succeedWith(() => n > 0.5))
+  nextBoolean: I.UIO<boolean> = I.chain_(this.next, (n) => I.succeedLazy(() => n > 0.5))
 
-  nextInt: I.UIO<number> = I.succeedWith(() => this.PRNG.nextInt())
+  nextInt: I.UIO<number> = I.succeedLazy(() => this.PRNG.nextInt())
 
   nextRange: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.chain_(this.next, (n) => I.succeedWith(() => (high - low) * n + low))
+    I.chain_(this.next, (n) => I.succeedLazy(() => (high - low) * n + low))
 
   nextIntBetween: (low: number, high: number) => I.UIO<number> = (low, high) =>
-    I.chain_(this.next, (n) => I.succeedWith(() => Math.floor((high - low + 1) * n + low)))
+    I.chain_(this.next, (n) => I.succeedLazy(() => Math.floor((high - low + 1) * n + low)))
 
   nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint> = (low, high) =>
-    I.succeedWith(() => this.PRNG.nextBigInt(low, high))
+    I.succeedLazy(() => this.PRNG.nextBigInt(low, high))
 
   nextArrayInt: (low: ArrayInt, high: ArrayInt) => I.UIO<ArrayInt> = (low, high) =>
-    I.succeedWith(() => this.PRNG.nextArrayInt(low, high))
+    I.succeedLazy(() => this.PRNG.nextArrayInt(low, high))
 }
 
 export const defaultRandom = new LiveRandom((Math.random() * 4294967296) >>> 0)

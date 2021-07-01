@@ -1132,6 +1132,6 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 export function makeMemoMap() {
   return pipe(
     RefM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
-    I.chain((r) => I.succeedWith(() => new MemoMap(r)))
+    I.chain((r) => I.succeedLazy(() => new MemoMap(r)))
   )
 }

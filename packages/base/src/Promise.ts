@@ -69,7 +69,7 @@ export function fulfill<R, E, A>(io: I.IO<R, E, A>): (promise: Promise<E, A>) =>
  * `Promise.complete`.
  */
 export function fulfillWith_<E, A>(promise: Promise<E, A>, io: FIO<E, A>): I.UIO<boolean> {
-  return I.succeedWith(() => {
+  return I.succeedLazy(() => {
     const state = promise.state.get
     switch (state._tag) {
       case 'Done': {
@@ -211,7 +211,7 @@ export function interruptAs(id: FiberId): <E, A>(promise: Promise<E, A>) => I.UI
  * already been completed with a value or an error and false otherwise.
  */
 export function isDone<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
-  return I.succeedWith(() => promise.state.get._tag === 'Done')
+  return I.succeedLazy(() => promise.state.get._tag === 'Done')
 }
 
 /**
@@ -225,7 +225,7 @@ export function make<E, A>() {
  * Makes a new promise to be completed by the fiber with the specified id.
  */
 export function makeAs<E, A>(fiberId: FiberId) {
-  return I.succeedWith(() => unsafeMake<E, A>(fiberId))
+  return I.succeedLazy(() => unsafeMake<E, A>(fiberId))
 }
 
 /**
@@ -233,7 +233,7 @@ export function makeAs<E, A>(fiberId: FiberId) {
  * promise has already been completed or a `None` otherwise.
  */
 export function poll<E, A>(promise: Promise<E, A>): I.UIO<Option<FIO<E, A>>> {
-  return I.succeedWith(() => {
+  return I.succeedLazy(() => {
     const state = promise.state.get
 
     switch (state._tag) {
@@ -318,7 +318,7 @@ function wait<E, A>(promise: Promise<E, A>): I.IO<unknown, E, A> {
 export { wait as await }
 
 function interruptJoiner<E, A>(promise: Promise<E, A>, joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> {
-  return I.succeedWith(() => {
+  return I.succeedLazy(() => {
     let retry = true
     while (retry) {
       const oldState = promise.state.get

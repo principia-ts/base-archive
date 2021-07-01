@@ -364,7 +364,7 @@ export function filterInputIO_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
       (ea) => O.some<EA | EC>(ea),
       P.identity,
       (a: A1) =>
-        I.ifIOWith_(
+        I.ifIOLazy_(
           I.asSomeError(f(a)),
           () => I.pure(a),
           () => I.fail<O.Option<EA | EC>>(O.none())
@@ -423,7 +423,7 @@ export function filterOutputIO_<RA, RB, EA, EB, A, B, RC, EC>(
     (eb) => O.some<EB | EC>(eb),
     (a) => I.pure(a),
     (b) =>
-      I.ifIOWith_(
+      I.ifIOLazy_(
         I.asSomeError(f(b)),
         () => I.pure(b),
         () => I.fail(O.none())
@@ -484,8 +484,8 @@ export function match_<RA, RB, EA, EB, A, B, EC, ED, C = A, D = B>(
   return ref.matchIO(
     ea,
     eb,
-    (c) => I.fromEitherWith(() => ca(c)),
-    (b) => I.fromEitherWith(() => bd(b))
+    (c) => I.fromEitherLazy(() => ca(c)),
+    (b) => I.fromEitherLazy(() => bd(b))
   )
 }
 

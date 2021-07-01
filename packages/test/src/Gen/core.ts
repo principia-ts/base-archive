@@ -89,7 +89,7 @@ export function constant<A>(a: A): Gen<unknown, A> {
 }
 
 export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
-  return pipe(I.succeedWith(gen), fromEffect, flatten)
+  return pipe(I.succeedLazy(gen), fromEffect, flatten)
 }
 
 export function fromEffect<R, A>(effect: IO<R, never, A>): Gen<R, A> {

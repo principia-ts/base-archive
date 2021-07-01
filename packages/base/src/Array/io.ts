@@ -39,7 +39,7 @@ export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R,
       return I.chain_(
         I.defer(() => f(a)),
         (b) =>
-          I.succeedWith(() => {
+          I.succeedLazy(() => {
             mut_bs[n] = b
           })
       )
@@ -49,7 +49,7 @@ export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R,
         A.imap_(as, (n, a) => [a, n] as [A, number]),
         fn
       ),
-      () => I.succeedWith(() => mut_bs)
+      () => I.succeedLazy(() => mut_bs)
     )
   })
 }

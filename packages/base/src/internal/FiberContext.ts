@@ -110,7 +110,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get poll() {
-    return I.succeedWith(() => this._poll())
+    return I.succeedLazy(() => this._poll())
   }
 
   private addTrace(f: Function) {
@@ -131,7 +131,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   })
 
   getRef<K>(fiberRef: FR.FiberRef<K>): I.UIO<K> {
-    return I.succeedWith(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial)
+    return I.succeedLazy(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial)
   }
 
   private _poll() {
@@ -152,7 +152,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       this.popInterruptStatus()
       return I.pure(v)
     } else {
-      return I.succeedWith(() => {
+      return I.succeedLazy(() => {
         this.popInterruptStatus()
         return v
       })
@@ -346,7 +346,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   get await(): I.UIO<Exit<E, A>> {
     return I.effectAsyncInterruptEither((k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
       const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
-      return O.match_(this.observe(cb), () => E.left(I.succeedWith(() => this.interruptObserver(cb))), E.right)
+      return O.match_(this.observe(cb), () => E.left(I.succeedLazy(() => this.interruptObserver(cb))), E.right)
     })
   }
 
@@ -989,12 +989,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const c = current
                     current = I.concrete(
                       I.bracket_(
-                        I.succeedWith(() => {
+                        I.succeedLazy(() => {
                           this.pushEnv(c.env)
                         }),
                         () => c.io,
                         () =>
-                          I.succeedWith(() => {
+                          I.succeedLazy(() => {
                             this.popEnv()
                           })
                       )
@@ -1080,12 +1080,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const newSupervisor  = c.supervisor.and(lastSupervisor)
                     current              = I.concrete(
                       I.bracket_(
-                        I.succeedWith(() => {
+                        I.succeedLazy(() => {
                           this.supervisors = makeStack(newSupervisor, this.supervisors)
                         }),
                         () => c.io,
                         () =>
-                          I.succeedWith(() => {
+                          I.succeedLazy(() => {
                             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                             this.supervisors = this.supervisors.previous!
                           })
@@ -1110,12 +1110,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                     current = I.concrete(
                       I.bracket_(
-                        I.succeedWith(() => {
+                        I.succeedLazy(() => {
                           this.forkScopeOverride = makeStack(c.forkScope, this.forkScopeOverride)
                         }),
                         () => c.io,
                         () =>
-                          I.succeedWith(() => {
+                          I.succeedLazy(() => {
                             this.forkScopeOverride = this.forkScopeOverride?.previous
                           })
                       )

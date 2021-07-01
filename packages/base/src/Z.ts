@@ -263,7 +263,7 @@ function _try<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A>
 
 export { _try as try }
 
-export function succeedWith<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
+export function succeedLazy<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
   return new EffectTotal(effect)
 }
 
@@ -284,15 +284,15 @@ export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
   return halt(FS.single(e))
 }
 
-export function failWith<E>(e: () => E): Z<never, unknown, never, unknown, E, never> {
-  return haltWith(() => FS.single(e()))
+export function failLazy<E>(e: () => E): Z<never, unknown, never, unknown, E, never> {
+  return haltLazy(() => FS.single(e()))
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
   return E.match_(either, fail, succeed)
 }
 
-export function fromEitherWith<E, A>(either: () => E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
+export function fromEitherLazy<E, A>(either: () => E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
   return defer(() => fromEither(either()))
 }
 
@@ -300,7 +300,7 @@ export function fromOption<A>(option: O.Option<A>): Z<never, unknown, never, unk
   return O.match_(option, () => fail(O.none()), succeed)
 }
 
-export function fromOptionWith<A>(option: () => O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
+export function fromOptionLazy<A>(option: () => O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
   return defer(() => fromOption(option()))
 }
 
@@ -308,7 +308,7 @@ export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, n
   return new Fail(cause)
 }
 
-export function haltWith<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
+export function haltLazy<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
   return defer(() => halt(cause()))
 }
 

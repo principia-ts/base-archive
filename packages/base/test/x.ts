@@ -11,6 +11,6 @@ pipe(
     [t1, I.succeed({ x: 0 })],
     [t2, I.succeed({ y: 'hello' })]
   )(I.asksServicesT(t1, t2)(({ x }, { y }) => x + y)),
-  I.chain((s) => I.succeedWith(() => console.log(s))),
+  I.chain((s) => I.succeedLazy(() => console.log(s))),
   I.run()
 )

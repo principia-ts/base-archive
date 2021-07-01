@@ -32,8 +32,8 @@ export class Sink<R, InErr, In, OutErr, L, Z> {
   }
 }
 
-export function succeedWith<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
-  return new Sink(Ch.effectTotal(a))
+export function succeedLazy<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
+  return new Sink(Ch.succeedLazy(a))
 }
 
 export function fromIO<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, unknown, unknown, E, never, Z> {
@@ -44,8 +44,8 @@ export function fail<E>(e: E): Sink<unknown, unknown, unknown, E, never, never> 
   return new Sink(Ch.fail(e))
 }
 
-export function failWith<E>(e: () => E): Sink<unknown, unknown, unknown, E, never, never> {
-  return new Sink(Ch.failWith(e))
+export function failLazy<E>(e: () => E): Sink<unknown, unknown, unknown, E, never, never> {
+  return new Sink(Ch.failLazy(e))
 }
 
 export function managed_<R, E, A, Env, InErr, In, OutErr, L, Z>(
@@ -267,14 +267,14 @@ export function matchSink_<
             const leftoversRef     = new AtomicReference<C.Chunk<C.Chunk<L1 | L2>>>(
               C.filter_(leftovers, (a) => C.isNonEmpty(a))
             )
-            const refReader        = Ch.effectTotal(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
+            const refReader        = Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
               Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
             )
             const passthrough      = Ch.id<InErr2, C.Chunk<In1 & In2>, unknown>()
             const continuationSink = refReader['*>'](passthrough)['>>>'](onSuccess(z).channel)
 
             return Ch.doneCollect(continuationSink)['>>='](([newLeftovers, z1]) =>
-              Ch.effectTotal(() => leftoversRef.get)
+              Ch.succeedLazy(() => leftoversRef.get)
                 ['>>='](Ch.writeChunk)
                 ['*>'](Ch.writeChunk(newLeftovers)['$>'](z1))
             )

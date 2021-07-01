@@ -130,9 +130,9 @@ export class GlobalScope extends CommonScope<never> {
     this.unsafeExtend = this.unsafeExtend.bind(this)
   }
 
-  private unsafeEnsureResult = E.right(new Key(I.succeedWith(() => true)))
+  private unsafeEnsureResult = E.right(new Key(I.succeedLazy(() => true)))
 
-  private ensureResult = I.succeedWith(() => this.unsafeEnsureResult)
+  private ensureResult = I.succeedLazy(() => this.unsafeEnsureResult)
 
   get closed(): UIO<boolean> {
     return I.pure(false)
@@ -189,19 +189,19 @@ export class LocalScope<A> extends CommonScope<A> {
   }
 
   get closed(): UIO<boolean> {
-    return I.succeedWith(() => this.unsafeClosed)
+    return I.succeedLazy(() => this.unsafeClosed)
   }
 
   get empty(): UIO<boolean> {
-    return I.succeedWith(() => this.finalizers.size === 0)
+    return I.succeedLazy(() => this.finalizers.size === 0)
   }
 
   ensure(finalizer: (a: A) => UIO<any>): UIO<E.Either<A, Key>> {
-    return I.succeedWith(() => this.unsafeEnsure(finalizer))
+    return I.succeedLazy(() => this.unsafeEnsure(finalizer))
   }
 
   get released(): UIO<boolean> {
-    return I.succeedWith(() => this.unsafeReleased())
+    return I.succeedLazy(() => this.unsafeReleased())
   }
 
   unsafeExtend(that: Scope<any>): boolean {
@@ -341,5 +341,5 @@ export function unsafeMakeScope<A>(): Open<A> {
 }
 
 export function makeScope<A>(): UIO<Open<A>> {
-  return I.succeedWith(() => unsafeMakeScope<A>())
+  return I.succeedLazy(() => unsafeMakeScope<A>())
 }

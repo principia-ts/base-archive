@@ -56,7 +56,7 @@ import * as MD from './internal/MergeDecision'
 import * as MS from './internal/MergeState'
 import { makeSingleProducerAsyncInput } from './internal/SingleProducerAsyncInput'
 
-export function effectTotal<OutDone>(
+export function succeedLazy<OutDone>(
   effect: () => OutDone
 ): Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
   return new EffectTotal(effect)
@@ -190,7 +190,7 @@ export function readWith<
 /**
  * Halt a channel with the specified error
  */
-export function failWith<E>(error: () => E): Channel<unknown, unknown, unknown, unknown, E, never, never> {
+export function failLazy<E>(error: () => E): Channel<unknown, unknown, unknown, unknown, E, never, never> {
   return new Halt(() => Ca.fail(error()))
 }
 
@@ -211,14 +211,14 @@ export function die(defect: unknown): Channel<unknown, unknown, unknown, unknown
 /**
  * Halt a channel with the specified exception
  */
-export function dieWith(defect: () => unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
+export function dieLazy(defect: () => unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
   return new Halt(() => Ca.die(defect()))
 }
 
 /**
  * Writes an output to the channel
  */
-export function writeWith<OutElem>(
+export function writeLazy<OutElem>(
   out: () => OutElem
 ): Channel<unknown, unknown, unknown, unknown, never, OutElem, void> {
   return new Emit(out)
@@ -1018,7 +1018,7 @@ function doneCollectReader<Env, OutErr, OutElem, OutDone>(
   return readWith(
     (out) =>
       fromIO(
-        I.succeedWith(() => {
+        I.succeedLazy(() => {
           builder.append(out)
         })
       )['*>'](doneCollectReader(builder)),
@@ -1039,7 +1039,7 @@ export function doneCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, never, readonly [A.Chunk<OutElem>, OutDone]> {
   return unwrap(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       const builder = A.builder<OutElem>()
 
       return mapIO_(pipeTo_(self, doneCollectReader(builder)), (z) => I.succeed(tuple(builder.result(), z)))
@@ -2088,7 +2088,7 @@ export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
 ): M.Managed<Env, OutErr, OutDone> {
   return M.mapIO_(
     M.bracketExit_(
-      I.succeedWith(() => new ChannelExecutor(() => self, undefined)),
+      I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
     (exec) => I.defer(() => runManagedInterpret(exec.run(), exec))
@@ -2133,7 +2133,7 @@ export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 ): M.Managed<Env, never, IO<Env, E.Either<OutErr, OutDone>, OutElem>> {
   return M.map_(
     M.bracketExit_(
-      I.succeedWith(() => new ChannelExecutor(() => self, undefined)),
+      I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
     (exec) => I.defer(() => toPullInterpret(exec.run(), exec))

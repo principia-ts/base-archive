@@ -138,28 +138,28 @@ export interface Enqueue<A> extends Queue<unknown, never, never, unknown, A, any
 
 export function makeSliding<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedWith(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => new Bounded<A>(capacity)),
     _makeQueue(new SlidingStrategy())
   )
 }
 
 export function makeUnbounded<A>(): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedWith(() => new Unbounded<A>()),
+    I.succeedLazy(() => new Unbounded<A>()),
     _makeQueue(new DroppingStrategy())
   )
 }
 
 export function makeDropping<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedWith(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => new Bounded<A>(capacity)),
     _makeQueue(new DroppingStrategy())
   )
 }
 
 export function makeBounded<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedWith(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => new Bounded<A>(capacity)),
     _makeQueue(new BackPressureStrategy())
   )
 }
@@ -898,7 +898,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
 
   capacity: number = this.queue.capacity
 
-  isShutdown: I.UIO<boolean> = I.succeedWith(() => this.shutdownFlag.get)
+  isShutdown: I.UIO<boolean> = I.succeedLazy(() => this.shutdownFlag.get)
 
   offer(a: A): I.IO<unknown, never, boolean> {
     return I.defer(() => {
@@ -1000,7 +1000,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
               return P.await(p)
             }
           }),
-          () => I.succeedWith(() => _unsafeRemove(this.takers, p))
+          () => I.succeedLazy(() => _unsafeRemove(this.takers, p))
         )
       }
     })
@@ -1010,7 +1010,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     if (this.shutdownFlag.get) {
       return I.interrupt
     } else {
-      return I.succeedWith(() => {
+      return I.succeedLazy(() => {
         const as = _unsafePollAll(this.queue)
         this.strategy.unsafeOnQueueEmptySpace(this.queue)
         return as
@@ -1023,7 +1023,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       if (this.shutdownFlag.get) {
         return I.interrupt
       } else {
-        return I.succeedWith(() => {
+        return I.succeedLazy(() => {
           const as = _unsafePollN(this.queue, max)
           this.strategy.unsafeOnQueueEmptySpace(this.queue)
           return as
@@ -1172,7 +1172,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
               return P.await(p)
             }
           }),
-          () => I.succeedWith(() => this.unsafeRemove(p))
+          () => I.succeedLazy(() => this.unsafeRemove(p))
         )
       })
     )
@@ -1225,7 +1225,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     const self = this
     return I.gen(function* (_) {
       const fiberId = yield* _(I.fiberId())
-      const putters = yield* _(I.succeedWith(() => _unsafePollAll(self.putters)))
+      const putters = yield* _(I.succeedLazy(() => _unsafePollAll(self.putters)))
       yield* _(
         I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(P.interruptAs_(p, fiberId)) : I.unit()))
       )
@@ -1267,7 +1267,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
     takers: MutableQueue<Promise<never, A>>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
-    return I.succeedWith(() => {
+    return I.succeedLazy(() => {
       this.unsafeSlidingOffer(queue, as)
       _unsafeCompleteTakers(this, queue, takers)
       return true

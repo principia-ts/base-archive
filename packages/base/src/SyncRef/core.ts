@@ -57,11 +57,11 @@ export class Atomic<A> implements SyncRef<never, never, A, A> {
   }
 
   get get(): S.USync<A> {
-    return S.succeedWith(() => this.value.get)
+    return S.succeedLazy(() => this.value.get)
   }
 
   set(a: A): S.USync<void> {
-    return S.succeedWith(() => {
+    return S.succeedLazy(() => {
       this.value.set(a)
     })
   }
@@ -240,7 +240,7 @@ export function concrete<EA, EB, A>(ref: SyncRef<EA, EB, A, A>) {
  */
 
 export function make<A>(a: A): S.USync<USyncRef<A>> {
-  return S.succeedWith(() => new Atomic(new AtomicReference(a)))
+  return S.succeedLazy(() => new Atomic(new AtomicReference(a)))
 }
 
 export function unsafeMake<A>(a: A): USyncRef<A> {

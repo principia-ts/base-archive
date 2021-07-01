@@ -370,7 +370,7 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 /**
  * Halt a channel with the specified cause
  */
-export function haltWith<E>(result: () => Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
+export function haltLazy<E>(result: () => Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
   return new Halt(result)
 }
 
@@ -384,7 +384,7 @@ export function halt<E>(result: Cause<E>): Channel<unknown, unknown, unknown, un
 /**
  * End a channel with the specified result
  */
-export function endWith<OutDone>(
+export function endLazy<OutDone>(
   result: () => OutDone
 ): Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
   return new Done(result)

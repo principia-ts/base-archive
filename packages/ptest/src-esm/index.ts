@@ -34,7 +34,8 @@ const argv = yargs(process.argv.slice(2))
     tags: { array: true, string: true },
     policy: { string: true }
   })
-  .help().parseSync()
+  .help()
+  .parseSync()
 
 const testArgs = new TestArgs(argv.tests || [], argv.tags || [], O.fromNullable(argv.policy))
 
@@ -47,7 +48,7 @@ const program = pipe(
     })
   ),
   I.chain(I.foreach((path) => I.try(() => _require(path).default))),
-  I.chain(I.foreach((test) => (isRunnableSpec(test) ? I.succeedWith(() => test.main(testArgs)) : I.unit())))
+  I.chain(I.foreach((test) => (isRunnableSpec(test) ? I.succeedLazy(() => test.main(testArgs)) : I.unit())))
 )
 
 I.run_(

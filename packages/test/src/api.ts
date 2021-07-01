@@ -119,7 +119,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
 }
 
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
-  return testM(label, () => I.succeedWith(assertion))
+  return testM(label, () => I.succeedLazy(assertion))
 }
 
 export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {

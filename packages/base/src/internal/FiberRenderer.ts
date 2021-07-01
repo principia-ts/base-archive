@@ -21,7 +21,7 @@ export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<Chunk<
 
 export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: false): UIO<string> {
   const du  = T.foreach_(fibers, dump)
-  const now = T.succeedWith(() => new Date().getTime())
+  const now = T.succeedLazy(() => new Date().getTime())
   return T.map_(T.crossWith_(du, now, tuple), ([dumps, now]) => {
     const tree        = renderHierarchy(dumps)
     const dumpStrings = withTrace ? collectTraces(dumps, now) : []

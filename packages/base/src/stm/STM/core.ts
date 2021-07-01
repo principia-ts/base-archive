@@ -33,7 +33,7 @@ export const succeed: <A>(a: A) => STM<unknown, never, A> = _.succeed
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export const succeedWith: <A>(a: () => A) => STM<unknown, never, A> = _.succeedWith
+export const succeedLazy: <A>(a: () => A) => STM<unknown, never, A> = _.succeedLazy
 
 /**
  * Returns a value that models failure in the transaction.
@@ -43,7 +43,7 @@ export const fail: <E>(e: E) => STM<unknown, E, never> = _.fail
 /**
  * Returns a value that models failure in the transaction.
  */
-export const failWith: <E>(e: () => E) => STM<unknown, E, never> = _.failWith
+export const failLazy: <E>(e: () => E) => STM<unknown, E, never> = _.failLazy
 
 /**
  * Kills the fiber running the effect.
@@ -57,7 +57,7 @@ export function die(u: unknown): STM<unknown, never, never> {
 /**
  * Kills the fiber running the effect.
  */
-export function dieWith(u: () => unknown): STM<unknown, never, never> {
+export function dieLazy(u: () => unknown): STM<unknown, never, never> {
   return new Effect(() => {
     throw new DieException(u())
   })
@@ -583,7 +583,7 @@ export function continueOrFailWithSTM_<R, E, E1, A, R2, E2, A2>(
   e: () => E1,
   pf: (a: A) => O.Option<STM<R2, E2, A2>>
 ) {
-  return chain_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failWith(e)))
+  return chain_(fa, (a): STM<R2, E1 | E2, A2> => O.getOrElse_(pf(a), () => failLazy(e)))
 }
 
 /**
@@ -677,7 +677,7 @@ export function commit<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
         case SuspendTypeId: {
           const id        = txnId()
           const done      = new AtomicBoolean(false)
-          const interrupt = T.succeedWith(() => done.set(true))
+          const interrupt = T.succeedLazy(() => done.set(true))
           const io        = T.async(tryCommitAsync(v.journal, fiberId, stm, id, done, r))
           return T.ensuring_(io, interrupt)
         }
@@ -699,7 +699,7 @@ export function commitEither<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
  * the specified message.
  */
 export function dieMessage(message: string): STM<unknown, never, never> {
-  return dieWith(() => new RuntimeException(message))
+  return dieLazy(() => new RuntimeException(message))
 }
 
 /**
@@ -707,7 +707,7 @@ export function dieMessage(message: string): STM<unknown, never, never> {
  * the specified message.
  */
 export function dieMessageWith(message: () => string): STM<unknown, never, never> {
-  return succeedWith(() => {
+  return succeedLazy(() => {
     throw new RuntimeException(message())
   })
 }
@@ -773,7 +773,7 @@ export function filterOrDie_<R, E, A, B extends A>(
 ): STM<R, E, B>
 export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: (a: A) => unknown): STM<R, E, A>
 export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: unknown) {
-  return filterOrElse_(fa, p, (x) => dieWith(() => (f as (a: A) => unknown)(x)))
+  return filterOrElse_(fa, p, (x) => dieLazy(() => (f as (a: A) => unknown)(x)))
 }
 
 /**
@@ -1053,7 +1053,7 @@ export function left<R, E, B, C>(stm: STM<R, E, E.Either<B, C>>): STM<R, O.Optio
 export function leftOrFail_<R, E, B, C, E1>(stm: STM<R, E, E.Either<B, C>>, orFail: (c: C) => E1) {
   return chain_(
     stm,
-    E.match(succeed, (x) => failWith(() => orFail(x)))
+    E.match(succeed, (x) => failLazy(() => orFail(x)))
   )
 }
 
@@ -1199,7 +1199,7 @@ export function repeatWhile<R, E, A>(f: (a: A) => boolean): (stm: STM<R, E, A>) 
  * Suspends creation of the specified transaction lazily.
  */
 export function defer<R, E, A>(f: () => STM<R, E, A>): STM<R, E, A> {
-  return flatten(succeedWith(f))
+  return flatten(succeedLazy(f))
 }
 
 /**
@@ -1221,8 +1221,8 @@ export function tap<A, R1, E1, B>(f: (a: A) => STM<R1, E1, B>): <R, E>(stm: STM<
 /**
  * Returns an effect with the value on the left part.
  */
-export function toLeftWith<A>(a: () => A): STM<unknown, never, E.Either<A, never>> {
-  return chain_(succeedWith(a), (x) => succeed(E.left(x)))
+export function toLeftLazy<A>(a: () => A): STM<unknown, never, E.Either<A, never>> {
+  return chain_(succeedLazy(a), (x) => succeed(E.left(x)))
 }
 
 /**

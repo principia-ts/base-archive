@@ -116,8 +116,8 @@ export function fromIOUninterruptible<R, E, A>(ma: I.IO<R, E, A>): Managed<R, E,
  *
  * @trace 0
  */
-export function succeedWith<A>(effect: () => A): Managed<unknown, never, A> {
-  return fromIO(I.succeedWith(effect))
+export function succeedLazy<A>(effect: () => A): Managed<unknown, never, A> {
+  return fromIO(I.succeedLazy(effect))
 }
 
 /**
@@ -158,14 +158,14 @@ export function tryCatch<E>(onThrow: (error: unknown) => E) {
  * @trace 0
  */
 export function defer<R, E, A>(managed: () => Managed<R, E, A>): Managed<R, E, A> {
-  return flatten(succeedWith(managed))
+  return flatten(succeedLazy(managed))
 }
 
 /**
  * @trace 0
  */
-export function failWith<E = never, A = never>(e: () => E): Managed<unknown, E, A> {
-  return fromIO(I.failWith(e))
+export function failLazy<E = never, A = never>(e: () => E): Managed<unknown, E, A> {
+  return fromIO(I.failLazy(e))
 }
 
 /**
@@ -181,7 +181,7 @@ export function fail<E = never, A = never>(e: E): Managed<unknown, E, A> {
 /**
  * @trace 0
  */
-export function haltWith<E = never, A = never>(cause: () => Cause<E>): Managed<unknown, E, A> {
+export function haltLazy<E = never, A = never>(cause: () => Cause<E>): Managed<unknown, E, A> {
   return haltWithTrace(cause)
 }
 
@@ -205,8 +205,8 @@ export function haltWithTrace<E = never, A = never>(cause: (_: () => Trace) => C
 /**
  * @trace 0
  */
-export function dieWith(e: () => unknown): Managed<unknown, never, never> {
-  return fromIO(I.dieWith(e))
+export function dieLazy(e: () => unknown): Managed<unknown, never, never> {
+  return fromIO(I.dieLazy(e))
 }
 
 /**
@@ -433,8 +433,8 @@ export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, 
  *
  * @trace 0
  */
-export function fromEitherWith<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
-  return chain_(succeedWith(ea), E.match(fail, succeed))
+export function fromEitherLazy<E, A>(ea: () => E.Either<E, A>): Managed<unknown, E, A> {
+  return chain_(succeedLazy(ea), E.match(fail, succeed))
 }
 
 /**
@@ -705,7 +705,7 @@ export function subsumeEither<R, E, E1, A>(fa: Managed<R, E, E.Either<E1, A>>): 
   const trace = accessCallTrace()
   return chain_(
     fa,
-    traceFrom(trace, (ea) => fromEitherWith(() => ea))
+    traceFrom(trace, (ea) => fromEitherLazy(() => ea))
   )
 }
 
@@ -2385,7 +2385,7 @@ export function require_<R, E, A>(ma: Managed<R, E, O.Option<A>>, error: () => E
     ma,
     traceAs(
       error,
-      O.match(() => chain_(succeedWith(error), fail), succeed)
+      O.match(() => chain_(succeedLazy(error), fail), succeed)
     )
   )
 }
@@ -2925,7 +2925,7 @@ const adapter = (_: any, __?: any) => {
   }
   if (E.isEither(_)) {
     return new GenManaged(
-      fromEitherWith(() => _),
+      fromEitherLazy(() => _),
       adapter['$trace']
     )
   }

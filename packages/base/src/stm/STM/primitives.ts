@@ -137,11 +137,11 @@ export function succeed<A>(a: A): STM<unknown, never, A> {
 /**
  * Returns an `STM` effect that succeeds with the specified value.
  */
-export function succeedWith<A>(a: () => A): STM<unknown, never, A> {
+export function succeedLazy<A>(a: () => A): STM<unknown, never, A> {
   return new Succeed(a)
 }
 
-export function failWith<E>(e: () => E): STM<unknown, E, never> {
+export function failLazy<E>(e: () => E): STM<unknown, E, never> {
   return new Effect(() => {
     throw new FailException(e())
   })
@@ -151,7 +151,7 @@ export function failWith<E>(e: () => E): STM<unknown, E, never> {
  * Returns a value that models failure in the transaction.
  */
 export function fail<E>(e: E): STM<unknown, E, never> {
-  return failWith(() => e)
+  return failLazy(() => e)
 }
 
 /**

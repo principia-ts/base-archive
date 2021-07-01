@@ -45,7 +45,7 @@ const _try: <A>(effect: () => A) => Sync<unknown, unknown, A> = Z.try
 
 export { _try as try }
 
-export const succeedWith: <A>(effect: () => A) => Sync<unknown, never, A> = Z.succeedWith
+export const succeedLazy: <A>(effect: () => A) => Sync<unknown, never, A> = Z.succeedLazy
 
 export const tryCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> = Z.tryCatch_
 

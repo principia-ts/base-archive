@@ -126,8 +126,8 @@ export function die(u: unknown): Stream<unknown, never, never> {
 /**
  * Halt a stream with the specified exception
  */
-export function dieWith(u: () => unknown): Stream<unknown, never, never> {
-  return new Stream(Ch.dieWith(u))
+export function dieLazy(u: () => unknown): Stream<unknown, never, never> {
+  return new Stream(Ch.dieLazy(u))
 }
 
 /**
@@ -140,22 +140,22 @@ export function fail<E>(error: E): Stream<unknown, E, never> {
 /**
  * Halt a stream with the specified error
  */
-export function failWith<E>(error: () => E): Stream<unknown, E, never> {
-  return new Stream(Ch.failWith(error))
+export function failLazy<E>(error: () => E): Stream<unknown, E, never> {
+  return new Stream(Ch.failLazy(error))
 }
 
 /**
  * Creates a stream from a `Chunk` of values
  */
 export function fromChunk<O>(c: C.Chunk<O>): Stream<unknown, never, O> {
-  return new Stream(Ch.unwrap(I.succeedWith(() => Ch.write(c))))
+  return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.write(c))))
 }
 
 /**
  * Creates a stream from a `Chunk` of values
  */
-export function fromChunkWith<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
-  return new Stream(Ch.unwrap(I.succeedWith(() => Ch.writeWith(c))))
+export function fromChunkLazy<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
+  return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.writeLazy(c))))
 }
 
 /**
@@ -175,8 +175,8 @@ export function succeed<O>(o: O): Stream<unknown, never, O> {
 /**
  * Creates a single-valued pure stream
  */
-export function succeedWith<O>(o: () => O): Stream<unknown, never, O> {
-  return fromChunkWith(() => C.single(o()))
+export function succeedLazy<O>(o: () => O): Stream<unknown, never, O> {
+  return fromChunkLazy(() => C.single(o()))
 }
 
 function unfoldChunkIOLoop<S, R, E, A>(
@@ -385,7 +385,7 @@ export function asyncInterrupt<R, E, A>(
       const output       = yield* _(M.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), Q.shutdown))
       const runtime      = yield* _(I.runtime<R>())
       const eitherStream = yield* _(
-        M.succeedWith(() =>
+        M.succeedLazy(() =>
           register((k, cb) =>
             pipe(
               Take.fromPull(k),
@@ -504,7 +504,7 @@ function fromIteratorLoop<A>(
   iterator: Iterator<A>
 ): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
   return Ch.unwrap(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       const v = iterator.next()
       return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIteratorLoop(iterator)))
     })
@@ -520,6 +520,13 @@ export function fromIterator<A>(iterator: () => Iterator<A>): Stream<unknown, ne
  */
 export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
   return fromIO(I.halt(cause))
+}
+
+/**
+ * The stream that always halts with `cause`.
+ */
+export function haltLazy<E>(cause: () => Ca.Cause<E>): Stream<unknown, E, never> {
+  return fromIO(I.haltLazy(cause))
 }
 
 /**
@@ -1148,14 +1155,14 @@ export function loopOnPartialChunks_<R, E, A, R1, E1, A1>(
         return I.catchAll_(
           I.map_(
             f(chunk, (a: A1) =>
-              I.succeedWith(() => {
+              I.succeedLazy(() => {
                 outputChunk = C.append_(outputChunk, a)
               })
             ),
             (cont) => Ch.chain_(Ch.write(outputChunk), () => Ch.end(cont))
           ),
           (failure) =>
-            I.succeedWith(() => {
+            I.succeedLazy(() => {
               if (C.isEmpty(outputChunk)) {
                 return Ch.fail(failure)
               } else {
@@ -1355,7 +1362,7 @@ export function unwrapManaged<R0, E0, R, E, A>(stream: M.Managed<R0, E0, Stream<
  * Submerges the error case of an `Either` into the `ZStream`.
  */
 export function subsumeEither<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
-  return mapIO_(xs, (_) => I.fromEitherWith(() => _))
+  return mapIO_(xs, (_) => I.fromEitherLazy(() => _))
 }
 
 /**
@@ -2043,7 +2050,7 @@ export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Strea
  */
 export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
   return unwrap(
-    I.succeedWith(() => {
+    I.succeedLazy(() => {
       const rechunker                                                           = new Rechunker<A>(n)
       const process: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> = Ch.readWithCause(
         (chunk) => {
@@ -2513,7 +2520,7 @@ export function distributedWithDynamic_<R, E, A>(
           Ref.make<I.UIO<readonly [symbol, Q.UQueue<Ex.Exit<O.Option<E>, A>>]>>(
             I.gen(function* (_) {
               const queue = yield* _(Q.makeBounded<Ex.Exit<O.Option<E>, A>>(maximumLag))
-              const id    = yield* _(I.succeedWith(() => Symbol()))
+              const id    = yield* _(I.succeedLazy(() => Symbol()))
               yield* _(pipe(queuesRef, Ref.update(HM.set(id, queue))))
               return tuple(id, queue)
             })
@@ -3105,7 +3112,7 @@ function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
         I.defer(() => {
           const outputChunk = C.builder<B>()
           const emit        = (b: B) =>
-            I.succeedWith(() => {
+            I.succeedLazy(() => {
               outputChunk.append(b)
             })
           return pipe(

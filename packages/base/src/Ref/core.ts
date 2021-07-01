@@ -227,11 +227,11 @@ export class Atomic<A> implements Ref<never, never, A, A> {
   }
 
   get get(): UIO<A> {
-    return I.succeedWith(() => this.value.get)
+    return I.succeedLazy(() => this.value.get)
   }
 
   set(a: A): UIO<void> {
-    return I.succeedWith(() => {
+    return I.succeedLazy(() => {
       this.value.set(a)
     })
   }
@@ -264,7 +264,7 @@ export function concrete<EA, EB, A>(ref: Ref<EA, EB, A, A>) {
  * Creates a new `Ref` with the specified value.
  */
 export function make<A>(a: A): UIO<URef<A>> {
-  return I.succeedWith(() => new Atomic(new AtomicReference(a)))
+  return I.succeedLazy(() => new Atomic(new AtomicReference(a)))
 }
 
 /**

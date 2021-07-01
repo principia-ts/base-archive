@@ -37,12 +37,12 @@ export function mapIOPar_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>):
       return I.chain_(
         I.defer(() => f(a)),
         (b) =>
-          I.succeedWith(() => {
+          I.succeedLazy(() => {
             mut_bs[n] = b
           })
       )
     }
-    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedWith(() => C.from(mut_bs)))
+    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedLazy(() => C.from(mut_bs)))
   })
 }
 

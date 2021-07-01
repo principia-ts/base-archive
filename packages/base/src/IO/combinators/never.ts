@@ -2,7 +2,7 @@
 
 import type { UIO } from '../core'
 
-import { defer, succeedWith } from '../core'
+import { defer, succeedLazy } from '../core'
 import { asyncInterrupt } from './interrupt'
 
 /**
@@ -14,7 +14,7 @@ export const never: UIO<never> = defer(() =>
     const interval = setInterval(() => {
       //
     }, 60000)
-    return succeedWith(() => {
+    return succeedLazy(() => {
       clearInterval(interval)
     })
   })
