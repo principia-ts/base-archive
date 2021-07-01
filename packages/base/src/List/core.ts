@@ -1007,43 +1007,43 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): List
  * -------------------------------------------------------------------------------------------------
  */
 
-export const icompactA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const ifilterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = imapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const icompactA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+export const ifilterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = imapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const compactA_: P.FilterMapAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const filterMapA_: P.FilterMapAFn_<[HKT.URI<ListURI>]> = (A) => {
   const traverseG_ = mapA_(A)
   return (wa, f) => A.map_(traverseG_(wa, f), compact)
 }
 
-export const compactA: P.FilterMapAFn<[HKT.URI<ListURI>]> = (A) => {
-  const compactAA_ = compactA_(A)
+export const filterMapA: P.FilterMapAFn<[HKT.URI<ListURI>]> = (A) => {
+  const compactAA_ = filterMapA_(A)
   return (f) => (wa) => compactAA_(wa, f)
 }
 
-export const iseparateA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = imapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
 }
 
-export const iseparateA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+export const ipartitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = imapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
 }
 
-export const separateA_: P.PartitionMapAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const partitionMapA_: P.PartitionMapAFn_<[HKT.URI<ListURI>]> = (A) => {
   const traverseA_ = mapA_(A)
   return (wa, f) => A.map_(traverseA_(wa, f), separate)
 }
 
-export const separateA: P.PartitionMapAFn<[HKT.URI<ListURI>]> = (A) => {
-  const separateAA_ = separateA_(A)
+export const partitionMapA: P.PartitionMapAFn<[HKT.URI<ListURI>]> = (A) => {
+  const separateAA_ = partitionMapA_(A)
   return (f) => (wa) => separateAA_(wa, f)
 }
 
@@ -2415,8 +2415,8 @@ export const Witherable = P.Witherable<URI>({
   partition_,
   partitionMap_,
   mapA_: mapA_,
-  filterMapA_: compactA_,
-  partitionMapA_: separateA_
+  filterMapA_: filterMapA_,
+  partitionMapA_: partitionMapA_
 })
 
 export const Unfolable = HKT.instance<P.Unfoldable<URI>>({

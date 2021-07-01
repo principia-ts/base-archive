@@ -670,14 +670,6 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function _ifoldMap<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
-  return ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
-}
-
-/**
- * @category FoldableWithIndex
- * @since 1.0.0
- */
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
   return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
@@ -688,14 +680,6 @@ export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: n
  */
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function _foldMap<A, M>(fa: ReadonlyArray<A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 /**
@@ -992,14 +976,6 @@ export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const _imapA = P._implementMapWithIndexA<[HKT.URI<ArrayURI>]>()(
-  (_) => (ta, G, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
-)
-
-/**
- * @category TraversableWithIndex
- * @since 1.0.0
- */
 export const imapA_ = P.implementMapWithIndexA_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
   return (ta, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
 })
@@ -1022,14 +998,6 @@ export const imapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
   const imapAccum_ = imapAccumM_(M)
   return (s, f) => (ta) => imapAccum_(ta, s, f)
 }
-
-/**
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
-export const _mapA: P._MapAFn<[HKT.URI<ArrayURI>]> = (ta, A, f) => _imapA(ta, A, (_, a) => f(a))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -1476,18 +1444,6 @@ export function dropLastWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
   return (as) => dropLastWhile_(as, predicate)
 }
 
-export function _elem<A>(as: ReadonlyArray<A>, E: P.Eq<A>, a: A): boolean {
-  const predicate = (element: A) => E.equals_(element, a)
-  let i           = 0
-  const len       = as.length
-  for (; i < len; i++) {
-    if (predicate(as[i])) {
-      return true
-    }
-  }
-  return false
-}
-
 /**
  * Test if a value is a member of an array. Takes a `P.Eq<A>` as a single
  * argument which returns the function to use to search for a value of type `A` in
@@ -1497,7 +1453,17 @@ export function _elem<A>(as: ReadonlyArray<A>, E: P.Eq<A>, a: A): boolean {
  * @since 1.0.0
  */
 export function elem_<A>(E: P.Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
-  return (as, a) => _elem(as, E, a)
+  return (as, a) => {
+  const predicate = (element: A) => E.equals_(element, a)
+  let i           = 0
+  const len       = as.length
+  for (; i < len; i++) {
+    if (predicate(as[i])) {
+      return true
+    }
+  }
+  return false
+  }
 }
 
 /**
@@ -1779,8 +1745,14 @@ export function foldrWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (a: A, b: B
   return (as) => foldrWhile_(as, b, predicate, f)
 }
 
-export function _group<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<NonEmptyArray<A>> {
-  return chop_(as, (as) => {
+/**
+ * Group equal, consecutive elements of an array into non empty arrays.
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
+export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
+  return chop((as) => {
     const h   = as[0]
     const out = [h] as P.Mutable<NonEmptyArray<A>>
     let i     = 1
@@ -1794,16 +1766,6 @@ export function _group<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<NonEm
     }
     return [out, as.slice(i)]
   })
-}
-
-/**
- * Group equal, consecutive elements of an array into non empty arrays.
- *
- * @category combinators
- * @since 1.0.0
- */
-export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<NonEmptyArray<A>> {
-  return (as) => _group(as, E)
 }
 
 /**
@@ -1852,14 +1814,6 @@ export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<NonE
  */
 export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<NonEmptyArray<A>> {
   return (as) => insertAt_(as, i, a)
-}
-
-/**
- * @category combinators
- * @since 1.0.0
- */
-export function _intersection<A>(xs: ReadonlyArray<A>, E: P.Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
-  return filter_(xs, (a) => _elem(ys, E, a))
 }
 
 /**
@@ -2426,7 +2380,9 @@ export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [Reado
  * @category combinators
  * @since 1.0.0
  */
-export function _uniq<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<A> {
+export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (as) => {
+
   if (as.length === 1) {
     return as
   }
@@ -2441,27 +2397,7 @@ export function _uniq<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlyArray<A> {
     }
   }
   return out
-}
-
-/**
- * Remove duplicates from an array, keeping the first occurrence of an element.
- *
- * @category combinators
- * @since 1.0.0
- */
-export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => _uniq(as, E)
-}
-
-/**
- * @category combinators
- * @since 1.0.0
- */
-export function _union<A>(xs: ReadonlyArray<A>, E: P.Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A> {
-  return concat_(
-    xs,
-    filter_(ys, (a) => !_elem(xs, E, a))
-  )
+  }
 }
 
 /**

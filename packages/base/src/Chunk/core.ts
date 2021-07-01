@@ -1583,28 +1583,20 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-export function _ifoldMap<A, M>(fa: Chunk<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
-  return ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
-}
-
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => _ifoldMap(fa, M, f)
+  return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Chunk<A>) => M {
-  return (f) => (fa) => _ifoldMap(fa, M, f)
-}
-
-export function _foldMap<A, M>(fa: Chunk<A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return _ifoldMap(fa, M, (_, a) => f(a))
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (a: A) => M) => M {
-  return (fa, f) => _foldMap(fa, M, f)
+  return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) => M {
-  return (f) => (fa) => _foldMap(fa, M, f)
+  return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
 /*
@@ -1697,17 +1689,13 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _imapA: P._MapWithIndexAFn<URI> = (ta, A, f) =>
+export const imapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
   ifoldl_(ta, A.pure(empty()), (fbs, i, a) => A.crossWith_(fbs, f(i, a), append_))
-
-export const imapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) => _imapA(ta, A, f)
 
 export const imapA: P.MapWithIndexAFn<URI> = (G) => {
   const itraverseG_ = imapA_(G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
-
-export const _mapA: P._MapAFn<URI> = (ta, A, f) => _imapA(ta, A, (_, a) => f(a))
 
 export const mapA_: P.MapAFn_<URI> = (G) => {
   const itraverseG_ = imapA_(G)
@@ -1756,73 +1744,73 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const _ifilterMapA: P._FilterMapWithIndexAFn<URI> = (wa, A, f) => pipe(_imapA(wa, A, f), A.map(compact))
+export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => {
+  const _ = imapA_(A)
+  return (wa, f) => pipe(_(wa, f), A.map(compact))
+}
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) => _ifilterMapA(wa, A, f)
+export const ifilterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
+  const _ = ifilterMapA_(A)
+  return (f) => (wa) => _(wa, f)
+}
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const filterMapA_: P.FilterMapAFn_<URI> = (A) => {
+  const _ = ifilterMapA_(A)
+  return (wa, f) => _(wa, (_, a) => f(a))
+}
+
+/**
+ * @category Witherable
+ * @since 1.0.0
+ */
+export const filterMapA: P.FilterMapAFn<URI> = (A) => {
+  const _ = filterMapA_(A)
+  return (f) => (wa) => _(wa, f)
+}
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ifilterMapA: P.FilterMapWithIndexAFn<URI> = (G) => (f) => (wa) => _ifilterMapA(wa, G, f)
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const _filterMapA: P._FilterMapAFn<URI> = (wa, A, f) => _ifilterMapA(wa, A, (_, a) => f(a))
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const filterMapA_: P.FilterMapAFn_<URI> = (G) => (wa, f) => _filterMapA(wa, G, f)
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const filterMapA: P.FilterMapAFn<URI> = (G) => (f) => (wa) => _filterMapA(wa, G, f)
+export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
+  const _ = imapA_(A)
+  return (wa, f) => pipe(_(wa, f), A.map(separate))
+}
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const _ipartitionMapA: P._PartitionMapWithIndexAFn<URI> = (wa, A, f) => pipe(_imapA(wa, A, f), A.map(separate))
-
-/**
- * @category WitherableWithIndex
- * @since 1.0.0
- */
-export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (G) => (wa, f) => _ipartitionMapA(wa, G, f)
-
-/**
- * @category WitherableWithIndex
- * @since 1.0.0
- */
-export const ipartitionMapA: P.PartitionMapWithIndexAFn<URI> = (G) => (f) => (wa) => _ipartitionMapA(wa, G, f)
+export const ipartitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
+  const _ = ipartitionMapA_(A)
+  return (f) => (wa) => _(wa, f)
+}
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const _partitionMapA: P._FilterMapAFn<URI> = (wa, A, f) => _ipartitionMapA(wa, A, (_, a) => f(a))
+export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => {
+  const _ = ipartitionMapA_(A)
+  return (wa, f) => _(wa, (_, a) => f(a))
+}
 
 /**
  * @category Witherable
  * @since 1.0.0
  */
-export const partitionMapA_: P.PartitionMapAFn_<URI> = (G) => (wa, f) => _partitionMapA(wa, G, f)
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const partitionMapA: P.PartitionMapAFn<URI> = (G) => (f) => (wa) => _partitionMapA(wa, G, f)
+export const partitionMapA: P.PartitionMapAFn<URI> = (A) => {
+  const _ = partitionMapA_(A)
+  return (f) => (wa) => _(wa, f)
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -2443,18 +2431,8 @@ export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
  * @category utils
  * @since 1.0.0
  */
-export function _elem<A>(as: Chunk<A>, E: Eq<A>, a: A): boolean {
-  return exists_(as, (el) => E.equals_(el, a))
-}
-
-/**
- * Determines whether at least one element of the Chunk is equal to the given element
- *
- * @category utils
- * @since 1.0.0
- */
 export function elem_<A>(E: Eq<A>): (as: Chunk<A>, a: A) => boolean {
-  return (as, a) => _elem(as, E, a)
+  return (as, a) => exists_(as, (el) => E.equals_(el, a))
 }
 
 /**
@@ -2464,7 +2442,8 @@ export function elem_<A>(E: Eq<A>): (as: Chunk<A>, a: A) => boolean {
  * @since 1.0.0
  */
 export function elem<A>(E: Eq<A>): (a: A) => (as: Chunk<A>) => boolean {
-  return (a) => (as) => _elem(as, E, a)
+  const elemE = elem_(E)
+  return (a) => (as) => elemE(as, a)
 }
 
 /**

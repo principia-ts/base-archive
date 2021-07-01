@@ -319,26 +319,20 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function _ifoldMap<A, M>(fa: Iterable<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): M {
-  let res = M.nat
-  let n   = -1
-  for (const value of fa) {
-    n  += 1
-    res = M.combine_(res, f(n, value))
-  }
-  return res
-}
-
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => _ifoldMap(fa, M, f)
+  return (fa, f) => {
+    let res = M.nat
+    let n   = -1
+    for (const value of fa) {
+      n  += 1
+      res = M.combine_(res, f(n, value))
+    }
+    return res
+  }
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
-}
-
-export function _foldMap<A, M>(fa: Iterable<A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
@@ -460,18 +454,23 @@ export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _imapA: P._MapWithIndexAFn<[HKT.URI<IterableURI>]> = (ta, AG, f) =>
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) =>
   ifoldl_(ta, AG.pure(never as Iterable<any>), (b, i, a) => AG.crossWith_(b, f(i, a), append_))
 
-export const imapA_: P.MapWithIndexAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) => _imapA(ta, AG, f)
+export const imapA: P.MapWithIndexAFn<[HKT.URI<IterableURI>]> = (AG) => {
+  const _ = imapA_(AG)
+  return (f) => (ta) => _(ta, f)
+}
 
-export const imapA: P.MapWithIndexAFn<[HKT.URI<IterableURI>]> = (AG) => (f) => (ta) => _imapA(ta, AG, f)
+export const mapA_: P.MapAFn_<[HKT.URI<IterableURI>]> = (AG) => {
+  const _ = imapA_(AG)
+  return (ta, f) => _(ta, (_, a) => f(a))
+}
 
-export const _mapA: P._MapAFn<[HKT.URI<IterableURI>]> = (ta, AG, f) => _imapA(ta, AG, (_, a) => f(a))
-
-export const mapA_: P.MapAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) => _mapA(ta, AG, f)
-
-export const mapA: P.MapAFn<[HKT.URI<IterableURI>]> = (AG) => (f) => (ta) => _mapA(ta, AG, f)
+export const mapA: P.MapAFn<[HKT.URI<IterableURI>]> = (AG) => {
+  const _ = mapA_(AG)
+  return (f) => (ta) => _(ta, f)
+}
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -377,26 +377,20 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export async function _ifoldMap<A, M>(fa: AsyncIterable<A>, M: P.Monoid<M>, f: (i: number, a: A) => M): Promise<M> {
-  let res = M.nat
-  let n   = 0
-  for await (const a of fa) {
-    res = M.combine_(res, f(n, a))
-    n++
-  }
-  return res
-}
-
 export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (i: number, a: A) => M) => Promise<M> {
-  return async (fa, f) => _ifoldMap(fa, M, f)
+  return async (fa, f) => {
+    let res = M.nat
+    let n   = 0
+    for await (const a of fa) {
+      res = M.combine_(res, f(n, a))
+      n++
+    }
+    return res
+  }
 }
 
 export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: AsyncIterable<A>) => Promise<M> {
   return (f) => (fa) => ifoldMap_(M)(fa, f)
-}
-
-export function _foldMap<A, M>(fa: AsyncIterable<A>, M: P.Monoid<M>, f: (a: A) => M): Promise<M> {
-  return _ifoldMap(fa, M, (_, a) => f(a))
 }
 
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (a: A) => M) => Promise<M> {

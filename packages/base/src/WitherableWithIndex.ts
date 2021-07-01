@@ -67,40 +67,6 @@ export interface FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface _FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
-  <
-    G extends HKT.URIS,
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A,
-    B,
-    GC = HKT.Auto
-  >(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    A: Applicative<G, GC>,
-    f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
-      a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
-  ): HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
-}
-
 export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
     NF extends string,
@@ -181,57 +147,6 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
 ) => FilterMapWithIndexAFn_<F, C>
 export function implementWitherWithIndex_() {
   return (i: any) => i()
-}
-
-export interface _PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
-  <
-    G extends HKT.URIS,
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A,
-    B,
-    B2,
-    GC = HKT.Auto
-  >(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    A: Applicative<G, GC>,
-    f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
-      a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
-  ): HKT.Kind<
-    G,
-    GC,
-    NG,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    readonly [
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    ]
-  >
 }
 
 export interface PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {

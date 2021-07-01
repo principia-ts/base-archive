@@ -736,35 +736,31 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _imapA = P._implementMapWithIndexA<[HKT.URI<RecordURI>]>()((_) => (ta, G, f) => {
-  type _ = typeof _
-
-  const ks = keys(ta)
-  if (ks.length === 0) {
-    return G.pure(empty)
-  }
-  let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
-  for (let i = 0; i < ks.length; i++) {
-    const key = ks[i]
-    mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
-      mut_r[key] = b
-      return mut_r
-    })
-  }
-  return mut_gr
-})
-
 /**
  */
-export const imapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = (G) => (ta, f) => _imapA(ta, G, f)
+export const imapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = P.implementMapWithIndexA_<[HKT.URI<RecordURI>]>()(
+  (_) => (G) => (ta, f) => {
+    type _ = typeof _
+
+    const ks = keys(ta)
+    if (ks.length === 0) {
+      return G.pure(empty)
+    }
+    let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+    for (let i = 0; i < ks.length; i++) {
+      const key = ks[i]
+      mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
+        mut_r[key] = b
+        return mut_r
+      })
+    }
+    return mut_gr
+  }
+)
 
 /**
  */
 export const imapA: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => imapA_(G)(ta, f)
-
-/**
- */
-export const _mapA: P._MapAFn<[HKT.URI<RecordURI>]> = (ta, G, f) => _imapA(ta, G, (_, a) => f(a))
 
 /**
  */
@@ -784,30 +780,20 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => imapA
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _ifilterMapA: P._FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
-  pipe(_imapA(wa, A, f), A.map(compact))
+export const ifilterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
+  pipe(imapA_(A)(wa, f), A.map(compact))
 
-export const ifilterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => _ifilterMapA(wa, G, f)
-
-export const ifilterMapA: P.FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => _ifilterMapA(wa, G, f)
-
-export const _filterMapA: P._FilterMapAFn<[HKT.URI<RecordURI>]> = (wa, G, f) => _ifilterMapA(wa, G, (_, a) => f(a))
+export const ifilterMapA: P.FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (A) => (f) => (wa) => ifilterMapA_(A)(wa, f)
 
 export const filterMapA_: P.FilterMapAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) => ifilterMapA_(G)(wa, (_, a) => f(a))
 
 export const filterMapA: P.FilterMapAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => filterMapA_(G)(wa, f)
 
-export const _ipartitionMapA: P._PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
-  pipe(_imapA(wa, A, f), A.map(separate))
-
 export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
-  _ipartitionMapA(wa, A, f)
+  pipe(imapA_(A)(wa, f), A.map(separate))
 
 export const ipartitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) =>
-  _ipartitionMapA(wa, G, f)
-
-export const _partitionMapA: P._PartitionMapAFn<[HKT.URI<RecordURI>]> = (wa, A, f) =>
-  _ipartitionMapA(wa, A, (_, a) => f(a))
+  ipartitionMapA_(G)(wa, f)
 
 export const partitionMapA_: P.PartitionMapAFn_<[HKT.URI<RecordURI>]> = (G) => (wa, f) =>
   ipartitionMapA_(G)(wa, (_, a) => f(a))

@@ -739,12 +739,8 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) =
   return (fa) => foldl_(fa, b, f)
 }
 
-export function _foldMap<E, A, M>(fa: Either<E, A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return match_(fa, () => M.nat, f)
-}
-
 export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) => M) => M {
-  return (fa, f) => _foldMap(fa, M, f)
+  return (fa, f) => match_(fa, () => M.nat, f)
 }
 
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
@@ -919,15 +915,13 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _mapA: P._MapAFn<URI, V> = (ta, AG, f) => match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
-
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
  *
  * @category Traversable
  * @since 1.0.0
  */
-export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => _mapA(ta, AG, f)
+export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results

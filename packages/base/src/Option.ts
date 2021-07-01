@@ -562,14 +562,10 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Option<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-export function _foldMap<A, M>(fa: Option<A>, M: P.Monoid<M>, f: (a: A) => M): M {
-  return match_(fa, () => M.nat, f)
-}
-
 /**
  */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Option<A>, f: (a: A) => M) => M {
-  return (fa, f) => _foldMap(fa, M, f)
+  return (fa, f) => match_(fa, () => M.nat, f)
 }
 
 /**
@@ -762,14 +758,6 @@ export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
  * @category Traversable
  * @since 1.0.0
  */
-export const _mapA: P._MapAFn<URI> = (ta, A, f) => match_(ta, flow(none, A.pure), flow(f, A.map(some)))
-
-/**
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
 export const mapA_: P.MapAFn_<URI> = (G) => (ta, f) => match_(ta, flow(none, G.pure), flow(f, G.map(some)))
 
 /**
@@ -804,13 +792,11 @@ export function unit(): Option<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const _filterMapA: P._FilterMapAFn<URI> = (wa, A, f) => match_(wa, flow(none, A.pure), f)
-
-export const filterMapA_: P.FilterMapAFn_<URI> = (A) => (wa, f) => _filterMapA(wa, A, f)
+export const filterMapA_: P.FilterMapAFn_<URI> = (A) => (wa, f) => match_(wa, flow(none, A.pure), f)
 
 export const filterMapA: P.FilterMapAFn<URI> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
 
-export const _partitionMapA: P._PartitionMapAFn<URI> = (wa, A, f) =>
+export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
   pipe(
     wa,
     map(
@@ -821,8 +807,6 @@ export const _partitionMapA: P._PartitionMapAFn<URI> = (wa, A, f) =>
     ),
     getOrElse(() => A.pure(P.tuple(none(), none())))
   )
-
-export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) => _partitionMapA(wa, A, f)
 
 export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => partitionMapA_(A)(wa, f)
 

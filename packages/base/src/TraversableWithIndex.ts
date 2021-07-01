@@ -58,64 +58,6 @@ export interface MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface _MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <
-    G extends HKT.URIS,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    A,
-    B,
-    CG = HKT.Auto
-  >(
-    ta: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    A: Applicative<G, CG>,
-    f: (
-      i: HKT.IndexFor<F, HKT.OrFix<'N', CF, NF>, HKT.OrFix<'K', CF, KF>>,
-      a: A
-    ) => HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>
-  ): HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
-}
-
-export function _implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <N extends string, K, Q, W, X, I, S, R, E, A, B, G>(_: {
-    A: A
-    B: B
-    G: G
-    N: N
-    K: HKT.OrFix<'K', C, K>
-    Q: Q
-    W: W
-    X: X
-    I: I
-    S: S
-    R: R
-    E: HKT.OrFix<'E', C, E>
-  }) => (
-    ta: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    G: Applicative<HKT.UHKT<G>>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, N>, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
-  ) => HKT.HKT<G, HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>>
-) => _MapWithIndexAFn<F, C>
-export function _implementMapWithIndexA() {
-  return (i: any) => i()
-}
-
 export interface MapWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
     NG extends string,
