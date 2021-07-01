@@ -22,6 +22,7 @@ import type { Sync } from '../Sync'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
+import { RSA_X931_PADDING } from 'constants'
 
 import * as A from '../Array/core'
 import { runAsyncEnv } from '../Async'
@@ -4149,137 +4150,115 @@ export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
   return asksServiceIO(s)(succeed)
 }
 
+export function giveServicesS_<SS extends Record<string, Tag<any>>>(tags: SS) {
+  return <R, E, A>(io: IO<R & HasStruct<SS>, E, A>, services: ServicesStruct<SS>): IO<R, E, A> =>
+    asksIO((r: R) =>
+      giveAll_(
+        io,
+        Object.assign(
+          {},
+          r,
+          R.ifoldl_(tags, {} as any, (b, k, tag) => mergeEnvironments(tag, b, services[k]))
+        )
+      )
+    )
+}
+
 /**
  * Provides the IO with the required services
  */
 export function giveServicesS<SS extends Record<string, Tag<any>>>(s: SS) {
   return (services: ServicesStruct<SS>) =>
     <R, E, A>(io: IO<R & HasStruct<SS>, E, A>): IO<R, E, A> =>
-      asksIO((r: R) =>
-        giveAll_(
-          io,
-          Object.assign(
-            {},
-            r,
-            R.ifoldl_(s, {} as any, (b, k, tag) => mergeEnvironments(tag, b, services[k]))
-          )
-        )
-      )
+      giveServicesS_(s)(io, services)
 }
 
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesSIO<SS extends Record<string, Tag<any>>>(s: SS) {
+export function giveServicesSIO_<SS extends Record<string, Tag<any>>>(tags: SS) {
+  return <R, E, A, R1, E1>(
+    io: IO<R & HasStruct<SS>, E, A>,
+    services: IO<R1, E1, ServicesStruct<SS>>
+  ): IO<R & R1, E | E1, A> =>
+    asksIO((r: R & R1) =>
+      chain_(services, (svcs) =>
+        giveAll_(
+          io,
+          Object.assign(
+            {},
+            r,
+            R.ifoldl_(tags, {} as any, (b, k, tag) => mergeEnvironments(tag, b, svcs[k]))
+          )
+        )
+      )
+    )
+}
+
+/**
+ * Effectfully provides the IO with the required services
+ */
+export function giveServicesSIO<SS extends Record<string, Tag<any>>>(tags: SS) {
   return <R, E>(services: IO<R, E, ServicesStruct<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasStruct<SS>, E1, A>): IO<R & R1, E | E1, A> =>
-      asksIO((r: R & R1) =>
-        chain_(services, (svcs) =>
-          giveAll_(
-            io,
-            Object.assign(
-              {},
-              r,
-              R.ifoldl_(s, {} as any, (b, k, tag) => mergeEnvironments(tag, b, svcs[k]))
-            )
-          )
+      giveServicesSIO_(tags)(io, services)
+}
+
+/**
+ * Provides the IO with the required services
+ */
+export function giveServicesT_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) {
+  return <R, E, A>(io: IO<R & HasTuple<SS>, E, A>, ...services: ServicesTuple<SS>): IO<R, E, A> =>
+    asksIO((r: R) =>
+      giveAll_(
+        io,
+        Object.assign(
+          {},
+          r,
+          A.ifoldl_(tags, {} as any, (b, i, tag) => mergeEnvironments(tag, b, services[i]))
         )
       )
-}
-
-/**
- * Provides the IO with the required services
- */
-export function _giveServicesT<R, E, A, SS extends ReadonlyArray<readonly [Tag<any>, any]>>(
-  io: IO<
-    R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<infer T>, any] ? Has<T> : never }[number]>,
-    E,
-    A
-  >,
-  ...s: { [K in keyof SS]: SS[K] extends [Tag<infer T>, infer T1] ? (T1 extends T ? SS[K] : never) : never }
-): IO<R, E, A> {
-  return asksIO((r: any) =>
-    giveAll_(
-      io,
-      Object.assign(
-        {},
-        r,
-        A.foldl_(s as ReadonlyArray<readonly [Tag<any>, any]>, {}, (services, [tag, service]) => ({
-          ...services,
-          [tag.key]: service
-        }))
-      )
     )
-  )
 }
 
 /**
  * Provides the IO with the required services
  */
-export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
+export function giveServicesT<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) {
   return (...services: ServicesTuple<SS>) =>
     <R, E, A>(io: IO<R & HasTuple<SS>, E, A>): IO<R, E, A> =>
-      asksIO((r: R) =>
+      giveServicesT_<SS>(...tags)<R, E, A>(io, ...services)
+}
+
+/**
+ * Effectfully provides the IO with the required services
+ */
+export function giveServicesTIO_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) {
+  return <R, E, A, R1, E1>(
+    io: IO<R & HasTuple<SS>, E, A>,
+    services: IO<R1, E1, ServicesTuple<SS>>
+  ): IO<R & R1, E | E1, A> =>
+    asksIO((r: R & R1) =>
+      chain_(services, (svcs) =>
         giveAll_(
           io,
           Object.assign(
             {},
             r,
-            A.ifoldl_(s, {} as any, (b, i, tag) => mergeEnvironments(tag, b, services[i]))
+            A.ifoldl_(tags, {} as any, (b, i, tag) => mergeEnvironments(tag, b, svcs[i]))
           )
         )
       )
-}
-
-/**
- * Effectfully provides the IO with the required services
- */
-export function _giveServicesTIO<R, E, A, SS extends ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>>(
-  io: IO<
-    R &
-      P.UnionToIntersection<
-        { [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, any>] ? Has<T> : never }[number]
-      >,
-    E,
-    A
-  >,
-  ...s: {
-    [K in keyof SS]: SS[K] extends [Tag<infer T>, IO<any, any, infer T1>] ? (T1 extends T ? SS[K] : never) : never
-  }
-): IO<
-  R & P.UnionToIntersection<{ [K in keyof SS]: SS[K] extends [Tag<any>, IO<infer R, any, any>] ? R : never }[number]>,
-  E | { [K in keyof SS]: SS[K] extends [Tag<any>, IO<any, infer E, any>] ? E : never }[number],
-  A
-> {
-  return asksIO((env: any) =>
-    pipe(
-      s as ReadonlyArray<readonly [Tag<any>, IO<any, any, any>]>,
-      A.foldl(succeed({}) as IO<any, any, any>, (all, [tag, svc]) =>
-        crossWith_(all, svc, (services, service) => ({ ...services, [tag.key]: service }))
-      ),
-      chain((all) => giveAll_(io, Object.assign({}, env, all)))
     )
-  )
 }
 
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...s: SS) {
-  return <R, E>(services: IO<R, E, ServicesTuple<SS>>) =>
-    <R1, E1, A>(io: IO<R1 & HasTuple<SS>, E1, A>): IO<R & R1, E | E1, A> =>
-      asksIO((r: R & R1) =>
-        chain_(services, (svcs) =>
-          giveAll_(
-            io,
-            Object.assign(
-              {},
-              r,
-              A.ifoldl_(s, {} as any, (b, i, tag) => mergeEnvironments(tag, b, svcs[i]))
-            )
-          )
-        )
-      )
+export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) {
+  return <R1, E1>(services: IO<R1, E1, ServicesTuple<SS>>) =>
+    <R, E, A>(io: IO<R & HasTuple<SS>, E, A>): IO<R1 & R, E1 | E, A> =>
+      giveServicesTIO_<SS>(...tags)(io, services)
 }
 
 export function giveService_<T, R, E, A>(ma: IO<R & Has<T>, E, A>, tag: Tag<T>, service: T): IO<R, E, A> {
