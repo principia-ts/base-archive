@@ -1452,13 +1452,7 @@ export function mergeAllWith_<
                     pipe(
                       getChildren,
                       I.chain(F.interruptAll),
-                      I.apr(
-                        pipe(
-                          queue,
-                          Q.offer(I.halt(Ca.map_(cause, E.left))),
-                          I.as(() => false)
-                        )
-                      )
+                      I.apr(pipe(queue, Q.offer(I.halt(Ca.map_(cause, E.left))), I.as(false)))
                     ),
                   (outDone) =>
                     I.raceWith_(
@@ -1468,12 +1462,7 @@ export function mergeAllWith_<
                         pipe(
                           getChildren,
                           I.chain(F.interruptAll),
-                          I.apr(
-                            pipe(
-                              F.interrupt(permitAcquisition),
-                              I.as(() => false)
-                            )
-                          )
+                          I.apr(pipe(F.interrupt(permitAcquisition), I.as(false)))
                         ),
                       (_, failureAwait) =>
                         pipe(
@@ -1487,7 +1476,7 @@ export function mergeAllWith_<
                                   (lastDone) => Q.offer_(queue, I.fail(E.right(f(lastDone, outDone))))
                                 )
                               ),
-                              I.as(() => false)
+                              I.as(false)
                             )
                           )
                         )

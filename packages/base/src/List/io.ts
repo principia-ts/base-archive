@@ -39,7 +39,7 @@ export function dropWhileM_<A, R, E>(l: List<A>, p: (a: A) => I.IO<R, E, boolean
         })
       )
     })
-    return I.as_(dropping, () => newList)
+    return I.asLazy_(dropping, () => newList)
   })
 }
 

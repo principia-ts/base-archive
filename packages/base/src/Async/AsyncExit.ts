@@ -172,11 +172,11 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: AsyncExit<E, A>) => AsyncExit
   return (fa) => map_(fa, f)
 }
 
-export function as_<E, A, B>(fa: AsyncExit<E, A>, b: () => B): AsyncExit<E, B> {
-  return map_(fa, b)
+export function as_<E, A, B>(fa: AsyncExit<E, A>, b: B): AsyncExit<E, B> {
+  return map_(fa, () => b)
 }
 
-export function as<B>(b: () => B): <E, A>(fa: AsyncExit<E, A>) => AsyncExit<E, B> {
+export function as<B>(b: B): <E, A>(fa: AsyncExit<E, A>) => AsyncExit<E, B> {
   return (fa) => as_(fa, b)
 }
 
@@ -205,12 +205,7 @@ export function flatten<E, E1, A>(mma: AsyncExit<E, AsyncExit<E1, A>>): AsyncExi
 }
 
 export function tap_<E, A, E1, B>(ma: AsyncExit<E, A>, f: (a: A) => AsyncExit<E1, B>): AsyncExit<E | E1, A> {
-  return chain_(ma, (a) =>
-    pipe(
-      f(a),
-      as(() => a)
-    )
-  )
+  return chain_(ma, (a) => pipe(f(a), as(a)))
 }
 
 export function tap<A, E1, B>(f: (a: A) => AsyncExit<E1, B>): <E>(ma: AsyncExit<E, A>) => AsyncExit<E | E1, A> {

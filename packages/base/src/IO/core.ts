@@ -1435,9 +1435,38 @@ export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => 
  * @category Combinators
  * @since 1.0.0
  *
+ * @trace call
+ */
+export function as_<R, E, A, B>(ma: IO<R, E, A>, b: B): IO<R, E, B> {
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, () => b)
+  )
+}
+
+/**
+ * Maps the success value of this IO to the specified constant value.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ *
+ * @trace call
+ */
+export function as<B>(b: B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(as_, trace)(ma, b)
+}
+
+/**
+ * Maps the success value of this IO to the specified constant value.
+ *
+ * @category Combinators
+ * @since 1.0.0
+ *
  * @trace 1
  */
-export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
+export function asLazy_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
   return map_(
     ma,
     traceAs(b, () => b())
@@ -1453,8 +1482,8 @@ export function as_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
  * @dataFirst as_
  * @trace 0
  */
-export function as<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
-  return (ma) => as_(ma, b)
+export function asLazy<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
+  return (ma) => asLazy_(ma, b)
 }
 
 /**

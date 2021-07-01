@@ -590,7 +590,7 @@ export function paginateChunkIO<S, R, E, A>(
               I.matchIO(Pull.fail, ([as, s]) =>
                 pipe(
                   ref.set(s),
-                  I.as(() => as)
+                  I.asLazy(() => as)
                 )
               )
             )
@@ -1349,15 +1349,29 @@ export function mapIO<A, R1, E1, A1>(
 /**
  * Maps the success values of this stream to the specified constant value.
  */
-export function as_<R, E, A, B>(ma: Stream<R, E, A>, b: () => B): Stream<R, E, B> {
+export function as_<R, E, A, B>(ma: Stream<R, E, A>, b: B): Stream<R, E, B> {
+  return map_(ma, () => b)
+}
+
+/**
+ * Maps the success values of this stream to the specified constant value.
+ */
+export function as<B>(b: B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, B> {
+  return (ma) => as_(ma, b)
+}
+
+/**
+ * Maps the success values of this stream to the specified constant value.
+ */
+export function asLazy_<R, E, A, B>(ma: Stream<R, E, A>, b: () => B): Stream<R, E, B> {
   return map_(ma, () => b())
 }
 
 /**
  * Maps the success values of this stream to the specified constant value.
  */
-export function as<B>(b: () => B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => as_(ma, b)
+export function asLazy<B>(b: () => B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, B> {
+  return (ma) => asLazy_(ma, b)
 }
 
 /*
@@ -1410,7 +1424,7 @@ export function tap_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, A1>
 ): Stream<R & R1, E | E1, A> {
-  return mapIO_(ma, (a) => I.as_(f(a), () => a))
+  return mapIO_(ma, (a) => I.as_(f(a), a))
 }
 
 export function tap<A, R1, E1, A1>(
@@ -1578,12 +1592,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
         const producer = pipe(
           pull,
           Take.fromPull,
-          I.repeatWhileIO((take) =>
-            pipe(
-              Ha.offer(take)(handoff),
-              I.as(() => Ex.isSuccess(take))
-            )
-          )
+          I.repeatWhileIO((take) => pipe(Ha.offer(take)(handoff), I.as(Ex.isSuccess(take))))
         )
 
         const updateSchedule: I.URIO<R1 & Has<Clock>, O.Option<Q>> = pipe(
@@ -1617,7 +1626,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
               I.halt,
               (os) =>
                 I.chain_(Take.fromPull(I.asSomeError(push(O.some(os)))), (take) =>
-                  I.as_(updateLastChunk(take), () => C.make(Take.map_(take, E.right)))
+                  I.as_(updateLastChunk(take), C.make(Take.map_(take, E.right)))
                 )
             ),
             I.mapError(O.some)
@@ -1975,7 +1984,7 @@ export function distributedWith_<R, E, A>(
               )
               return pipe(
                 P.succeed_(prom, (o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key)!))),
-                I.as(() => queues)
+                I.as(queues)
               )
             }),
             M.fromIO
@@ -3232,12 +3241,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
         } else if (chunk.length <= n - count) {
           return yield* _(pipe(counterRef.set(count + chunk.length), I.apr(pull)))
         } else {
-          return yield* _(
-            pipe(
-              counterRef.set(count + (n - count)),
-              I.as(() => C.drop_(chunk, n - count))
-            )
-          )
+          return yield* _(pipe(counterRef.set(count + (n - count)), I.as(C.drop_(chunk, n - count))))
         }
       })
       return pull
@@ -3292,7 +3296,7 @@ export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): St
             return yield* _(
               pipe(
                 keepDroppingRef.set(false),
-                I.as(() => remaining)
+                I.asLazy(() => remaining)
               )
             )
           }
@@ -3443,7 +3447,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                               )
                             ] as const)
                           ),
-                          I.as(() => (_) => _ === idx)
+                          I.as((_) => _ === idx)
                         )
                       )
                     )
@@ -4200,24 +4204,20 @@ export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
                         return pipe(
                           handoff,
                           Ha.offer(<Take.Take<E | E1, C | C1>>Take.chunk(causeOrChunk.right)),
-                          I.as(() => [true, o])
+                          I.as([true, o])
                         )
                       } else if (causeOrChunk._tag === 'Left' && causeOrChunk.left._tag === 'Some') {
                         return pipe(
                           handoff,
                           Ha.offer(<Take.Take<E | E1, C | C1>>Take.halt(causeOrChunk.left.value)),
-                          I.as(() => [false, O.some(true)])
+                          I.as([false, O.some(true)])
                         )
                       } else if (
                         causeOrChunk._tag === 'Left' &&
                         causeOrChunk.left._tag === 'None' &&
                         (terminate || o._tag === 'Some')
                       ) {
-                        return pipe(
-                          handoff,
-                          Ha.offer(<Take.Take<E | E1, C | C1>>Take.end),
-                          I.as(() => [false, O.some(true)])
-                        )
+                        return pipe(handoff, Ha.offer(<Take.Take<E | E1, C | C1>>Take.end), I.as([false, O.some(true)]))
                       } else {
                         return I.succeed([false, O.some(false)])
                       }
@@ -4643,7 +4643,7 @@ export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
             I.chain((o) =>
               pipe(
                 driver.next(o),
-                I.as(() => C.single(f(o))),
+                I.asLazy(() => C.single(f(o))),
                 I.orElse(() =>
                   pipe(
                     driver.last,
@@ -5039,13 +5039,13 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
           O.map((last) =>
             pipe(
               I.sleep(d),
-              I.as(() => last),
+              I.asLazy(() => last),
               I.forkDaemon,
               I.chain((f) => ref.set({ _tag: 'Previous', fiber: f }))
             )
           ),
           O.getOrElse(() => ref.set({ _tag: 'NotStarted' })),
-          I.as(() => C.empty<A>())
+          I.asLazy(() => C.empty<A>())
         )
 
       const pull = pipe(
@@ -5063,7 +5063,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                       ex,
                       (cause): I.IO<R & Has<Clock>, Option<E>, Chunk<A>> =>
                         I.apr_(Fi.interrupt(current), Pull.halt(cause)),
-                      (value) => I.as_(ref.set({ _tag: 'Current', fiber: current }), () => C.single(value))
+                      (value) => I.asLazy_(ref.set({ _tag: 'Current', fiber: current }), () => C.single(value))
                     ),
                   (ex, previous) =>
                     Ex.match_(
@@ -5264,7 +5264,7 @@ export function unfoldChunkIO<S, R, E, A>(
                   ([as, z]) =>
                     pipe(
                       ref.set(z),
-                      I.as(() => as)
+                      I.asLazy(() => as)
                     )
                 )
               )
@@ -5962,12 +5962,12 @@ export class GroupBy<R, E, K, V> {
         if (i < n) {
           return pipe(
             I.succeed(elem),
-            I.as(() => true)
+            I.asLazy(() => true)
           )
         } else {
           return pipe(
             Q.shutdown(q),
-            I.as(() => false)
+            I.asLazy(() => false)
           )
         }
       }),
@@ -5984,12 +5984,12 @@ export class GroupBy<R, E, K, V> {
         if (f(k)) {
           return pipe(
             I.succeed(elem),
-            I.as(() => true)
+            I.asLazy(() => true)
           )
         } else {
           return pipe(
             Q.shutdown(q),
-            I.as(() => false)
+            I.asLazy(() => false)
           )
         }
       })

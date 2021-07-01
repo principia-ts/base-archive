@@ -30,7 +30,7 @@ export function retry_<R, E, A, R1>(
             I.chain(
               matchTag({
                 Done: (_) => I.fail(e),
-                Continue: (c) => I.as_(Clock.sleep(Math.abs(now - c.interval)), () => tuple(r, c.next))
+                Continue: (c) => I.as_(Clock.sleep(Math.abs(now - c.interval)), tuple(r, c.next))
               })
             )
           )

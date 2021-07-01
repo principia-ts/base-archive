@@ -629,12 +629,7 @@ export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
 ): RefM<RA & RC, RB, EA | EC, EB, A1, B> {
   return P.pipe(
     ref,
-    contramapIO((c: A1) =>
-      P.pipe(
-        f(c),
-        I.as(() => c)
-      )
-    )
+    contramapIO((c: A1) => P.pipe(f(c), I.as(c)))
   )
 }
 
@@ -658,12 +653,7 @@ export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
 ): RefM<RA, RB & RC, EA, EB | EC, A, B> {
   return P.pipe(
     ref,
-    mapIO((b) =>
-      P.pipe(
-        f(b),
-        I.as(() => b)
-      )
-    )
+    mapIO((b) => P.pipe(f(b), I.as(b)))
   )
 }
 
@@ -759,12 +749,7 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
         P.pipe(
           atomic.ref.get,
           I.chain(f),
-          I.chain(([b, a]) =>
-            P.pipe(
-              atomic.ref.set(a),
-              I.as(() => b)
-            )
-          ),
+          I.chain(([b, a]) => P.pipe(atomic.ref.set(a), I.as(b))),
           S.withPermit(atomic.semaphore)
         ),
       Derived: (derived) =>
@@ -779,7 +764,7 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
                   P.pipe(
                     setEither(a),
                     I.chain((a) => value.ref.set(a)),
-                    I.as(() => b)
+                    I.as(b)
                   )
                 )
               )
@@ -799,7 +784,7 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
                   P.pipe(
                     setEither(a)(s),
                     I.chain((a) => value.ref.set(a)),
-                    I.as(() => b)
+                    I.as(b)
                   )
                 )
               )

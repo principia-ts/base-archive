@@ -364,11 +364,7 @@ export function whenM_<R, E, R1, E1>(
     Test: (t) =>
       test(
         t.label,
-        I.ifIO_(
-          b,
-          t.test,
-          I.as_(Annotations.annotate(Annotation.ignored, 1), () => new Ignored())
-        ),
+        I.ifIO_(b, t.test, I.as_(Annotations.annotate(Annotation.ignored, 1), new Ignored())),
         t.annotations
       )
   })

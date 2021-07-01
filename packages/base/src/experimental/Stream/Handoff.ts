@@ -63,10 +63,7 @@ export function take<A>(handoff: Handoff<A>): I.UIO<A> {
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(
-            I.as_(P.succeed_(s.notifyConsumer, undefined), () => s.a),
-            new Empty(p)
-          )
+          return tuple(I.as_(P.succeed_(s.notifyConsumer, undefined), s.a), new Empty(p))
         } else {
           return tuple(I.apr_(P.await(s.notifyConsumer), take(handoff)), s)
         }
@@ -82,10 +79,7 @@ export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(
-            I.as_(P.succeed_(s.notifyConsumer, undefined), () => O.some(s.a)),
-            new Empty(p)
-          )
+          return tuple(I.as_(P.succeed_(s.notifyConsumer, undefined), O.some(s.a)), new Empty(p))
         } else {
           return tuple(I.succeed(O.none()), s)
         }

@@ -274,7 +274,7 @@ export function dropWhileIO<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduc
                     return I.succeed(tuple(is, false))
                   }
                 }),
-                I.chain(([is, pt]) => I.as_(droppingRef.set(pt), () => is))
+                I.chain(([is, pt]) => I.as_(droppingRef.set(pt), is))
               )
           )
       )

@@ -30,20 +30,7 @@ export function timeoutTo_<R, E, A, B, B1>(
   f: (a: A) => B1
 ): IO<R & Has<Clock>, E, B | B1> {
   const trace = accessCallTrace()
-  return pipe(
-    ma,
-    map(f),
-    traceCall(
-      raceFirst,
-      trace
-    )(
-      pipe(
-        Clock.sleep(d),
-        interruptible,
-        as(() => b)
-      )
-    )
-  )
+  return pipe(ma, map(f), traceCall(raceFirst, trace)(pipe(Clock.sleep(d), interruptible, as(b))))
 }
 
 /**

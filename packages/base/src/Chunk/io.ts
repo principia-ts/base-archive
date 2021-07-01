@@ -22,7 +22,7 @@ export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.
           out.append(b)
         })
       ),
-      I.as(() => out.result())
+      I.asLazy(() => out.result())
     )
   })
 }
@@ -123,7 +123,7 @@ export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
         })
       }
     }
-    return I.as_(taking, () => out.result())
+    return I.asLazy_(taking, () => out.result())
   })
 }
 
@@ -155,7 +155,7 @@ export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
         })
       }
     }
-    return I.as_(dropping, () => out.result())
+    return I.asLazy_(dropping, () => out.result())
   })
 }
 

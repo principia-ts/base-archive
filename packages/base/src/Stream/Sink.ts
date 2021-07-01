@@ -714,7 +714,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                         (z1) => Push.emit(f(z, z1), leftover)
                       )
                   ),
-                  I.as(() => state)
+                  I.as(state)
                 ),
               RightDone: ({ value: z1 }) =>
                 pipe(
@@ -727,7 +727,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                         (z) => Push.emit(f(z, z1), leftover)
                       )
                   ),
-                  I.as(() => state)
+                  I.as(state)
                 )
             })
           )
@@ -1231,7 +1231,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
             const go = (s: S, in_: O.Option<Chunk<I>>, end: boolean): I.IO<R, [E.Either<E, S>, Chunk<L>], S> =>
               pipe(
                 push(in_),
-                I.as(() => s),
+                I.as(s),
                 I.catchAll(([e, leftover]) =>
                   E.match_(
                     e,
@@ -1244,7 +1244,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                           if (end) {
                             return Push.emit(s1, C.empty())
                           } else {
-                            return I.as_(restart, () => s1)
+                            return I.as_(restart, s1)
                           }
                         } else {
                           return I.apr_(restart, go(s1, O.some(leftover as unknown as Chunk<I>), end))

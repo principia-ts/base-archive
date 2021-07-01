@@ -71,11 +71,7 @@ export function raceAll<R, E, A>(
                 I.chain_(io, () => pipe(f.await, I.chain(arbiter(fs, f, done, fails)), I.fork, I.asUnit))
               )
             )
-            const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) =>
-              pipe(
-                res[1].inheritRefs,
-                I.as(() => res[0])
-              )
+            const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) => pipe(res[1].inheritRefs, I.as(res[0]))
             const c           = yield* _(
               pipe(
                 P.await(done),

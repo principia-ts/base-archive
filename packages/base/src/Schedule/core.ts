@@ -108,9 +108,9 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
               return yield* _(
                 pipe(
                   ref.set(tuple(O.some(dec.out), dec.next)),
-                  I.as(() => dec.interval - now),
+                  I.asLazy(() => dec.interval - now),
                   I.chain((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
-                  I.as(() => dec.out)
+                  I.asLazy(() => dec.out)
                 )
               )
             }
@@ -745,7 +745,7 @@ const ensuringLoop =
     I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
-          return I.as_(finalizer, () => makeDone(d.out))
+          return I.asLazy_(finalizer, () => makeDone(d.out))
         }
         case 'Continue': {
           return I.pure(makeContinue(d.out, d.interval, ensuringLoop(d.next, finalizer)))
@@ -1030,10 +1030,10 @@ const onDecisionLoop =
     I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
-          return I.as_(f(d), () => makeDone(d.out))
+          return I.asLazy_(f(d), () => makeDone(d.out))
         }
         case 'Continue': {
-          return I.as_(f(d), () => makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)))
+          return I.asLazy_(f(d), () => makeContinue(d.out, d.interval, onDecisionLoop(d.next, f)))
         }
       }
     })
@@ -1303,10 +1303,10 @@ const tapOutputLoop =
     I.chain_(self(now, i), (d) => {
       switch (d._tag) {
         case 'Done': {
-          return I.as_(f(d.out), () => makeDone(d.out))
+          return I.asLazy_(f(d.out), () => makeDone(d.out))
         }
         case 'Continue': {
-          return I.as_(f(d.out), () => makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)))
+          return I.asLazy_(f(d.out), () => makeContinue(d.out, d.interval, tapOutputLoop(d.next, f)))
         }
       }
     })

@@ -853,24 +853,14 @@ export function foldWeightedDecomposeIO<Env, Err, In, S, Env1, Err1, Env2, Err2,
  * A sink that executes the provided effectful function for every element fed to it.
  */
 export function foreach<R, Err, In>(f: (inp: In) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
-  return foreachWhile(
-    flow(
-      f,
-      I.as(() => true)
-    )
-  )
+  return foreachWhile(flow(f, I.as(true)))
 }
 
 /**
  * A sink that executes the provided effectful function for every chunk fed to it.
  */
 export function foreachChunk<R, Err, In>(f: (inp: C.Chunk<In>) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
-  return foreachChunkWhile(
-    flow(
-      f,
-      I.as(() => true)
-    )
-  )
+  return foreachChunkWhile(flow(f, I.as(true)))
 }
 
 function foreachWhileLoop<R, Err, In>(

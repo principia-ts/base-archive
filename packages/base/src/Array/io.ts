@@ -122,7 +122,7 @@ export function dropWhileIO_<A, R, E>(
         })
       )
     }
-    return I.as_(dropping, () => ret)
+    return I.asLazy_(dropping, () => ret)
   })
 }
 
@@ -155,7 +155,7 @@ export function takeWhileIO_<R, E, A>(
         })
       )
     }
-    return I.as_(taking, () => ret)
+    return I.asLazy_(taking, () => ret)
   })
 }
 

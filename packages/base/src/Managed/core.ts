@@ -57,7 +57,7 @@ export class Managed<R, E, A> {
     return map_(this, f)
   }
   ['$>']<B>(b: () => B): Managed<R, E, B> {
-    return as_(this, b)
+    return asLazy_(this, b)
   }
   ['>>>']<E1, B>(fb: Managed<A, E1, B>): Managed<R, E | E1, B> {
     return pipeTo_(this, fb)
@@ -1105,7 +1105,7 @@ export function tapIO_<R, E, A, R1, E1>(
   ma: Managed<R, E, A>,
   f: (a: A) => I.IO<R1, E1, any>
 ): Managed<R & R1, E | E1, A> {
-  return mapIO_(ma, (a) => I.as_(f(a), () => a))
+  return mapIO_(ma, (a) => I.asLazy_(f(a), () => a))
 }
 
 /**
@@ -1251,9 +1251,34 @@ export function unit(): Managed<unknown, never, void> {
  * Maps this effect to the specified constant while preserving the
  * effects of this effect.
  *
+ * @trace call
+ */
+export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: B): Managed<R, E, B> {
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, () => b)
+  )
+}
+
+/**
+ * Maps this effect to the specified constant while preserving the
+ * effects of this effect.
+ *
+ * @trace call
+ */
+export function as<B>(b: B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(as_, trace)(ma, b)
+}
+
+/**
+ * Maps this effect to the specified constant while preserving the
+ * effects of this effect.
+ *
  * @trace 1
  */
-export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: () => B): Managed<R, E, B> {
+export function asLazy_<R, E, A, B>(ma: Managed<R, E, A>, b: () => B): Managed<R, E, B> {
   return map_(ma, b)
 }
 
@@ -1264,8 +1289,8 @@ export function as_<R, E, A, B>(ma: Managed<R, E, A>, b: () => B): Managed<R, E,
  * @dataFirst as_
  * @trace 0
  */
-export function as<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
-  return (ma) => as_(ma, b)
+export function asLazy<B>(b: () => B): <R, E, A>(ma: Managed<R, E, A>) => Managed<R, E, B> {
+  return (ma) => asLazy_(ma, b)
 }
 
 /**

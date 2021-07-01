@@ -409,7 +409,7 @@ export function asyncInterrupt<R, E, A>(
         (stream) =>
           pipe(
             Q.shutdown(output),
-            I.as(() => stream),
+            I.asLazy(() => stream),
             unwrap
           )
       )
@@ -480,7 +480,7 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
             (maybeError) =>
               pipe(
                 Q.shutdown(output),
-                I.as(() =>
+                I.asLazy(() =>
                   pipe(
                     Ca.failureOrCause(maybeError),
                     E.match(
@@ -1183,7 +1183,7 @@ export function loopOnPartialChunksElements_<R, E, A, R1, E1, A1>(
   f: (a: A, emit: (a: A1) => I.UIO<void>) => I.IO<R1, E1, void>
 ): Stream<R & R1, E | E1, A1> {
   return loopOnPartialChunks_(stream, (a, emit) =>
-    I.as_(
+    I.asLazy_(
       C.mapIO_(a, (a) => f(a, emit)),
       () => true
     )
@@ -2239,7 +2239,7 @@ export function collectWhileIO_<R, R1, E, E1, A, A1>(
       O.match_(
         pf(a),
         () => I.succeed(false),
-        (_) => I.as_(I.chain_(_, emit), () => true)
+        (_) => I.as_(I.chain_(_, emit), true)
       )
 
     const loop = (chunk: C.Chunk<A>): I.IO<R1, E1, boolean> => {
@@ -2394,7 +2394,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
       function enqueue(last: C.Chunk<A>) {
         return pipe(
           Clock.sleep(duration),
-          I.as(() => last),
+          I.as(last),
           I.forkIn(scope),
           I.map((f) => consumer(new DS.Previous(f)))
         )
@@ -2631,7 +2631,7 @@ export function distributedWith_<R, E, A>(
                 Pr.succeed_(p, (o: A) =>
                   I.map_(decide(o), (f) => (key: symbol) => f(O.toUndefined(HM.get_(mappings, key))!))
                 ),
-                I.as(() => queues)
+                I.as(queues)
               )
             }),
             M.fromIO
@@ -2831,7 +2831,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                             ] as const)
                           )
                         ),
-                        I.as(() => (_) => _ === idx)
+                        I.as((_) => _ === idx)
                       )
                     )
                   ),
@@ -4545,7 +4545,7 @@ export class GroupBy<R, E, K, V> {
       zipWithIndex,
       filterIO((elem) => {
         const i = elem[1]
-        return i < n ? I.succeed(true) : I.as_(Q.shutdown(elem[0][1]), () => false)
+        return i < n ? I.succeed(true) : I.as_(Q.shutdown(elem[0][1]), false)
       }),
       map(([_]) => _)
     )
@@ -4555,7 +4555,7 @@ export class GroupBy<R, E, K, V> {
   filter(f: (k: K) => boolean): GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
-      filterIO(([k, q]) => (f(k) ? I.succeed(true) : I.as_(Q.shutdown(q), () => false)))
+      filterIO(([k, q]) => (f(k) ? I.succeed(true) : I.as_(Q.shutdown(q), false)))
     )
     return new GroupBy(g1, this.buffer)
   }

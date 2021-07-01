@@ -81,13 +81,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
                 s
               ] as const,
             Full: ({ a, notifyProducer }) =>
-              [
-                pipe(
-                  P.succeed_(notifyProducer, undefined),
-                  I.as(() => a)
-                ),
-                new Empty(p)
-              ] as const
+              [pipe(P.succeed_(notifyProducer, undefined), I.as(a)), new Empty(p)] as const
           })
         ),
         I.flatten
@@ -106,13 +100,7 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
           matchTag({
             Empty: (s) => [I.succeed(none()), s] as const,
             Full: ({ a, notifyProducer }) =>
-              [
-                pipe(
-                  P.succeed_(notifyProducer, undefined),
-                  I.as(() => some(a))
-                ),
-                new Empty(p)
-              ] as const
+              [pipe(P.succeed_(notifyProducer, undefined), I.as(some(a))), new Empty(p)] as const
           })
         ),
         I.flatten
