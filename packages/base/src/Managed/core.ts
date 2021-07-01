@@ -1753,13 +1753,13 @@ export function get<R, A>(ma: Managed<R, never, O.Option<A>>): Managed<R, O.Opti
  */
 export function ifManaged_<R, E, R1, E1, B, R2, E2, C>(
   mb: Managed<R, E, boolean>,
-  onTrue: () => Managed<R1, E1, B>,
-  onFalse: () => Managed<R2, E2, C>
+  onTrue: Managed<R1, E1, B>,
+  onFalse: Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E | E1 | E2, B | C> {
   const trace = accessCallTrace()
   return chain_(
     mb,
-    traceFrom(trace, (b) => (b ? (onTrue() as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse()))
+    traceFrom(trace, (b) => (b ? (onTrue as Managed<R & R1 & R2, E | E1 | E2, B | C>) : onFalse))
   )
 }
 
@@ -1769,7 +1769,7 @@ export function ifManaged_<R, E, R1, E1, B, R2, E2, C>(
  * @dataFirst ifManaged_
  * @trace call
  */
-export function ifManaged<R1, E1, B, R2, E2, C>(onTrue: () => Managed<R1, E1, B>, onFalse: () => Managed<R2, E2, C>) {
+export function ifManaged<R1, E1, B, R2, E2, C>(onTrue: Managed<R1, E1, B>, onFalse: Managed<R2, E2, C>) {
   return <R, E>(mb: Managed<R, E, boolean>): Managed<R & R1 & R2, E | E1 | E2, B | C> => ifManaged_(mb, onTrue, onFalse)
 }
 
@@ -1780,8 +1780,8 @@ export function ifManaged<R1, E1, B, R2, E2, C>(onTrue: () => Managed<R1, E1, B>
  */
 export function if_<R, E, A, R1, E1, B>(
   b: boolean,
-  onTrue: () => Managed<R, E, A>,
-  onFalse: () => Managed<R1, E1, B>
+  onTrue: Managed<R, E, A>,
+  onFalse: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A | B> {
   const trace = accessCallTrace()
   return traceCall(ifManaged_, trace)(succeed(b), onTrue, onFalse)
@@ -1793,7 +1793,7 @@ export function if_<R, E, A, R1, E1, B>(
  * @dataFirst if_
  * @trace call
  */
-function _if<R, E, A, R1, E1, B>(onTrue: () => Managed<R, E, A>, onFalse: () => Managed<R1, E1, B>) {
+function _if<R, E, A, R1, E1, B>(onTrue: Managed<R, E, A>, onFalse: Managed<R1, E1, B>) {
   return (b: boolean): Managed<R & R1, E | E1, A | B> => if_(b, onTrue, onFalse)
 }
 export { _if as if }

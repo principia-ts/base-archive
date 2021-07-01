@@ -352,15 +352,7 @@ export function whenM_<R, E, R1, E1>(
 ): Spec<R & R1 & Has<Annotations>, E | E1, TestSuccess> {
   return matchTag_(spec.caseValue, {
     Suite: ({ label, specs, exec }) =>
-      suite(
-        label,
-        M.ifManaged_(
-          I.toManaged_(b),
-          () => specs,
-          () => M.succeed(A.empty<Spec<R & R1, E | E1, TestSuccess>>())
-        ),
-        exec
-      ),
+      suite(label, M.ifManaged_(I.toManaged_(b), specs, M.succeed(A.empty<Spec<R & R1, E | E1, TestSuccess>>())), exec),
     Test: (t) =>
       test(
         t.label,
