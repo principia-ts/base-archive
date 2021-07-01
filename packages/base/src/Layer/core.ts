@@ -991,7 +991,7 @@ export function update_<R, E, A extends H.Has<T>, T>(
   tag: H.Tag<T>,
   f: (a: T) => T
 ): Layer<R, E, A> {
-  return la['>=>'](fromRawIO(pipe(I.ask<A>(), I.updateService(tag, f))))
+  return la['>=>'](fromRawIO(pipe(I.ask<A>(), I.updateService(tag)(f))))
 }
 
 /**

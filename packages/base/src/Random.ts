@@ -66,5 +66,5 @@ export abstract class Random {
 }
 
 export function withSeed(seed: number) {
-  return I.updateService(RandomTag, () => new LiveRandom(seed))
+  return I.updateService(RandomTag)(() => new LiveRandom(seed))
 }

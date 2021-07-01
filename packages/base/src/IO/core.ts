@@ -32,7 +32,7 @@ import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
 import { constant, flow, identity, pipe } from '../function'
-import { isTag, mergeEnvironments, tag } from '../Has'
+import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
 import * as NEA from '../NonEmptyArray'
 import * as O from '../Option'
@@ -4258,76 +4258,73 @@ export function giveServicesTIO<SS extends ReadonlyArray<Tag<any>>>(...tags: SS)
       giveServicesTIO_<SS>(...tags)(io, services)
 }
 
-export function giveService_<T, R, E, A>(ma: IO<R & Has<T>, E, A>, tag: Tag<T>, service: T): IO<R, E, A> {
-  return giveServiceIO_<R, E, A, unknown, never, T>(ma, tag, pure(service))
+/**
+ * Provides the IO with the required service
+ */
+export function giveService_<T>(tag: Tag<T>) {
+  return <R, E, A>(ma: IO<R & Has<T>, E, A>, service: T): IO<R, E, A> => giveServiceIO_(tag)(ma, pure(service))
 }
 
 /**
  * Provides the IO with the required service
  */
-export function giveService<T>(tag: Tag<T>, service: T) {
-  return <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R, E, A> => giveService_<T, R, E, A>(ma, tag, service)
+export function giveService<T>(tag: Tag<T>) {
+  return (service: T) =>
+    <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R, E, A> =>
+      giveService_(tag)(ma, service)
 }
 
 /**
  * Effectfully provides the IO with the required service
  */
-export function giveServiceIO_<R, E, A, R1, E1, T>(
-  ma: IO<R & Has<T>, E, A>,
-  tag: Tag<T>,
-  service: IO<R1, E1, T>
-): IO<R & R1, E | E1, A> {
-  return asksIO((r: R & R1) => chain_(service, (t) => giveAll_(ma, mergeEnvironments(tag, r, t))))
+export function giveServiceIO_<T>(tag: Tag<T>) {
+  return <R, E, A, R1, E1>(ma: IO<R & Has<T>, E, A>, service: IO<R1, E1, T>): IO<R & R1, E | E1, A> =>
+    asksIO((r: R & R1) => chain_(service, (t) => giveAll_(ma, mergeEnvironments(tag, r, t))))
 }
 
 /**
  * Effectfully provides the IO with the required service
  */
-export function giveServiceIO<R1, E1, T>(tag: Tag<T>, service: IO<R1, E1, T>) {
-  return <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R1 & R, E1 | E, A> =>
-    giveServiceIO_<R, E, A, R1, E1, T>(ma, tag, service)
+export function giveServiceIO<T>(tag: Tag<T>) {
+  return <R1, E1>(service: IO<R1, E1, T>) =>
+    <R, E, A>(ma: IO<R & Has<T>, E, A>): IO<R1 & R, E1 | E, A> =>
+      giveServiceIO_(tag)(ma, service)
 }
 
 /**
  * Replaces the service in the environment
  */
-export function updateService_<R1, E1, A1, T>(
-  ma: IO<R1, E1, A1>,
-  tag: Tag<T>,
-  f: (service: T) => T
-): IO<R1 & Has<T>, E1, A1> {
-  return asksServiceIO(tag)((service) => giveServiceIO_(ma, tag, pure(f(service))))
+export function updateService_<T>(
+  tag: Tag<T>
+): <R1, E1, A1>(ma: IO<R1, E1, A1>, f: (service: T) => T) => IO<R1 & Has<T>, E1, A1> {
+  return (ma, f) => asksServiceIO(tag)((service) => giveServiceIO_(tag)(ma, pure(f(service))))
 }
 
 /**
  * Replaces the service in the environment
  */
 export function updateService<T>(
-  tag: Tag<T>,
-  f: (service: T) => T
-): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<T>, E, A> {
-  return (ma) => asksServiceIO(tag)((service) => giveServiceIO_(ma, tag, pure(f(service))))
+  tag: Tag<T>
+): (f: (service: T) => T) => <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<T>, E, A> {
+  return (f) => (ma) => asksServiceIO(tag)((service) => giveServiceIO_(tag)(ma, pure(f(service))))
 }
 
 /**
  * Effectfully replaces the service in the environment
  */
-export function updateServiceIO_<R, E, T, R1, E1, A1>(
-  ma: IO<R1, E1, A1>,
-  tag: Tag<T>,
-  f: (service: T) => IO<R, E, T>
-): IO<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceIO(tag)((t) => giveServiceIO(tag, f(t))(ma))
+export function updateServiceIO_<T>(
+  tag: Tag<T>
+): <R, E, R1, E1, A1>(ma: IO<R1, E1, A1>, f: (service: T) => IO<R, E, T>) => IO<R & R1 & Has<T>, E | E1, A1> {
+  return (ma, f) => asksServiceIO(tag)((t) => giveServiceIO_(tag)(ma, f(t)))
 }
 
 /**
  * Effectfully replaces the service in the environment
  */
-export function updateServiceIO<R, E, T>(
-  tag: Tag<T>,
-  f: (service: T) => IO<R, E, T>
-): <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
-  return (ma) => asksServiceIO(tag)((t) => giveServiceIO(tag, f(t))(ma))
+export function updateServiceIO<T>(
+  tag: Tag<T>
+): <R, E>(f: (service: T) => IO<R, E, T>) => <R1, E1, A1>(ma: IO<R1, E1, A1>) => IO<R & R1 & Has<T>, E1 | E, A1> {
+  return (f) => (ma) => asksServiceIO(tag)((t) => giveServiceIO_(tag)(ma, f(t)))
 }
 
 /**
