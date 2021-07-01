@@ -21,7 +21,7 @@ const argv = yargs(process.argv.slice(2))
     tags: { array: true, string: true },
     policy: { string: true }
   })
-  .help().argv
+  .help().parseSync()
 
 const testArgs = new TestArgs(argv.tests || [], argv.tags || [], O.fromNullable(argv.policy))
 
