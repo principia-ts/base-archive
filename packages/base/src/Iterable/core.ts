@@ -379,7 +379,7 @@ export function ifoldr_<A, B>(
     } else {
       return f(current, i++, go)
     }
-  }).memoize
+  })
   return go
 }
 
