@@ -87,20 +87,20 @@ export function ap<R, A>(fa: Reader<R, A>): <R1, B>(fab: Reader<R1, (a: A) => B>
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
+export function crossLeft_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function apl<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
-  return (fa) => apl_(fa, fb)
+export function crossLeft<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
+  return (fa) => crossLeft_(fa, fb)
 }
 
-export function apr_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
+export function crossRight_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function apr<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
-  return (fa) => apr_(fa, fb)
+export function crossRight<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
+  return (fa) => crossRight_(fa, fb)
 }
 
 export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {

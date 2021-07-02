@@ -368,20 +368,20 @@ export function ap<A>(fa: Option<A>): <B>(fab: Option<(a: A) => B>) => Option<B>
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
+export function crossLeft_<A, B>(fa: Option<A>, fb: Option<B>): Option<A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function apl<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
-  return (fa) => apl_(fa, fb)
+export function crossLeft<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<A> {
+  return (fa) => crossLeft_(fa, fb)
 }
 
-export function apr_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
+export function crossRight_<A, B>(fa: Option<A>, fb: Option<B>): Option<B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function apr<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
-  return (fa) => apr_(fa, fb)
+export function crossRight<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<B> {
+  return (fa) => crossRight_(fa, fb)
 }
 
 /**

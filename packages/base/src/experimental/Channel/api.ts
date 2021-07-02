@@ -1424,7 +1424,7 @@ export function mergeAllWith_<
                 Ca.flipCauseEither,
                 E.match(
                   (cause) =>
-                    I.apr_(
+                    I.crossRight_(
                       Q.offer_(queue, I.halt(Ca.map_(cause, E.left))),
                       I.asUnit(PR.succeed_(errorSignal, undefined))
                     ),
@@ -1452,7 +1452,7 @@ export function mergeAllWith_<
                     pipe(
                       getChildren,
                       I.chain(F.interruptAll),
-                      I.apr(pipe(queue, Q.offer(I.halt(Ca.map_(cause, E.left))), I.as(false)))
+                      I.crossRight(pipe(queue, Q.offer(I.halt(Ca.map_(cause, E.left))), I.as(false)))
                     ),
                   (outDone) =>
                     I.raceWith_(
@@ -1462,12 +1462,12 @@ export function mergeAllWith_<
                         pipe(
                           getChildren,
                           I.chain(F.interruptAll),
-                          I.apr(pipe(F.interrupt(permitAcquisition), I.as(false)))
+                          I.crossRight(pipe(F.interrupt(permitAcquisition), I.as(false)))
                         ),
                       (_, failureAwait) =>
                         pipe(
                           F.interrupt(failureAwait),
-                          I.apr(
+                          I.crossRight(
                             pipe(
                               Ref.get(lastDone),
                               I.chain(
@@ -1489,7 +1489,7 @@ export function mergeAllWith_<
                     return I.gen(function* (_) {
                       const latch   = yield* _(PR.make<never, void>())
                       const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
-                      yield* _(I.fork(Sem.withPermit(permits)(I.apr_(PR.succeed_(latch, undefined), raceIOs))))
+                      yield* _(I.fork(Sem.withPermit(permits)(I.crossRight_(PR.succeed_(latch, undefined), raceIOs))))
                       yield* _(PR.await(latch))
                       return !(yield* _(PR.isDone(errorSignal)))
                     })
@@ -1504,7 +1504,7 @@ export function mergeAllWith_<
                         toPull(channel),
                         M.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
                       )
-                      yield* _(I.fork(Sem.withPermit(permits)(I.apr_(PR.succeed_(latch, undefined), raceIOs))))
+                      yield* _(I.fork(Sem.withPermit(permits)(I.crossRight_(PR.succeed_(latch, undefined), raceIOs))))
                       yield* _(PR.await(latch))
                       return !(yield* _(PR.isDone(errorSignal)))
                     })
@@ -1968,7 +1968,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                     pipe(
                       Sem.withPermits(permits, n)(I.unit()),
                       I.interruptible,
-                      I.apr(pipe(E.right(outDone), I.fail, (_) => Q.offer_(queue, _)))
+                      I.crossRight(pipe(E.right(outDone), I.fail, (_) => Q.offer_(queue, _)))
                     )
                 )
               ),
@@ -1980,7 +1980,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   yield* _(
                     I.fork(
                       Sem.withPermit(permits)(
-                        I.apr_(
+                        I.crossRight_(
                           PR.succeed_(latch, undefined),
                           pipe(
                             PR.await(errorSignal),

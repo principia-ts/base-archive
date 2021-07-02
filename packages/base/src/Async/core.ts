@@ -369,20 +369,30 @@ export function apPar<R, E, A>(
   return (fab) => apPar_(fab, fa)
 }
 
-export function aplPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+export function crossLeftPar_<R, E, A, R1, E1, A1>(
+  fa: Async<R, E, A>,
+  fb: Async<R1, E1, A1>
+): Async<R & R1, E | E1, A> {
   return crossWithPar_(fa, fb, (a, _) => a)
 }
 
-export function aplPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => aplPar_(fa, fb)
+export function crossLeftPar<R1, E1, A1>(
+  fb: Async<R1, E1, A1>
+): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => crossLeftPar_(fa, fb)
 }
 
-export function aprPar_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
+export function crossRightPar_<R, E, A, R1, E1, A1>(
+  fa: Async<R, E, A>,
+  fb: Async<R1, E1, A1>
+): Async<R & R1, E | E1, A1> {
   return crossWithPar_(fa, fb, (_, b) => b)
 }
 
-export function aprPar<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => aprPar_(fa, fb)
+export function crossRightPar<R1, E1, A1>(
+  fb: Async<R1, E1, A1>
+): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
+  return (fa) => crossRightPar_(fa, fb)
 }
 
 /*
@@ -439,20 +449,24 @@ export function ap<R, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+export function crossLeft_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function apl<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => apl_(fa, fb)
+export function crossLeft<R1, E1, A1>(
+  fb: Async<R1, E1, A1>
+): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => crossLeft_(fa, fb)
 }
 
-export function apr_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
+export function crossRight_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function apr<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => apr_(fa, fb)
+export function crossRight<R1, E1, A1>(
+  fb: Async<R1, E1, A1>
+): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
+  return (fa) => crossRight_(fa, fb)
 }
 
 /*

@@ -47,7 +47,7 @@ export function offer<A>(a: A) {
           Ref.modify<I.UIO<void>, State<A>>(
             matchTag({
               Empty: ({ notifyConsumer }) =>
-                [pipe(P.succeed_(notifyConsumer, undefined), I.apr(P.await(p))), new Full(a, p)] as const,
+                [pipe(P.succeed_(notifyConsumer, undefined), I.crossRight(P.await(p))), new Full(a, p)] as const,
               Full: (s) =>
                 [
                   pipe(

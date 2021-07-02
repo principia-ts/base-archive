@@ -115,7 +115,10 @@ export function apPar<R, E, A>(
 /**
  * @trace call
  */
-export function aplPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
+export function crossLeftPar_<R, E, A, R1, E1, B>(
+  fa: Managed<R, E, A>,
+  fb: Managed<R1, E1, B>
+): Managed<R & R1, E | E1, A> {
   const trace = accessCallTrace()
   return crossWithPar_(
     fa,
@@ -125,20 +128,23 @@ export function aplPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1
 }
 
 /**
- * @dataFirst aplPar_
+ * @dataFirst crossLeftPar_
  * @trace call
  */
-export function aplPar<R1, E1, B>(
+export function crossLeftPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(aplPar_, trace)(fa, fb)
+  return (fa) => traceCall(crossLeftPar_, trace)(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function aprPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
+export function crossRightPar_<R, E, A, R1, E1, B>(
+  fa: Managed<R, E, A>,
+  fb: Managed<R1, E1, B>
+): Managed<R & R1, E | E1, B> {
   const trace = accessCallTrace()
   return crossWithPar_(
     fa,
@@ -148,14 +154,14 @@ export function aprPar_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1
 }
 
 /**
- * @dataFirst aprPar_
+ * @dataFirst crossRightPar_
  * @trace call
  */
-export function aprPar<R1, E1, B>(
+export function crossRightPar<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(aprPar_, trace)(fa, fb)
+  return (fa) => traceCall(crossRightPar_, trace)(fa, fb)
 }
 
 export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(

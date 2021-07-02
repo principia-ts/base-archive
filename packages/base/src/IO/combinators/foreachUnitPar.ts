@@ -66,7 +66,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const startFailure = pipe(
       status,
       Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-      I.apl(P.fail_(result, undefined))
+      I.crossLeft(P.fail_(result, undefined))
     )
 
     const effect = (a: A) =>
@@ -77,7 +77,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
           pipe(
             causes,
             Ref.update((l) => C.both(l, cause)),
-            I.apr(startFailure)
+            I.crossRight(startFailure)
           )
         ),
         ensuring(
@@ -114,7 +114,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
       useManaged_(interruptor, () =>
         pipe(
           P.fail_(result, undefined),
-          I.apr(I.chain_(causes.get, I.halt)),
+          I.crossRight(I.chain_(causes.get, I.halt)),
           I.whenIO(
             pipe(
               fibers,
@@ -216,7 +216,7 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
           )
         )
         const releaseMapEntry      = yield* _(
-          RM.add(outerReleaseMap, (e) => pipe(fiber, interruptFiber, I.apr(releaseAllSeq_(innerReleaseMap, e))))
+          RM.add(outerReleaseMap, (e) => pipe(fiber, interruptFiber, I.crossRight(releaseAllSeq_(innerReleaseMap, e))))
         )
 
         return tuple(releaseMapEntry, fiber)

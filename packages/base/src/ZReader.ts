@@ -88,13 +88,13 @@ export const ap_: <R, A, R1, B>(fab: ZReader<R1, (a: A) => B>, fa: ZReader<R, A>
 
 export const ap: <R, A>(fa: ZReader<R, A>) => <R1, B>(fab: ZReader<R1, (a: A) => B>) => ZReader<R & R1, B> = Z.zap
 
-export const apl_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Z.zipl_
+export const crossLeft_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Z.zipLeft_
 
-export const apl: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Z.zipl
+export const crossLeft: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Z.zipLeft
 
-export const apr_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Z.zipr_
+export const crossRight_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Z.zipRight_
 
-export const apr: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zipr
+export const crossRight: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zipRight
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -130,12 +130,12 @@ export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function compose_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
+export function andThen_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
   return chain_(ra, (a) => giveAll_(ab, a))
 }
 
-export function compose<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZReader<R, B> {
-  return (ra) => compose_(ra, ab)
+export function andThen<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZReader<R, B> {
+  return (ra) => andThen_(ra, ab)
 }
 
 /*

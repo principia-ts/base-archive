@@ -687,16 +687,16 @@ export function ap<R, E, A>(fa: IO<R, E, A>): <R1, E1, B>(fab: IO<R1, E1, (a: A)
 /**
  * @trace call
  */
-export function apl_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
+export function crossLeft_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
   return chain_(fa, (a) => map_(fb, () => a))
 }
 
 /**
- * @dataFirst apl_
+ * @dataFirst crossLeft_
  * @trace call
  */
-export function apl<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
-  return (fa) => apl_(fa, fb)
+export function crossLeft<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
+  return (fa) => crossLeft_(fa, fb)
 }
 
 /**
@@ -707,7 +707,7 @@ export function apl<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) =>
  *
  * @trace call
  */
-export function apr_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
+export function crossRight_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
   return chain_(fa, () => fb)
 }
 
@@ -717,11 +717,11 @@ export function apr_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO
  * @category Apply
  * @since 1.0.0
  *
- * @dataFirst apr_
+ * @dataFirst crossRight_
  * @trace call
  */
-export function apr<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, B> {
-  return (fa) => apr_(fa, fb)
+export function crossRight<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, B> {
+  return (fa) => crossRight_(fa, fb)
 }
 
 /**
@@ -1102,7 +1102,7 @@ export function bitap_<R, E, A, R1, E1, R2, E2>(
         (e) => chain_(onFailure(e), () => halt(c)),
         (_) => halt(c)
       ),
-    (a) => pipe(onSuccess(a), apr(succeed(a)))
+    (a) => pipe(onSuccess(a), crossRight(succeed(a)))
   )
 }
 
@@ -2465,7 +2465,7 @@ export function foldr<A, B, R, E>(
  */
 export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
   const trace = accessCallTrace()
-  return pipe(ma, apr(yieldNow), chain(traceFrom(trace, () => forever(ma))))
+  return pipe(ma, crossRight(yieldNow), chain(traceFrom(trace, () => forever(ma))))
 }
 
 /**

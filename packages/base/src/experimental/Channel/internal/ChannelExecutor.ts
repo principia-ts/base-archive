@@ -65,7 +65,7 @@ function maybeCloseBoth<Env>(
   l: IO<Env, never, unknown> | undefined,
   r: IO<Env, never, unknown> | undefined
 ): URIO<Env, Exit<never, unknown>> | undefined {
-  if (l && r) return pipe(I.result(l), I.crossWith(I.result(r), Ex.apr_))
+  if (l && r) return pipe(I.result(l), I.crossWith(I.result(r), Ex.crossRight_))
   else if (l) return I.result(l)
   else if (r) return I.result(r)
 }
@@ -110,7 +110,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       } else {
         return pipe(
           I.result(head.finalizer(exit)),
-          I.chain((finExit) => this.unwindAllFinalizers(Ex.apr_(acc, finExit), L.tail(conts), exit))
+          I.chain((finExit) => this.unwindAllFinalizers(Ex.crossRight_(acc, finExit), L.tail(conts), exit))
         )
       }
     }
@@ -177,7 +177,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         const fin2 = this.subexecutorStack.rest.close(exit)
 
         if (fin1 && fin2) {
-          closeSubexecutors = pipe(I.result(fin1), I.crossWith(I.result(fin2), Ex.apr_))
+          closeSubexecutors = pipe(I.result(fin1), I.crossWith(I.result(fin2), Ex.crossRight_))
         } else if (fin1) {
           closeSubexecutors = I.result(fin1)
         } else if (fin2) {
@@ -204,7 +204,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           this.ifNotNull(runInProgressFinalizer),
           this.ifNotNull(closeSelf)
         ),
-        I.map(([a, b, c]) => pipe(a, Ex.apr(b), Ex.apr(c))),
+        I.map(([a, b, c]) => pipe(a, Ex.crossRight(b), Ex.crossRight(c))),
         I.uninterruptible
       )
     }

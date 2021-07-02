@@ -36,7 +36,7 @@ export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A
             )
           )
         )
-        return pipe(complete, I.apr(P.await(promise)), fromIO)
+        return pipe(complete, I.crossRight(P.await(promise)), fromIO)
       })
     )
   )

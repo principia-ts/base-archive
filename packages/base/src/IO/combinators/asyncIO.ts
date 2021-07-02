@@ -33,7 +33,7 @@ export function asyncIO<R, E, R1, E1, A>(
             I.catchAllCause((c) => P.halt_(p, c)),
             restore,
             I.fork,
-            I.apr(restore(P.await(p)))
+            I.crossRight(restore(P.await(p)))
           )
         )
       )

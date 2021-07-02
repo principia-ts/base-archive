@@ -1498,7 +1498,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
           return Ch.chain_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
             return Ch.zipr_(
-              Ch.fromIO(I.apr_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
+              Ch.fromIO(I.crossRight_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
                 Ref.modify_(sinkEndReason, (reason) => {
                   switch (reason._typeId) {
@@ -2819,7 +2819,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                     I.chain(([idx, q]) =>
                       pipe(
                         Ref.update_(ref, HM.set(k, idx)),
-                        I.apr(
+                        I.crossRight(
                           Q.offer_(
                             out,
                             Ex.succeed([
@@ -4075,13 +4075,13 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
       loopOnPartialChunksElements_(stream, (a, emit) =>
         pipe(
           driver.next(a),
-          I.apr(emit(f(a))),
+          I.crossRight(emit(f(a))),
           I.orElse(() =>
             pipe(
               driver.last,
               I.orDie,
               I.chain((b) => emit(f(a))['*>'](emit(g(b)))),
-              I.apl(driver.reset)
+              I.crossLeft(driver.reset)
             )
           )
         )

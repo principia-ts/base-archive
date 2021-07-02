@@ -62,13 +62,13 @@ export const ap_: <S, A, B>(fab: ZState<S, (a: A) => B>, fa: ZState<S, A>) => ZS
 
 export const ap: <S, A>(fa: ZState<S, A>) => <B>(fab: ZState<S, (a: A) => B>) => ZState<S, B> = Z.ap
 
-export const apr_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, B> = Z.apr_
+export const crossRight_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, B> = Z.crossRight_
 
-export const apr: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, B> = Z.apr
+export const crossRight: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, B> = Z.crossRight
 
-export const apl_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, A> = Z.apl_
+export const crossLeft_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, A> = Z.crossLeft_
 
-export const apl: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, A> = Z.apl
+export const crossLeft: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, A> = Z.crossLeft
 
 /*
  * -------------------------------------------------------------------------------------------------
