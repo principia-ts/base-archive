@@ -45,10 +45,10 @@ abstract class ZSyntax<W, S1, S2, R, E, A> {
     return this['<$>'](b)
   }
   ['*>']<W1, S3, Q, D, B>(this: Z<W, S1, S2, R, E, A>, mb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, B> {
-    return zipRight_(this, mb)
+    return zipSecond_(this, mb)
   }
   ['<*']<W1, S3, Q, D, B>(this: Z<W, S1, S2, R, E, A>, mb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, A> {
-    return zipLeft_(this, mb)
+    return zipFirst_(this, mb)
   }
   ['<*>']<W1, S3, Q, D, B>(
     this: Z<W, S1, S2, R, E, A>,
@@ -717,30 +717,30 @@ export function ap<W, S, R1, E1, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function crossLeft_<W, S, R, E, A, R1, E1, B>(
+export function crossFirst_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function crossLeft<W, S, R1, E1, B>(
+export function crossFirst<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, A> {
-  return (fa) => crossLeft_(fa, fb)
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<W, S, R, E, A, R1, E1, B>(
+export function crossSecond_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function crossRight<W, S, R1, E1, B>(
+export function crossSecond<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, B> {
-  return (fa) => crossRight_(fa, fb)
+  return (fa) => crossSecond_(fa, fb)
 }
 
 /*
@@ -790,30 +790,30 @@ export function zap<W1, S2, S3, R1, E1, A>(
   return (fab) => zap_(fab, fa)
 }
 
-export function zipLeft_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+export function zipFirst_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Z<W, S1, S2, R, E, A>,
   fb: Z<W1, S2, S3, Q, D, B>
 ): Z<W | W1, S1, S3, Q & R, D | E, A> {
   return zipWith_(fa, fb, (a, _) => a)
 }
 
-export function zipLeft<W1, S2, S3, Q, D, B>(
+export function zipFirst<W1, S2, S3, Q, D, B>(
   fb: Z<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, Q & R, D | E, A> {
-  return (fa) => zipLeft_(fa, fb)
+  return (fa) => zipFirst_(fa, fb)
 }
 
-export function zipRight_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+export function zipSecond_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Z<W, S1, S2, R, E, A>,
   fb: Z<W1, S2, S3, Q, D, B>
 ): Z<W | W1, S1, S3, Q & R, D | E, B> {
   return zipWith_(fa, fb, (_, b) => b)
 }
 
-export function zipRight<W1, S2, S3, Q, D, B>(
+export function zipSecond<W1, S2, S3, Q, D, B>(
   fb: Z<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, Q & R, D | E, B> {
-  return (fa) => zipRight_(fa, fb)
+  return (fa) => zipSecond_(fa, fb)
 }
 
 /*

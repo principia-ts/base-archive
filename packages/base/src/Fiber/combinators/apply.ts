@@ -6,20 +6,20 @@ import { crossWithPar_ } from '../../IO/combinators/apply-par'
 import * as O from '../../Option'
 import * as I from '../internal/io'
 
-export function crossLeft_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function crossFirst_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function crossLeft<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function crossSecond_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function crossRight<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
-  return (fa) => crossRight_(fa, fb)
+export function crossSecond<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 /**

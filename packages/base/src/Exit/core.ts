@@ -193,36 +193,36 @@ export function ap<E, A>(fa: Exit<E, A>): <G, B>(fab: Exit<G, (a: A) => B>) => E
   return (fab) => ap_(fab, fa)
 }
 
-export function crossLeft_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
+export function crossFirst_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
   return crossWithCause_(fa, fb, (a, _) => a, C.then)
 }
 
-export function crossLeft<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
+export function crossSecond_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
   return crossWithCause_(fa, fb, (_, b) => b, C.then)
 }
 
-export function crossRight<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => crossRight_(fa, fb)
+export function crossSecond<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
-export function crossLeftPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
+export function crossFirstPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, A> {
   return crossWithCause_(fa, fb, (a, _) => a, C.both)
 }
 
-export function crossLeftPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
-  return (fa) => crossLeftPar_(fa, fb)
+export function crossFirstPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, A> {
+  return (fa) => crossFirstPar_(fa, fb)
 }
 
-export function crossRightPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
+export function crossSecondPar_<E, A, G, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, B> {
   return crossWithCause_(fa, fb, (_, b) => b, C.both)
 }
 
-export function crossRightPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
-  return (fa) => crossRightPar_(fa, fb)
+export function crossSecondPar<G, B>(fb: Exit<G, B>): <E, A>(fa: Exit<E, A>) => Exit<G | E, B> {
+  return (fa) => crossSecondPar_(fa, fb)
 }
 
 export function cross_<E, G, A, B>(fa: Exit<E, A>, fb: Exit<G, B>): Exit<E | G, readonly [A, B]> {

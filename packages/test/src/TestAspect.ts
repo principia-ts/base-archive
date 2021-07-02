@@ -109,7 +109,7 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
     pipe(
       test,
       I.result,
-      I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.crossLeft_),
+      I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.crossFirst_),
       I.chain(I.done)
     )
   )
@@ -136,7 +136,7 @@ export function aroundAll<R, E, A, R1>(
     const aroundAll = (
       specs: M.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
     ): M.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, M.bracket(after), M.mapError(TF.fail), M.crossRight(specs))
+      pipe(before, M.bracket(after), M.mapError(TF.fail), M.crossSecond(specs))
 
     const around = (
       test: I.IO<R0, TestFailure<E0>, TestSuccess>
@@ -161,7 +161,7 @@ export function aspect<R0, E0>(
 }
 
 export function before<R0>(effect: I.IO<R0, never, any>): TestAspect<R0, never> {
-  return new PerTest((test) => I.crossRight_(effect, test))
+  return new PerTest((test) => I.crossSecond_(effect, test))
 }
 
 export function beforeAll<R0, E0>(effect: I.IO<R0, E0, any>): TestAspect<R0, E0> {
@@ -213,7 +213,7 @@ export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = 
   pipe(
     TestConfig.repeats,
     I.chain((n) =>
-      I.crossRight_(
+      I.crossSecond_(
         test,
         pipe(
           test,

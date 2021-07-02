@@ -422,7 +422,7 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
  * @category Apply
  * @since 1.0.0
  */
-export function crossLeft_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
+export function crossFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
@@ -435,8 +435,8 @@ export function crossLeft_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eith
  * @category Apply
  * @since 1.0.0
  */
-export function crossLeft<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
 /**
@@ -445,7 +445,7 @@ export function crossLeft<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => E
  * @category Apply
  * @since 1.0.0
  */
-export function crossRight_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
+export function crossSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
@@ -458,8 +458,8 @@ export function crossRight_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eit
  * @category Apply
  * @since 1.0.0
  */
-export function crossRight<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
-  return (fa) => crossRight_(fa, fb)
+export function crossSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 /**

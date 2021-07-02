@@ -402,7 +402,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
             context.seen.push(value)
             return context
           }),
-          Z.crossRight(
+          Z.crossSecond(
             Z.defer(() => {
               let keys: ShowComputationChunk
               let indices: ShowComputationChunk
@@ -463,7 +463,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                 Z.update((_: ShowContext) =>
                   _.copy({ recurseTimes: context.recurseTimes + 1, currentDepth: _.recurseTimes + 1 })
                 ),
-                Z.crossRight(output),
+                Z.crossSecond(output),
                 Z.cross(baseWithRef),
                 Z.chain(([output, base]) =>
                   Z.modify((context) => {
@@ -482,7 +482,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                     return [res, newContext]
                   })
                 ),
-                Z.crossLeft(
+                Z.crossFirst(
                   Z.update((context: ShowContext) => {
                     context.seen.pop()
                     return context.copy({
@@ -556,18 +556,18 @@ function removeColors(str: string): string {
 function showSet(value: Set<unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-    Z.crossRight(It.mapAChunk_(Z.Applicative)(value, _show)),
-    Z.crossLeft(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
+    Z.crossSecond(It.mapAChunk_(Z.Applicative)(value, _show)),
+    Z.crossFirst(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
   )
 }
 
 function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-    Z.crossRight(
+    Z.crossSecond(
       It.mapAChunk_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))
     ),
-    Z.crossLeft(
+    Z.crossFirst(
       Z.update((_: ShowContext) =>
         _.copy({
           indentationLevel: _.indentationLevel - 2
@@ -595,7 +595,7 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
       if (context.showHidden) {
         return pipe(
           Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-          Z.crossRight(
+          Z.crossSecond(
             Z.pure(output)['>>=']((output) =>
               pipe(
                 C.make('BYTES_PER_ELEMENT', 'length', 'byteLength', 'byteOffset', 'buffer'),
@@ -604,7 +604,7 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
               )
             )
           ),
-          Z.crossLeft(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
+          Z.crossFirst(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
         )
       } else {
         return Z.pure(output)
@@ -747,7 +747,7 @@ export function showProperty(
           const diff = context.compact !== true || (type !== OBJECT_TYPE && type !== PROTO_TYPE) ? 2 : 3
           return pipe(
             Z.update((_: ShowContext): ShowContext => _.copy({ indentationLevel: _.indentationLevel + diff })),
-            Z.crossRight(_show(descriptor.value)),
+            Z.crossSecond(_show(descriptor.value)),
             Z.chain((shown: string) =>
               Z.gets((_: ShowContext) =>
                 diff === 3 && _.breakLength < getStringWidth(shown, _.colors)
@@ -755,7 +755,7 @@ export function showProperty(
                   : tuple(descriptor, ' ', shown)
               )
             ),
-            Z.crossLeft(
+            Z.crossFirst(
               Z.update((_: ShowContext): ShowContext => _.copy({ indentationLevel: _.indentationLevel - diff }))
             )
           )

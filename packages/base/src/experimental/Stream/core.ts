@@ -74,19 +74,19 @@ export class Stream<R, E, A> {
     return aspect.apply(this)
   }
   ['*>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A1> {
-    return crossRight_(this, that)
+    return crossSecond_(this, that)
   }
   ['<*']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A> {
-    return crossLeft_(this, that)
+    return crossFirst_(this, that)
   }
   ['<*>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, readonly [A, A1]> {
     return cross_(this, that)
   }
   ['&>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A1> {
-    return zipRight_(this, that)
+    return zipSecond_(this, that)
   }
   ['<&']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A> {
-    return zipLeft_(this, that)
+    return zipFirst_(this, that)
   }
   ['<&>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, readonly [A, A1]> {
     return zip_(this, that)
@@ -570,7 +570,7 @@ export function cross<R1, E1, A1>(that: Stream<R1, E1, A1>) {
  * but keeps only elements from this stream.
  * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function crossLeft_<R, R1, E, E1, A, A1>(
+export function crossFirst_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   that: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A> {
@@ -582,8 +582,8 @@ export function crossLeft_<R, R1, E, E1, A, A1>(
  * but keeps only elements from this stream.
  * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function crossLeft<R1, E1, A1>(that: Stream<R1, E1, A1>) {
-  return <R, E, A>(stream: Stream<R, E, A>) => crossLeft_(stream, that)
+export function crossFirst<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => crossFirst_(stream, that)
 }
 
 /**
@@ -591,7 +591,7 @@ export function crossLeft<R1, E1, A1>(that: Stream<R1, E1, A1>) {
  * but keeps only elements from the other stream.
  * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function crossRight_<R, R1, E, E1, A, A1>(
+export function crossSecond_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   that: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A1> {
@@ -603,8 +603,8 @@ export function crossRight_<R, R1, E, E1, A, A1>(
  * but keeps only elements from the other stream.
  * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function crossRight<R1, E1, A1>(that: Stream<R1, E1, A1>) {
-  return <R, E, A>(stream: Stream<R, E, A>) => crossRight_(stream, that)
+export function crossSecond<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => crossSecond_(stream, that)
 }
 
 /**
@@ -1498,7 +1498,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
           return Ch.chain_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
             return Ch.zipr_(
-              Ch.fromIO(I.crossRight_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
+              Ch.fromIO(I.crossSecond_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
                 Ref.modify_(sinkEndReason, (reason) => {
                   switch (reason._typeId) {
@@ -1529,7 +1529,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
       )
     }
 
-    return zipRight_(
+    return zipSecond_(
       fromManaged(pipe(stream.channel['>>>'](handoffProducer), Ch.runManaged, M.fork)),
       new Stream(scheduledAggregator(O.none()))
     )
@@ -2819,7 +2819,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                     I.chain(([idx, q]) =>
                       pipe(
                         Ref.update_(ref, HM.set(k, idx)),
-                        I.crossRight(
+                        I.crossSecond(
                           Q.offer_(
                             out,
                             Ex.succeed([
@@ -4075,13 +4075,13 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
       loopOnPartialChunksElements_(stream, (a, emit) =>
         pipe(
           driver.next(a),
-          I.crossRight(emit(f(a))),
+          I.crossSecond(emit(f(a))),
           I.orElse(() =>
             pipe(
               driver.last,
               I.orDie,
               I.chain((b) => emit(f(a))['*>'](emit(g(b)))),
-              I.crossLeft(driver.reset)
+              I.crossFirst(driver.reset)
             )
           )
         )
@@ -4496,7 +4496,7 @@ export function zip<R1, E1, A1>(
  *
  * The new stream will end when one of the sides ends.
  */
-export function zipRight_<R, R1, E, E1, A, A1>(
+export function zipSecond_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   that: Stream<R1, E1, A1>
 ): Stream<R1 & R, E | E1, A1> {
@@ -4508,8 +4508,8 @@ export function zipRight_<R, R1, E, E1, A, A1>(
  *
  * The new stream will end when one of the sides ends.
  */
-export function zipRight<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
-  return (stream: Stream<R, E, A>) => zipRight_(stream, that)
+export function zipSecond<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
+  return (stream: Stream<R, E, A>) => zipSecond_(stream, that)
 }
 
 /**
@@ -4517,7 +4517,7 @@ export function zipRight<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
  *
  * The new stream will end when one of the sides ends.
  */
-export function zipLeft_<R, R1, E, E1, A, A1>(
+export function zipFirst_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   that: Stream<R1, E1, A1>
 ): Stream<R1 & R, E | E1, A> {
@@ -4529,8 +4529,8 @@ export function zipLeft_<R, R1, E, E1, A, A1>(
  *
  * The new stream will end when one of the sides ends.
  */
-export function zipLeft<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
-  return (stream: Stream<R, E, A>) => zipLeft_(stream, that)
+export function zipFirst<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
+  return (stream: Stream<R, E, A>) => zipFirst_(stream, that)
 }
 
 export class GroupBy<R, E, K, V> {

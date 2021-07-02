@@ -184,7 +184,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                       return M.use_(f(s.data).push, (f) => f(O.none()))
                     }
                     case 'Emitting': {
-                      return I.crossLeft_(s.push(O.none()), s.finalizer(Ex.unit()))
+                      return I.crossFirst_(s.push(O.none()), s.finalizer(Ex.unit()))
                     }
                   }
                 })
@@ -376,8 +376,8 @@ export function foldWhileIO<R, E, I, O>(
               ),
               I.chain(([os, s, progress]) =>
                 progress
-                  ? I.crossRight_(state.set(O.some(s)), I.succeed(os))
-                  : I.crossRight_(state.set(O.none()), I.succeed(os))
+                  ? I.crossSecond_(state.set(O.some(s)), I.succeed(os))
+                  : I.crossSecond_(state.set(O.none()), I.succeed(os))
               )
             )
         )
@@ -634,8 +634,8 @@ export function foldWeightedDecomposeIO<R, E, I, O>(
               ),
               I.chain(([os, s, dirty]) =>
                 dirty
-                  ? I.crossRight_(state.set(O.some(s)), I.succeed(os))
-                  : I.crossRight_(state.set(O.none()), I.succeed(os))
+                  ? I.crossSecond_(state.set(O.some(s)), I.succeed(os))
+                  : I.crossSecond_(state.set(O.none()), I.succeed(os))
               )
             )
         )
@@ -1048,7 +1048,7 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
               pipe(
                 pushMe(O.none()),
                 I.mapError((e) => [E.left<E | E1>(e), C.empty<L>()] as const),
-                I.chain((chunk) => I.crossRight_(pushThat(O.some(chunk)), pushThat(O.none())))
+                I.chain((chunk) => I.crossSecond_(pushThat(O.some(chunk)), pushThat(O.none())))
               ),
             (in_) =>
               pipe(

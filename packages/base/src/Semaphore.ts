@@ -53,9 +53,9 @@ export class Semaphore {
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.left(q), I.crossLeft_(acc, P.succeed_(p, undefined)))
+              return this.loop(n - m, E.left(q), I.crossFirst_(acc, P.succeed_(p, undefined)))
             } else if (n === m) {
-              return [I.crossLeft_(acc, P.succeed_(p, undefined)), E.left(q)]
+              return [I.crossFirst_(acc, P.succeed_(p, undefined)), E.left(q)]
             } else {
               return [acc, E.left(q.prepend([p, m - n]))]
             }

@@ -309,17 +309,17 @@ export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D
 export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> =
   Z.zap
 
-export const crossLeft_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
-  Z.zipLeft_
+export const crossFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
+  Z.zipFirst_
 
-export const crossLeft: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
-  Z.zipLeft
+export const crossFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
+  Z.zipFirst
 
-export const crossRight_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
-  Z.zipRight_
+export const crossSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
+  Z.zipSecond_
 
-export const crossRight: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
-  Z.zipRight
+export const crossSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
+  Z.zipSecond
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
   return (a, b) => crossWith_(a, b, f)

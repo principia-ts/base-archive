@@ -129,20 +129,20 @@ export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => St
   return (fab) => ap_(fab, fa)
 }
 
-export function crossLeft_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
+export function crossFirst_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function crossLeft<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
+export function crossSecond_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function crossRight<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
-  return (fa) => crossRight_(fa, fb)
+export function crossSecond<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 /*

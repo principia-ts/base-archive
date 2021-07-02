@@ -37,7 +37,7 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Fiber
           )
           const releaseMapEntry      = yield* _(
             RM.add(outerReleaseMap, (e) =>
-              pipe(fiber, F.interrupt, I.crossRight(releaseAll_(innerReleaseMap, e, sequential)))
+              pipe(fiber, F.interrupt, I.crossSecond(releaseAll_(innerReleaseMap, e, sequential)))
             )
           )
 

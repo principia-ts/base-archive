@@ -48,10 +48,10 @@ export class Managed<R, E, A> {
     return chain_(this, f)
   }
   ['*>']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> {
-    return crossRight_(this, fb)
+    return crossSecond_(this, fb)
   }
   ['<*']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A> {
-    return crossLeft_(this, fb)
+    return crossFirst_(this, fb)
   }
   ['<$>']<B>(f: (a: A) => B): Managed<R, E, B> {
     return map_(this, f)
@@ -555,7 +555,7 @@ export function ap<R, E, A>(
 /**
  * @trace call
  */
-export function crossLeft_<R, E, A, R1, E1, B>(
+export function crossFirst_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A> {
@@ -563,19 +563,19 @@ export function crossLeft_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossLeft_
+ * @dataFirst crossFirst_
  * @trace call
  */
-export function crossLeft<R1, E1, B>(
+export function crossFirst<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
-  return (fa) => crossLeft_(fa, fb)
+  return (fa) => crossFirst_(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function crossRight_<R, E, A, R1, E1, B>(
+export function crossSecond_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
@@ -583,13 +583,13 @@ export function crossRight_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFrist crossRight_
+ * @dataFrist crossSecond_
  * @trace call
  */
-export function crossRight<R1, E1, B>(
+export function crossSecond<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
-  return (fa) => crossRight_(fa, fb)
+  return (fa) => crossSecond_(fa, fb)
 }
 
 export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
@@ -961,7 +961,7 @@ export function chain_<R, E, A, R1, E1, A1>(
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
             I.chain_(I.result(releaseThat(e)), (e1) =>
-              I.chain_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.crossRight_(e1, e2)))
+              I.chain_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.crossSecond_(e1, e2)))
             ),
           b
         ])
@@ -1848,7 +1848,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
           )
         )
       ),
-      I.crossRight(ma.io)
+      I.crossSecond(ma.io)
     )
   )
 }

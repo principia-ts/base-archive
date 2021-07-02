@@ -137,15 +137,15 @@ export function ap<A>(fa: RoseTree<A>): <B>(fab: RoseTree<(a: A) => B>) => RoseT
   return (fab) => ap_(fab, fa)
 }
 
-export function crossLeft_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A> {
+export function crossFirst_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function crossLeft<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
+export function crossSecond_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 

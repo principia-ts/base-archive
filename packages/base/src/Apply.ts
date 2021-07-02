@@ -15,10 +15,10 @@ import { apF_, SemimonoidalFunctor } from './SemimonoidalFunctor'
 export interface Apply<F extends HKT.URIS, C = HKT.Auto> extends SemimonoidalFunctor<F, C> {
   readonly ap_: ApFn_<F, C>
   readonly ap: ApFn<F, C>
-  readonly crossLeft_: CrossLeftFn_<F, C>
-  readonly crossLeft: CrossLeftFn<F, C>
-  readonly crossRight_: CrossRightFn_<F, C>
-  readonly crossRight: CrossRightFn<F, C>
+  readonly crossFirst_: crossFirstFn_<F, C>
+  readonly crossFirst: crossFirstFn<F, C>
+  readonly crossSecond_: crossSecondFn_<F, C>
+  readonly crossSecond: crossSecondFn<F, C>
 }
 
 export type ApplyMin<F extends HKT.URIS, C = HKT.Auto> =
@@ -45,10 +45,10 @@ export function Apply<F extends HKT.URIS, C = HKT.Auto>(F: ApplyMin<F, C>): Appl
     ...SF,
     ap_,
     ap: (fa) => (fab) => ap_(fab, fa),
-    crossLeft_: crossLeftF_(F),
-    crossLeft: crossLeftF(F),
-    crossRight_: crossRightF_(F),
-    crossRight: crossRightF(F)
+    crossFirst_: crossFirstF_(F),
+    crossFirst: crossFirstF(F),
+    crossSecond_: crossSecondF_(F),
+    crossSecond: crossSecondF(F)
   })
 }
 
@@ -384,7 +384,7 @@ export function crossF_<F>(F: ApplyMin<HKT.UHKT<F>>): CrossFn_<HKT.UHKT<F>> {
   }
 }
 
-export interface CrossLeftFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface crossFirstFn<F extends HKT.URIS, TC = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     N extends string,
     K,
@@ -427,7 +427,7 @@ export interface CrossLeftFn<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export interface CrossLeftFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface crossFirstFn_<F extends HKT.URIS, TC = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
@@ -460,7 +460,7 @@ export interface CrossLeftFn_<F extends HKT.URIS, TC = HKT.Auto> {
   >
 }
 
-export function crossLeftF_<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): CrossLeftFn_<F, C> {
+export function crossFirstF_<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): crossFirstFn_<F, C> {
   if ('ap_' in A) {
     return (left, right) =>
       A.ap_(
@@ -474,7 +474,7 @@ export function crossLeftF_<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>)
   }
 }
 
-export function crossLeftF<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): CrossLeftFn<F, C> {
+export function crossFirstF<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): crossFirstFn<F, C> {
   if ('ap_' in A) {
     return (right) => (left) =>
       A.ap_(
@@ -488,7 +488,7 @@ export function crossLeftF<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>):
   }
 }
 
-export interface CrossLeftFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface crossFirstFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,
@@ -582,7 +582,7 @@ export interface CrossLeftFnComposition<F extends HKT.URIS, G extends HKT.URIS, 
   >
 }
 
-export interface CrossRightFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface crossSecondFn<F extends HKT.URIS, C = HKT.Auto> {
   <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     N extends string,
     K,
@@ -625,7 +625,7 @@ export interface CrossRightFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CrossRightFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface crossSecondFn_<F extends HKT.URIS, C = HKT.Auto> {
   <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
@@ -658,8 +658,8 @@ export interface CrossRightFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function crossRightF_<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): CrossRightFn_<F, C>
-export function crossRightF_<F>(A: ApplyMin<HKT.UHKT<F>>): CrossRightFn_<HKT.UHKT<F>> {
+export function crossSecondF_<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): crossSecondFn_<F, C>
+export function crossSecondF_<F>(A: ApplyMin<HKT.UHKT<F>>): crossSecondFn_<HKT.UHKT<F>> {
   if ('ap_' in A) {
     return (left, right) =>
       A.ap_(
@@ -673,8 +673,8 @@ export function crossRightF_<F>(A: ApplyMin<HKT.UHKT<F>>): CrossRightFn_<HKT.UHK
   }
 }
 
-export function crossRightF<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): CrossRightFn<F, C>
-export function crossRightF<F>(A: ApplyMin<HKT.UHKT<F>>): CrossRightFn<HKT.UHKT<F>> {
+export function crossSecondF<F extends HKT.URIS, C = HKT.Auto>(A: ApplyMin<F, C>): crossSecondFn<F, C>
+export function crossSecondF<F>(A: ApplyMin<HKT.UHKT<F>>): crossSecondFn<HKT.UHKT<F>> {
   if ('ap_' in A) {
     return (right) => (left) =>
       A.ap_(
@@ -688,7 +688,7 @@ export function crossRightF<F>(A: ApplyMin<HKT.UHKT<F>>): CrossRightFn<HKT.UHKT<
   }
 }
 
-export interface CrossRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface crossSecondFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     NF1 extends string,
     KF1,

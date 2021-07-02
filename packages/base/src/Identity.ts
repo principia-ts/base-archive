@@ -65,26 +65,26 @@ export function ap<A>(fa: A): <B>(fab: (a: A) => B) => B {
   return (fab) => fab(fa)
 }
 
-export function crossLeft_<A, B>(fa: A, fb: B): A {
+export function crossFirst_<A, B>(fa: A, fb: B): A {
   return ap_(
     map_(fa, (a) => () => a),
     fb
   )
 }
 
-export function crossLeft<B>(fb: B): <A>(fa: A) => A {
-  return (fa) => crossLeft_(fa, fb)
+export function crossFirst<B>(fb: B): <A>(fa: A) => A {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function crossRight_<A, B>(fa: A, fb: B): B {
+export function crossSecond_<A, B>(fa: A, fb: B): B {
   return ap_(
     map_(fa, (_) => (b: B) => b),
     fb
   )
 }
 
-export function crossRight<B>(fb: B): <A>(fa: A) => B {
-  return (fa) => crossRight_(fa, fb)
+export function crossSecond<B>(fb: B): <A>(fa: A) => B {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 export function crossWith_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
