@@ -90,8 +90,8 @@ abstract class IOSyntax<R, E, A> {
    *
    * @trace 0
    */
-  ['$>']<B>(this: IO<R, E, A>, b: () => B): IO<R, E, B> {
-    return this['<$>'](b)
+  ['$>']<B>(this: IO<R, E, A>, b: B): IO<R, E, B> {
+    return this['<$>'](() => b)
   }
   /**
    * @trace call
@@ -105,7 +105,7 @@ abstract class IOSyntax<R, E, A> {
    */
   ['<*']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
     const trace = accessCallTrace()
-    return this['>>='](traceFrom(trace, (a) => mb['$>'](() => a)))
+    return this['>>='](traceFrom(trace, (a) => mb['$>'](a)))
   }
   /**
    * @trace call
@@ -119,28 +119,6 @@ abstract class IOSyntax<R, E, A> {
     aspect: IOAspect<R1, E1, A1, EC>
   ): IO<R & R1, E | E1, A> {
     return aspect.apply(this)
-  }
-  /**
-   * A symbolic alias for `orDie`
-   *
-   * @trace call
-   */
-  ['!']<R, E, A>(this: IO<R, E, A>): IO<R, never, A> {
-    const trace = accessCallTrace()
-    return new Match(
-      this,
-      traceFrom(
-        trace,
-        flow(
-          C.failureOrCause,
-          E.match(
-            (e) => new Fail(() => C.die(e)),
-            (c) => new Fail(() => c)
-          )
-        )
-      ),
-      (a) => new Succeed(a)
-    )
   }
 }
 

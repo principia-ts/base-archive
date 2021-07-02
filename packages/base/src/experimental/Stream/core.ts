@@ -2439,16 +2439,16 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
                 (ex, current) =>
                   Ex.match_(
                     ex,
-                    (cause) => F.interrupt(current)['$>'](() => Ch.halt(cause)),
+                    (cause) => F.interrupt(current)['$>'](Ch.halt(cause)),
                     (chunk) => I.succeed(Ch.write(chunk)['*>'](consumer(new DS.Current(current))))
                   ),
                 (ex, previous) =>
                   Ex.match_(
                     ex,
-                    (cause) => F.interrupt(previous)['$>'](() => Ch.halt(cause)),
+                    (cause) => F.interrupt(previous)['$>'](Ch.halt(cause)),
                     HO.matchSignal({
                       Emit: ({ els }) => F.interrupt(previous)['*>'](enqueue(els)),
-                      Halt: ({ error }) => F.interrupt(previous)['$>'](() => Ch.halt(error)),
+                      Halt: ({ error }) => F.interrupt(previous)['$>'](Ch.halt(error)),
                       End: () => F.join(previous)['<$>']((chunk) => Ch.write(chunk)['*>'](Ch.unit()))
                     })
                   )
@@ -3120,7 +3120,7 @@ function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
             I.foldl(s, (s1, a) =>
               pipe(
                 f(s1, a),
-                I.chain(([b, s2]) => emit(b)['$>'](() => s2))
+                I.chain(([b, s2]) => emit(b)['$>'](s2))
               )
             ),
             I.match(
@@ -3786,9 +3786,9 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
             inp: C.Chunk<A>,
             a: A
           ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> => {
-            const advance = driver.next(a)['$>'](() => Ch.write(C.single(f(a)))['*>'](step(inp, a)))
+            const advance = driver.next(a)['$>'](Ch.write(C.single(f(a)))['*>'](step(inp, a)))
             const reset   = I.gen(function* (_) {
-              const b = yield* _(driver.last['!']())
+              const b = yield* _(I.orDie(driver.last))
               yield* _(driver.reset)
               return Ch.write(C.single(g(b)))['*>'](feed(inp))
             })

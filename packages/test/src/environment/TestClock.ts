@@ -227,7 +227,7 @@ export class TestClock implements Clock {
     this.warningState,
     matchTag({
       Start: () => O.some(I.succeed(Done)),
-      Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](() => Done)),
+      Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](Done)),
       Done: () => O.none()
     })
   )
