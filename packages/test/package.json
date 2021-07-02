@@ -1,6 +1,6 @@
 {
   "name": "@principia/test",
-  "version": "0.11.20",
+  "version": "0.11.21",
   "description": "Abstractions for IO tests",
   "repository": "git://github.com/0x706b/principia",
   "license": "MIT",
@@ -85,7 +85,7 @@
     "prepublish": "yarn buildAll"
   },
   "dependencies": {
-    "@principia/base": "^0.11.20",
+    "@principia/base": "^0.11.21",
     "@principia/compile": "0.9.20"
   },
   "publishConfig": {
