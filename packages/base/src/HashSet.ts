@@ -514,10 +514,12 @@ export function union<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
+export function toArray_<A>(set: HashSet<A>, O: P.Ord<A>): ReadonlyArray<A> {
+  const r: Array<A> = []
+  forEach_(set, (a) => r.push(a))
+  return r.sort(O.compare_)
+}
+
 export function toArray<A>(O: P.Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
-  return (set) => {
-    const r: Array<A> = []
-    forEach_(set, (a) => r.push(a))
-    return r.sort(O.compare_)
-  }
+  return (set) => toArray_(set, O)
 }
