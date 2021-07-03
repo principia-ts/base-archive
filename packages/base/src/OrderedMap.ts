@@ -69,7 +69,7 @@ export function isNonEmpty<K, V>(m: OrderedMap<K, V>): boolean {
 
 /**
  * Inserts an element into the correct position in the map.
- * This function ignores duplicate keys. For one that combines duplicate key's values,
+ * This function inserts duplicate keys. For one that combines duplicate key's values,
  * see `insertWith_`
  */
 export function insert_<K, V>(m: OrderedMap<K, V>, key: K, value: V): OrderedMap<K, V> {
@@ -78,25 +78,16 @@ export function insert_<K, V>(m: OrderedMap<K, V>, key: K, value: V): OrderedMap
   }
   const cmp                                   = m.ord.compare_
   const nodeStack: Array<Mutable<Node<K, V>>> = []
-  const orderStack: Array<1 | -1>             = []
+  const orderStack: Array<P.Ordering>         = []
   let n: RBNode<K, V>                         = m.root
   while (n) {
     const d = cmp(key, n.key)
     nodeStack.push(n)
-    switch (d) {
-      case -1: {
-        orderStack.push(d)
-        n = n.left
-        break
-      }
-      case 1: {
-        orderStack.push(d)
-        n = n.right
-        break
-      }
-      case 0: {
-        return m
-      }
+    orderStack.push(d)
+    if (d <= 0) {
+      n = n.left
+    } else {
+      n = n.right
     }
   }
 
@@ -117,7 +108,7 @@ export function insert<K, V>(key: K, value: V): (m: OrderedMap<K, V>) => Ordered
 }
 
 /**
- * Inserts an element into the correct position in the map, combining euqal key's values
+ * Inserts an element into the correct position in the map, combining the values of keys of equal ordering
  * with a `Semigroup` instance
  */
 export function insertWith_<V>(S: P.Semigroup<V>) {
@@ -166,6 +157,15 @@ export function insertWith_<V>(S: P.Semigroup<V>) {
 }
 
 /**
+ * Inserts an element into the correct position in the map, combining euqal key's values
+ * with a `Semigroup` instance
+ */
+export function insertWith<V>(S: P.Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
+  const insertWithS_ = insertWith_(S)
+  return (key, value) => (m) => insertWithS_(m, key, value)
+}
+
+/**
  * Removes an element from the map
  */
 export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
@@ -178,15 +178,6 @@ export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
  */
 export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => remove_(m, key)
-}
-
-/**
- * Inserts an element into the correct position in the map, combining euqal key's values
- * with a `Semigroup` instance
- */
-export function insertWith<V>(S: P.Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
-  const insertWithS_ = insertWith_(S)
-  return (key, value) => (m) => insertWithS_(m, key, value)
 }
 
 /**
@@ -977,7 +968,7 @@ export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) =>
 }
 
 /**
- * Returns an iterable of all the values in the mpa in sorted order
+ * Returns an iterable of all the values in the map in sorted order
  */
 export function values_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable<V> {
   return {
@@ -1425,18 +1416,17 @@ function recountNode<K, V>(n: Mutable<Node<K, V>>): void {
   n.count = 1 + (n.left ? n.left.count : 0) + (n.right ? n.right.count : 0)
 }
 
-function rebuildModifiedPath<K, V>(nodeStack: Array<Mutable<Node<K, V>>>, orderStack: Array<1 | -1>, inc = 1): void {
+function rebuildModifiedPath<K, V>(
+  nodeStack: Array<Mutable<Node<K, V>>>,
+  orderStack: Array<P.Ordering>,
+  inc = 1
+): void {
   for (let s = nodeStack.length - 2; s >= 0; --s) {
     const n = nodeStack[s]
-    switch (orderStack[s]) {
-      case -1: {
-        nodeStack[s] = Node(n.color, nodeStack[s + 1], n.key, n.value, n.right, n.count + inc)
-        break
-      }
-      case 1: {
-        nodeStack[s] = Node(n.color, n.left, n.key, n.value, nodeStack[s + 1], n.count + inc)
-        break
-      }
+    if (orderStack[s] <= 0) {
+      nodeStack[s] = Node(n.color, nodeStack[s + 1], n.key, n.value, n.right, n.count + inc)
+    } else {
+      nodeStack[s] = Node(n.color, n.left, n.key, n.value, nodeStack[s + 1], n.count + inc)
     }
   }
 }

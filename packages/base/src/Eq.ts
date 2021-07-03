@@ -1,8 +1,8 @@
 import { memoize } from './function'
 
 export interface Eq<A> {
-  readonly equals_: (x: A, y: A) => boolean
-  readonly equals: (y: A) => (x: A) => boolean
+  readonly equals_: EqualsFn_<A>
+  readonly equals: EqualsFn<A>
 }
 
 export function Eq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
@@ -11,6 +11,14 @@ export function Eq<A>(equals: (x: A, y: A) => boolean): Eq<A> {
     equals_,
     equals: (y) => (x) => equals_(x, y)
   }
+}
+
+export interface EqualsFn_<A> {
+  (x: A, y: A): boolean
+}
+
+export interface EqualsFn<A> {
+  (y: A): (x: A) => boolean
 }
 
 export type TypeOf<E> = E extends Eq<infer A> ? A : never

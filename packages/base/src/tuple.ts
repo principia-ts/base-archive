@@ -3,6 +3,7 @@ import * as E from './Eq'
 import { pipe } from './function'
 import * as G from './Guard'
 import * as _ from './internal/tuple'
+import * as O from './Ord'
 import * as S from './Show'
 
 export const tuple = _.tuple
@@ -51,7 +52,7 @@ export function getGuard(...components: ReadonlyArray<G.AnyUGuard>): G.Guard<unk
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Guard
+ * Show
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -66,4 +67,28 @@ export function getShow<C extends ReadonlyArray<S.Show<any>>>(
         A.join(', ')
       )}]`
   )
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Ord
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getOrd<C extends ReadonlyArray<O.Ord<any>>>(
+  ...components: C
+): O.Ord<{ [K in keyof C]: O.TypeOf<C[K]> }> {
+  return O.Ord({
+    compare_: (x, y) => {
+      let i = 0
+      for (; i < components.length - 1; i++) {
+        const r = components[i].compare_(x[i], y[i])
+        if (r !== 0) {
+          return r
+        }
+      }
+      return components[i].compare_(x[i], y[i])
+    },
+    equals_: getEq(...components).equals_ as any
+  })
 }

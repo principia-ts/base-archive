@@ -27,7 +27,10 @@ export const Eq: P.Eq<number> = E.strict
 /**
  * @category instances
  */
-export const Ord: P.Ord<number> = P.Ord((x, y) => (x < y ? -1 : x > y ? 1 : 0))
+export const Ord: P.Ord<number> = P.Ord({
+  compare_: (x, y) => (x < y ? -1 : x > y ? 1 : 0),
+  equals_: (x, y) => x === y
+})
 
 /**
  * @category instances

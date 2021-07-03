@@ -6,6 +6,7 @@ import type { Eq } from './Eq'
 import type { Eval } from './Eval'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
+import type { HashMap } from './HashMap'
 import type { Identity } from './Identity'
 import type { IO } from './IO'
 import type { List } from './List/core'
@@ -130,6 +131,9 @@ export type ChunkURI = typeof ChunkURI
 export const RoseTreeURI = 'RoseTree'
 export type RoseTreeURI = typeof RoseTreeURI
 
+export const HashMapURI = 'HashMap'
+export type HashMapURI = typeof HashMapURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -166,12 +170,14 @@ declare module './HKT' {
     [RoseTreeURI]: RoseTree<A>
     [StateInURI]: StateIn<S, A>
     [StateOutURI]: StateOut<S, A>
+    [HashMapURI]: HashMap<K, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number
     [MapURI]: K
     [NonEmptyArrayURI]: number
     [RecordURI]: N
+    [HashMapURI]: K
     [IterableURI]: number
     [AsyncIterableURI]: number
     [ChunkURI]: number

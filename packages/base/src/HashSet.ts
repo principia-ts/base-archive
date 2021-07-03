@@ -1,7 +1,9 @@
 import type { Equatable, Hashable } from './Structural'
 
+import * as E from './Either'
 import * as HM from './HashMap'
 import * as It from './Iterable/core'
+import * as O from './Option'
 import { not } from './Predicate'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
@@ -22,14 +24,6 @@ export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
   }
 }
 
-export function make<V>(K: P.Hash<V> & P.Eq<V>) {
-  return new HashSet(HM.make(K))
-}
-
-export function makeDefault<V>() {
-  return new HashSet<V>(HM.makeDefault())
-}
-
 export function add_<V>(set: HashSet<V>, v: V) {
   return set.keyMap.editable ? (HM.set_(set.keyMap, v, true), set) : new HashSet(HM.set_(set.keyMap, v, true))
 }
@@ -38,20 +32,20 @@ export function add<V>(v: V) {
   return (set: HashSet<V>) => add_(set, v)
 }
 
-export function remove_<V>(set: HashSet<V>, v: V) {
-  return set.keyMap.editable ? (HM.remove_(set.keyMap, v), set) : new HashSet(HM.remove_(set.keyMap, v))
+/**
+ * Mark `set` as mutable.
+ */
+export function beginMutation<K>(set: HashSet<K>) {
+  return new HashSet(HM.beginMutation(set.keyMap))
 }
 
-export function remove<V>(v: V) {
-  return (set: HashSet<V>) => remove_(set, v)
-}
-
-export function values<V>(set: HashSet<V>) {
-  return HM.keys(set.keyMap)
-}
-
-export function has_<V>(set: HashSet<V>, v: V) {
-  return HM.has_(set.keyMap, v)
+/**
+ * Mark `set` as immutable.
+ */
+export function endMutation<K>(set: HashSet<K>) {
+  // eslint-disable-next-line functional/immutable-data
+  set.keyMap.editable = false
+  return set
 }
 
 /**
@@ -70,6 +64,22 @@ export function forEach<V>(f: (v: V, m: HashSet<V>) => void): (map: HashSet<V>) 
   return (map) => forEach_(map, f)
 }
 
+export function has_<V>(set: HashSet<V>, v: V): boolean {
+  return HM.has_(set.keyMap, v)
+}
+
+export function has<V>(v: V): (set: HashSet<V>) => boolean {
+  return (set) => has_(set, v)
+}
+
+export function make<V>(K: P.Hash<V> & P.Eq<V>) {
+  return new HashSet(HM.make(K))
+}
+
+export function makeDefault<V>() {
+  return new HashSet<V>(HM.makeDefault())
+}
+
 /**
  * Mutate `set` within the context of `f`.
  */
@@ -83,31 +93,46 @@ export function mutate<V>(transient: (set: HashSet<V>) => void): (set: HashSet<V
   return (set) => mutate_(set, transient)
 }
 
-/**
- * The set of elements which are in both the first and second set,
- *
- * the hash and equal of the 2 sets has to be the same
- */
-export function intersection_<A>(l: HashSet<A>, r: Iterable<A>): HashSet<A> {
-  const x = make<A>(l.keyMap.config)
+export function remove_<V>(set: HashSet<V>, v: V) {
+  return set.keyMap.editable ? (HM.remove_(set.keyMap, v), set) : new HashSet(HM.remove_(set.keyMap, v))
+}
 
-  return mutate_(x, (y) => {
-    for (const k of r) {
-      if (has_(l, k)) {
-        add_(y, k)
-      }
-    }
-  })
+export function remove<V>(v: V) {
+  return (set: HashSet<V>) => remove_(set, v)
 }
 
 /**
- * The set of elements which are in both the first and second set
- *
- * @dataFirst intersection_
+ * Calculate the number of keys pairs in a set
  */
-export function intersection<A>(r: Iterable<A>) {
-  return (l: HashSet<A>) => intersection_(l, r)
+export function size<A>(set: HashSet<A>) {
+  return HM.size(set.keyMap)
 }
+
+/**
+ * If element is present remove it, if not add it
+ *
+ * @dataFirst toggle_
+ */
+export function toggle<A>(a: A): (set: HashSet<A>) => HashSet<A> {
+  return (set) => toggle_(set, a)
+}
+
+/**
+ * If element is present remove it, if not add it
+ */
+export function toggle_<A>(set: HashSet<A>, a: A): HashSet<A> {
+  return (has_(set, a) ? remove : add)(a)(set)
+}
+
+export function values<V>(set: HashSet<V>) {
+  return HM.keys(set.keyMap)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Functor
+ * -------------------------------------------------------------------------------------------------
+ */
 
 /**
  * Projects a Set through a function
@@ -137,73 +162,11 @@ export function map<B>(E: HM.Config<B>): <A>(f: (x: A) => B) => (set: HashSet<A>
   return (f) => (set) => m(set, f)
 }
 
-/**
- * true if one or more elements match predicate
- *
- * @dataFirst some_
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Monad
+ * -------------------------------------------------------------------------------------------------
  */
-export function some<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
-  return (set) => some_(set, predicate)
-}
-
-/**
- * true if one or more elements match predicate
- */
-export function some_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
-  let found = false
-  for (const e of set) {
-    found = predicate(e)
-    if (found) {
-      break
-    }
-  }
-  return found
-}
-
-/**
- * Calculate the number of keys pairs in a set
- */
-export function size<A>(set: HashSet<A>) {
-  return HM.size(set.keyMap)
-}
-
-/**
- * Creates an equal for a set
- */
-export function getEq<A>(): P.Eq<HashSet<A>> {
-  return P.Eq((x, y) => {
-    if (y === x) {
-      return true
-    }
-    if (size(x) !== size(y)) {
-      return false
-    }
-    let eq = true
-    for (const vx of x) {
-      if (!has_(y, vx)) {
-        eq = false
-        break
-      }
-    }
-    return eq
-  })
-}
-
-/**
- * true if all elements match predicate
- *
- * @dataFirst every_
- */
-export function every<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
-  return (set) => every_(set, predicate)
-}
-
-/**
- * true if all elements match predicate
- */
-export function every_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
-  return not(some(not(predicate)))(set)
-}
 
 /**
  * Map + Flatten
@@ -233,25 +196,39 @@ export function chain_<B>(E: HM.Config<B>): <A>(set: HashSet<A>, f: (x: A) => It
     })
 }
 
-/**
- * `true` if and only if every element in the first set is an element of the second set,
- *
- * the hash and equal of the 2 sets has to be the same
- *
- * @dataFirst isSubset_
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Eq
+ * -------------------------------------------------------------------------------------------------
  */
-export function isSubset<A>(y: HashSet<A>): (x: HashSet<A>) => boolean {
-  return (x) => isSubset_(y, x)
-}
 
 /**
- * `true` if and only if every element in the first set is an element of the second set,
- *
- * the hash and equal of the 2 sets has to be the same
+ * Creates an equal for a set
  */
-export function isSubset_<A>(x: HashSet<A>, y: HashSet<A>): boolean {
-  return every_(x, (a: A) => has_(y, a))
+export function getEq<A>(): P.Eq<HashSet<A>> {
+  return P.Eq((x, y) => {
+    if (y === x) {
+      return true
+    }
+    if (size(x) !== size(y)) {
+      return false
+    }
+    let eq = true
+    for (const vx of x) {
+      if (!has_(y, vx)) {
+        eq = false
+        break
+      }
+    }
+    return eq
+  })
 }
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Filterable
+ * -------------------------------------------------------------------------------------------------
+ */
 
 /**
  * Filter set values using predicate
@@ -283,6 +260,26 @@ export function filter_<A>(set: HashSet<A>, predicate: P.Predicate<A>): HashSet<
     }
     return r
   })
+}
+
+export function filterMap_<B>(B: HM.Config<B>): <A>(fa: HashSet<A>, f: (a: A) => O.Option<B>) => HashSet<B> {
+  return (fa, f) => {
+    const out = beginMutation(make(B))
+    for (const a of fa) {
+      const ob = f(a)
+      if (O.isSome(ob)) {
+        add_(out, ob.value)
+      }
+    }
+    return endMutation(out)
+  }
+}
+
+/**
+ * @dataFirst filterMap_
+ */
+export function filterMap<B>(B: HM.Config<B>): <A>(f: (a: A) => O.Option<B>) => (fa: HashSet<A>) => HashSet<B> {
+  return (f) => (fa) => filterMap_(B)(fa, f)
 }
 
 /**
@@ -322,24 +319,68 @@ export function partition_<A>(set: HashSet<A>, predicate: P.Predicate<A>): reado
   return tuple(endMutation(left), endMutation(right))
 }
 
-/**
- * Mark `set` as mutable.
- */
-export function beginMutation<K>(set: HashSet<K>) {
-  return new HashSet(HM.beginMutation(set.keyMap))
+export function partitionMap_<B, C>(
+  B: HM.Config<B>,
+  C: HM.Config<C>
+): <A>(fa: HashSet<A>, f: (a: A) => E.Either<B, C>) => readonly [HashSet<B>, HashSet<C>] {
+  return (fa, f) => {
+    const right = beginMutation(make(C))
+    const left  = beginMutation(make(B))
+    for (const a of fa) {
+      E.match_(
+        f(a),
+        (b) => {
+          add_(left, b)
+        },
+        (c) => {
+          add_(right, c)
+        }
+      )
+    }
+    return [endMutation(left), endMutation(right)]
+  }
 }
 
 /**
- * Mark `set` as immutable.
+ * @dataFirst partitionMap_
  */
-export function endMutation<K>(set: HashSet<K>) {
-  // eslint-disable-next-line functional/immutable-data
-  set.keyMap.editable = false
-  return set
+export function partitionMap<B, C>(
+  B: HM.Config<B>,
+  C: HM.Config<C>
+): <A>(f: (a: A) => E.Either<B, C>) => (fa: HashSet<A>) => readonly [HashSet<B>, HashSet<C>] {
+  return (f) => (fa) => partitionMap_(B, C)(fa, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Foldable
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Reduce a state over the set elements
+ */
+export function foldl_<A, B>(fa: HashSet<A>, b: B, f: (b: B, v: A) => B): B {
+  return HM.ifoldl_(fa.keyMap, b, (b, a) => f(b, a))
 }
 
 /**
- * Form the set difference (`x` - `y`)
+ * Reduce a state over the set elements
+ *
+ * @dataFirst foldl_
+ */
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: HashSet<A>) => B {
+  return (fa) => foldl_(fa, b, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Combinators
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Form the set difference
  */
 export function difference_<A>(x: HashSet<A>, y: Iterable<A>): HashSet<A> {
   return mutate_(x, (s) => {
@@ -350,7 +391,7 @@ export function difference_<A>(x: HashSet<A>, y: Iterable<A>): HashSet<A> {
 }
 
 /**
- * Form the set difference (`x` - `y`)
+ * Form the set difference
  *
  * @dataFirst difference_
  */
@@ -359,35 +400,88 @@ export function difference<A>(y: Iterable<A>): (x: HashSet<A>) => HashSet<A> {
 }
 
 /**
- * Reduce a state over the map entries
+ * true if all elements match predicate
  */
-export function foldl_<V, Z>(set: HashSet<V>, z: Z, f: (z: Z, v: V) => Z): Z {
-  return HM.ifoldl_(set.keyMap, z, (z, v) => f(z, v))
+export function every_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
+  return not(some(not(predicate)))(set)
 }
 
 /**
- * Reduce a state over the map entries
+ * true if all elements match predicate
  *
- * @dataFirst foldl_
+ * @dataFirst every_
  */
-export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
-  return (set: HashSet<V>) => foldl_(set, z, f)
+export function every<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
+  return (set) => every_(set, predicate)
 }
 
 /**
- * If element is present remove it, if not add it
+ * The set of elements which are in both the first and second set,
  *
- * @dataFirst toggle_
+ * the hash and equal of the 2 sets has to be the same
  */
-export function toggle<A>(a: A): (set: HashSet<A>) => HashSet<A> {
-  return (set) => toggle_(set, a)
+export function intersection_<A>(l: HashSet<A>, r: Iterable<A>): HashSet<A> {
+  const x = make<A>(l.keyMap.config)
+
+  return mutate_(x, (y) => {
+    for (const k of r) {
+      if (has_(l, k)) {
+        add_(y, k)
+      }
+    }
+  })
 }
 
 /**
- * If element is present remove it, if not add it
+ * The set of elements which are in both the first and second set
+ *
+ * @dataFirst intersection_
  */
-export function toggle_<A>(set: HashSet<A>, a: A): HashSet<A> {
-  return (has_(set, a) ? remove : add)(a)(set)
+export function intersection<A>(r: Iterable<A>) {
+  return (l: HashSet<A>) => intersection_(l, r)
+}
+
+/**
+ * `true` if and only if every element in the first set is an element of the second set,
+ *
+ * the hash and equal of the 2 sets has to be the same
+ */
+export function isSubset_<A>(x: HashSet<A>, y: HashSet<A>): boolean {
+  return every_(x, (a: A) => has_(y, a))
+}
+
+/**
+ * `true` if and only if every element in the first set is an element of the second set,
+ *
+ * the hash and equal of the 2 sets has to be the same
+ *
+ * @dataFirst isSubset_
+ */
+export function isSubset<A>(y: HashSet<A>): (x: HashSet<A>) => boolean {
+  return (x) => isSubset_(y, x)
+}
+
+/**
+ * true if one or more elements match predicate
+ */
+export function some_<A>(set: HashSet<A>, predicate: P.Predicate<A>): boolean {
+  let found = false
+  for (const e of set) {
+    found = predicate(e)
+    if (found) {
+      break
+    }
+  }
+  return found
+}
+
+/**
+ * true if one or more elements match predicate
+ *
+ * @dataFirst some_
+ */
+export function some<A>(predicate: P.Predicate<A>): (set: HashSet<A>) => boolean {
+  return (set) => some_(set, predicate)
 }
 
 /**
@@ -396,12 +490,7 @@ export function toggle_<A>(set: HashSet<A>, a: A): HashSet<A> {
  * the hash and equal of the 2 sets has to be the same
  */
 export function union_<A>(l: HashSet<A>, r: Iterable<A>): HashSet<A> {
-  const x = make(l.keyMap.config)
-
-  return mutate_(x, (x) => {
-    forEach_(l, (a) => {
-      add_(x, a)
-    })
+  return mutate_(l, (x) => {
     for (const a of r) {
       add_(x, a)
     }

@@ -874,17 +874,20 @@ export function getMonoid<A = never>(): P.Monoid<ReadonlyArray<A>> {
  * @since 1.0.0
  */
 export function getOrd<A>(O: P.Ord<A>): P.Ord<ReadonlyArray<A>> {
-  return P.Ord((a, b) => {
-    const aLen = a.length
-    const bLen = b.length
-    const len  = Math.min(aLen, bLen)
-    for (let i = 0; i < len; i++) {
-      const ordering = O.compare_(a[i], b[i])
-      if (ordering === EQ) {
-        return ordering
+  return P.Ord({
+    compare_: (a, b) => {
+      const aLen = a.length
+      const bLen = b.length
+      const len  = Math.min(aLen, bLen)
+      for (let i = 0; i < len; i++) {
+        const ordering = O.compare_(a[i], b[i])
+        if (ordering === EQ) {
+          return ordering
+        }
       }
-    }
-    return N.Ord.compare_(aLen, bLen)
+      return N.Ord.compare_(aLen, bLen)
+    },
+    equals_: getEq(O).equals_
   })
 }
 
@@ -1454,15 +1457,15 @@ export function dropLastWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
  */
 export function elem_<A>(E: P.Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
   return (as, a) => {
-  const predicate = (element: A) => E.equals_(element, a)
-  let i           = 0
-  const len       = as.length
-  for (; i < len; i++) {
-    if (predicate(as[i])) {
-      return true
+    const predicate = (element: A) => E.equals_(element, a)
+    let i           = 0
+    const len       = as.length
+    for (; i < len; i++) {
+      if (predicate(as[i])) {
+        return true
+      }
     }
-  }
-  return false
+    return false
   }
 }
 
@@ -2382,21 +2385,20 @@ export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [Reado
  */
 export function uniq<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => {
-
-  if (as.length === 1) {
-    return as
-  }
-  const elemE_        = elem_(E)
-  const out: Array<A> = []
-  const len           = as.length
-  let i               = 0
-  for (; i < len; i++) {
-    const a = as[i]
-    if (!elemE_(out, a)) {
-      out.push(a)
+    if (as.length === 1) {
+      return as
     }
-  }
-  return out
+    const elemE_        = elem_(E)
+    const out: Array<A> = []
+    const len           = as.length
+    let i               = 0
+    for (; i < len; i++) {
+      const a = as[i]
+      if (!elemE_(out, a)) {
+        out.push(a)
+      }
+    }
+    return out
   }
 }
 
