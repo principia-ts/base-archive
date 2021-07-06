@@ -1178,9 +1178,9 @@ export const chainS_ = P.chainSF_(Monad)
 
 export const chainS = P.chainSF(Monad)
 
-export const asS_ = P.asSF_(Monad)
+export const toS_ = P.toSF_(Monad)
 
-export const asS = P.asSF(Monad)
+export const toS = P.toSF(Monad)
 
 const adapter: {
   <A>(_: Tag<A>): GenHKT<Async<Has<A>, never, A>, A>

@@ -2626,15 +2626,15 @@ export const pureS: <K, N extends string, A>(
   f: (_: K) => A
 ) => (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> = P.pureSF(Monad)
 
-export const asS_ = P.asSF_(Monad)
+export const toS_ = P.toSF_(Monad)
 
-export const bindTo: <K, N extends string>(
+export const toS: <K, N extends string>(
   name: Exclude<N, keyof K>
 ) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<
   {
     [k in Exclude<N, keyof K>]: A
   }
-> = P.asSF(Functor)
+> = P.toSF(Functor)
 
 /*
  * -------------------------------------------------------------------------------------------------

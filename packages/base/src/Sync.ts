@@ -860,11 +860,11 @@ export const chainS: <R, E, A, K, N extends string>(
   }
 > = P.chainSF(Monad)
 
-export const asS_ = P.asSF_(Monad)
+export const toS_ = P.toSF_(Monad)
 
-export const asS: <K, N extends string>(
+export const toS: <K, N extends string>(
   name: Exclude<N, keyof K>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.asSF(Monad)
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.toSF(Monad)
 
 /*
  * -------------------------------------------------------------------------------------------------

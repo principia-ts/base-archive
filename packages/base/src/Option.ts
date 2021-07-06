@@ -1037,7 +1037,7 @@ export const pureS = P.pureSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const asS_ = P.asSF_(Monad)
+export const toS_ = P.toSF_(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -1045,7 +1045,7 @@ export const asS_ = P.asSF_(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const asS = P.asSF(Monad)
+export const toS = P.toSF(Monad)
 
 export const Filterable = P.Filterable<URI>({
   map_,

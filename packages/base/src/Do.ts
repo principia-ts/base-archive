@@ -1,8 +1,8 @@
-import type { AsSFn, AsSFn_ } from './Functor'
+import type { ToSFn, ToSFn_ } from './Functor'
 import type { Monad } from './Monad'
 
 import { flow, pipe } from './function'
-import { asSF, asSF_ } from './Functor'
+import { toSF, toSF_ } from './Functor'
 import * as HKT from './HKT'
 
 export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
@@ -10,8 +10,8 @@ export interface Do<F extends HKT.URIS, C = HKT.Auto> extends Monad<F, C> {
   readonly pureS_: PureSFn_<F, C>
   readonly chainS: ChainSFn<F, C>
   readonly pureS: PureSFn<F, C>
-  readonly asS_: AsSFn_<F, C>
-  readonly asS: AsSFn<F, C>
+  readonly toS_: ToSFn_<F, C>
+  readonly toS: ToSFn<F, C>
 }
 
 export function Do<F extends HKT.URIS, C = HKT.Auto>(M: Monad<F, C>): Do<F, C>
@@ -29,8 +29,8 @@ export function Do<F>(M: Monad<HKT.UHKT<F>>): Do<HKT.UHKT<F>> {
     chainS: (name, f) => (fa) => chainS_(fa, name, f),
     pureS_: (fa, name, f) => chainS_(fa, name, flow(f, M.pure)),
     pureS: (name, f) => (fa) => chainS_(fa, name, flow(f, M.pure)),
-    asS_: asSF_(M),
-    asS: asSF(M)
+    toS_: toSF_(M),
+    toS: toSF(M)
   })
 }
 

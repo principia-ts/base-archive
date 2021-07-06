@@ -262,7 +262,7 @@ export const chainS_ = P.chainSF_(Monad)
 export const chainS  = P.chainSF(Monad)
 export const pureS_  = P.pureSF_(Monad)
 export const pureS   = P.pureSF(Monad)
-export const asS_    = P.asSF_(Monad)
-export const asS     = P.asSF(Monad)
+export const toS_    = P.toSF_(Monad)
+export const toS     = P.toSF(Monad)
 
 export { IdentityURI } from './Modules'

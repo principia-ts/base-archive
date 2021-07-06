@@ -2947,7 +2947,7 @@ export function chainS<R, E, A, K, N extends string>(
 /**
  * @trace call
  */
-export function asS_<R, E, A, N extends string>(ma: Managed<R, E, A>, name: N): Managed<R, E, { [k in N]: A }> {
+export function toS_<R, E, A, N extends string>(ma: Managed<R, E, A>, name: N): Managed<R, E, { [k in N]: A }> {
   const trace = accessCallTrace()
   return map_(
     ma,
@@ -2958,7 +2958,7 @@ export function asS_<R, E, A, N extends string>(ma: Managed<R, E, A>, name: N): 
 /**
  * @trace call
  */
-export function asS<N extends string>(name: N): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
+export function toS<N extends string>(name: N): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
   const trace = accessCallTrace()
   return (fa) =>
     map_(

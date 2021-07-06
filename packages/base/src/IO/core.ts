@@ -1403,7 +1403,7 @@ export function chainS<R, E, A, K, N extends string>(
 /**
  * @trace call
  */
-export function asS_<R, E, A, N extends string>(ma: IO<R, E, A>, name: N): IO<R, E, { [k in N]: A }> {
+export function toS_<R, E, A, N extends string>(ma: IO<R, E, A>, name: N): IO<R, E, { [k in N]: A }> {
   const trace = accessCallTrace()
   return map_(
     ma,
@@ -1414,7 +1414,7 @@ export function asS_<R, E, A, N extends string>(ma: IO<R, E, A>, name: N): IO<R,
 /**
  * @trace call
  */
-export function asS<N extends string>(name: N): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, { [k in N]: A }> {
+export function toS<N extends string>(name: N): <R, E, A>(fa: IO<R, E, A>) => IO<R, E, { [k in N]: A }> {
   const trace = accessCallTrace()
   return (fa) =>
     map_(
