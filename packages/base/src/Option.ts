@@ -914,8 +914,10 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
 })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const mapN      = P.mapNF(SemimonoidalFunctor)
+export const crossT    = P.crossTF(SemimonoidalFunctor)
+export const crossS    = P.crossSF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI>({
   map_,
@@ -1003,7 +1005,15 @@ export { of as do }
  * @category Do
  * @since 1.0.0
  */
-export const bindS = P.bindSF(Monad)
+export const chainS_ = P.chainSF_(Monad)
+
+/**
+ * Contributes a computation to a threaded scope
+ *
+ * @category Do
+ * @since 1.0.0
+ */
+export const chainS = P.chainSF(Monad)
 
 /**
  * Contributes a pure value to a threaded scope
@@ -1011,7 +1021,15 @@ export const bindS = P.bindSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const letS = P.letSF(Monad)
+export const pureS_ = P.pureSF_(Monad)
+
+/**
+ * Contributes a pure value to a threaded scope
+ *
+ * @category Do
+ * @since 1.0.0
+ */
+export const pureS = P.pureSF(Monad)
 
 /**
  * Binds a computation to a property in a `Record`.
@@ -1019,7 +1037,15 @@ export const letS = P.letSF(Monad)
  * @category Do
  * @since 1.0.0
  */
-export const bindToS = P.bindToSF(Monad)
+export const asS_ = P.asSF_(Monad)
+
+/**
+ * Binds a computation to a property in a `Record`.
+ *
+ * @category Do
+ * @since 1.0.0
+ */
+export const asS = P.asSF(Monad)
 
 export const Filterable = P.Filterable<URI>({
   map_,

@@ -2608,14 +2608,25 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
 const of: ReadonlyArray<{}> = pure({})
 export { of as do }
 
-export const bindS: <A, K, N extends string>(
+export const chainS_ = P.chainSF_(Monad)
+
+export const chainS: <A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => ReadonlyArray<A>
 ) => (mk: ReadonlyArray<K>) => ReadonlyArray<
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
-> = P.bindSF(Monad)
+> = P.chainSF(Monad)
+
+export const pureS_ = P.pureSF_(Monad)
+
+export const pureS: <K, N extends string, A>(
+  name: Exclude<N, keyof K>,
+  f: (_: K) => A
+) => (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> = P.pureSF(Monad)
+
+export const asS_ = P.asSF_(Monad)
 
 export const bindTo: <K, N extends string>(
   name: Exclude<N, keyof K>
@@ -2623,12 +2634,7 @@ export const bindTo: <K, N extends string>(
   {
     [k in Exclude<N, keyof K>]: A
   }
-> = P.bindToSF(Functor)
-
-export const letS: <K, N extends string, A>(
-  name: Exclude<N, keyof K>,
-  f: (_: K) => A
-) => (mk: ReadonlyArray<K>) => ReadonlyArray<{ [k in N | keyof K]: k extends keyof K ? K[k] : A }> = P.letSF(Monad)
+> = P.asSF(Functor)
 
 /*
  * -------------------------------------------------------------------------------------------------

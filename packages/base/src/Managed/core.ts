@@ -2905,7 +2905,26 @@ export function asService<A>(tag: Tag<A>): <R, E>(ma: Managed<R, E, A>) => Manag
 const of = succeed({})
 export { of as do }
 
-export function bindS<R, E, A, K, N extends string>(
+/**
+ * @trace 2
+ */
+export function chainS_<R, E, K, N extends string, R1, E1, A1>(
+  mk: Managed<R, E, K>,
+  name: Exclude<N, keyof K>,
+  f: (_: K) => Managed<R1, E1, A1>
+): Managed<R & R1, E | E1, { [k in N | keyof K]: k extends keyof K ? K[k] : A1 }> {
+  return chain_(
+    mk,
+    traceAs(f, (a) =>
+      pipe(
+        f(a),
+        map((b) => Object.assign(a, { [name]: b }) as any)
+      )
+    )
+  )
+}
+
+export function chainS<R, E, A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => Managed<R, E, A>
 ): <R2, E2>(
@@ -2925,15 +2944,45 @@ export function bindS<R, E, A, K, N extends string>(
   )
 }
 
-export function bindTo<N extends string>(name: N): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
-  return (fa) => map_(fa, (a) => ({ [name]: a } as any))
+/**
+ * @trace call
+ */
+export function asS_<R, E, A, N extends string>(ma: Managed<R, E, A>, name: N): Managed<R, E, { [k in N]: A }> {
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, (a) => ({ [name]: a } as any))
+  )
 }
 
-export function letS<K, N extends string, A>(
+/**
+ * @trace call
+ */
+export function asS<N extends string>(name: N): <R, E, A>(fa: Managed<R, E, A>) => Managed<R, E, { [k in N]: A }> {
+  const trace = accessCallTrace()
+  return (fa) =>
+    map_(
+      fa,
+      traceFrom(trace, (a) => ({ [name]: a } as any))
+    )
+}
+
+/**
+ * @trace 2
+ */
+export function pureS_<R, E, K, N extends string, A>(
+  mk: Managed<R, E, K>,
+  name: Exclude<N, keyof K>,
+  f: (_: K) => A
+): Managed<R, E, { [k in N | keyof K]: k extends keyof K ? K[k] : A }> {
+  return chainS_(mk, name, traceAs(f, flow(f, succeed)))
+}
+
+export function pureS<K, N extends string, A>(
   name: Exclude<N, keyof K>,
   f: (_: K) => A
 ): <R2, E2>(mk: Managed<R2, E2, K>) => Managed<R2, E2, { [k in N | keyof K]: k extends keyof K ? K[k] : A }> {
-  return bindS(name, flow(f, succeed))
+  return chainS(name, flow(f, succeed))
 }
 
 /*

@@ -288,13 +288,24 @@ export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCr
   return (f) => (fa) => F.map_(fa, (a) => [a, f(a)])
 }
 
-export interface BindToSFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface AsSFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <N extends string, K, Q, W, X, I, S, R, E, A, BN extends string>(
+    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+    name: BN
+  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
+}
+
+export function asSF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsSFn_<F, C> {
+  return (fa, name) => F.map_(fa, (a) => ({ [name]: a }))
+}
+
+export interface AsSFn<F extends HKT.URIS, C = HKT.Auto> {
   <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
 }
 
-export function bindToSF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): BindToSFn<F, C> {
+export function asSF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsSFn<F, C> {
   return (name) => F.map((a) => ({ [name]: a }))
 }
 

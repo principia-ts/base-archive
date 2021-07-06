@@ -830,7 +830,7 @@ export const Do = P.Do(Monad)
 const of: Sync<unknown, never, {}> = succeed({})
 export { of as do }
 
-export const letS: <K, N extends string, A>(
+export const pureS: <K, N extends string, A>(
   name: Exclude<N, keyof K>,
   f: (_: K) => A
 ) => <R, E>(
@@ -841,9 +841,13 @@ export const letS: <K, N extends string, A>(
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
-> = P.letSF(Monad)
+> = P.pureSF(Monad)
 
-export const bindS: <R, E, A, K, N extends string>(
+export const pureS_ = P.pureSF_(Monad)
+
+export const chainS_ = P.chainSF_(Monad)
+
+export const chainS: <R, E, A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => Sync<R, E, A>
 ) => <R2, E2>(
@@ -854,11 +858,13 @@ export const bindS: <R, E, A, K, N extends string>(
   {
     [k in N | keyof K]: k extends keyof K ? K[k] : A
   }
-> = P.bindSF(Monad)
+> = P.chainSF(Monad)
 
-export const bindToS: <K, N extends string>(
+export const asS_ = P.asSF_(Monad)
+
+export const asS: <K, N extends string>(
   name: Exclude<N, keyof K>
-) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.bindToSF(Monad)
+) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.asSF(Monad)
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -1170,11 +1170,17 @@ export const Monad = P.Monad<URI, V>({
 
 export const Do: P.Do<URI, V> = P.Do(Monad)
 
-export const letS = P.letSF(Monad)
+export const pureS_ = P.pureSF_(Monad)
 
-export const bindS = P.bindSF(Monad)
+export const pureS = P.pureSF(Monad)
 
-export const bindToS = P.bindToSF(Monad)
+export const chainS_ = P.chainSF_(Monad)
+
+export const chainS = P.chainSF(Monad)
+
+export const asS_ = P.asSF_(Monad)
+
+export const asS = P.asSF(Monad)
 
 const adapter: {
   <A>(_: Tag<A>): GenHKT<Async<Has<A>, never, A>, A>

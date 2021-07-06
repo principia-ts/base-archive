@@ -294,7 +294,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
 
   subscribe = pipe(
     M.do,
-    M.bindS('dequeue', () => I.toManaged_(subscription(this.hub, this.subscribers, this.strategy))),
+    M.chainS('dequeue', () => I.toManaged_(subscription(this.hub, this.subscribers, this.strategy))),
     M.tap(({ dequeue }) =>
       M.bracketExit_(
         RM.add(this.releaseMap, (_) => Q.shutdown(dequeue)),
@@ -1026,8 +1026,8 @@ export class BackPressure<A> extends Strategy<A> {
   get shutdown(): I.UIO<void> {
     return pipe(
       I.do,
-      I.bindS('fiberId', () => I.fiberId()),
-      I.bindS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
+      I.chainS('fiberId', () => I.fiberId()),
+      I.chainS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
         I.foreachPar_(publishers, ([_, promise, last]) =>
           last ? I.asUnit(P.interruptAs_(promise, fiberId)) : I.unit()
