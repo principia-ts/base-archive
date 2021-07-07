@@ -6,7 +6,6 @@
 import { tag } from './Has'
 import { asyncInterrupt } from './IO/combinators/interrupt'
 import * as I from './IO/core'
-import * as L from './Layer/core'
 
 /**
  * Clock Model
@@ -38,8 +37,6 @@ export abstract class Clock {
 
   static currentTime = I.asksServiceIO(ClockTag)((_) => _.currentTime)
   static sleep       = (ms: number) => I.asksServiceIO(ClockTag)((_) => _.sleep(ms))
-
-  static live = L.succeed(ClockTag)(new LiveClock())
 }
 
 /**

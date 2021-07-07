@@ -54,8 +54,6 @@ export abstract class Random {
   abstract readonly nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint>
   abstract readonly nextArrayInt: (low: ArrayInt, high: ArrayInt) => I.UIO<ArrayInt>
 
-  static live = L.succeed(RandomTag)(defaultRandom)
-
   static next              = I.deriveLifted(RandomTag)([], ['next'], []).next
   static nextBoolean       = I.deriveLifted(RandomTag)([], ['nextBoolean'], []).nextBoolean
   static nextIntBetween    = I.deriveLifted(RandomTag)(['nextIntBetween'], [], []).nextIntBetween

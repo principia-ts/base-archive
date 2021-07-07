@@ -1,6 +1,5 @@
 import { tag } from './Has'
 import * as I from './IO/core'
-import * as L from './Layer/core'
 
 export const ConsoleTag = tag<Console>()
 
@@ -9,15 +8,6 @@ export abstract class Console {
   abstract readonly putStrLn: (line: string) => I.UIO<void>
   abstract readonly putStrLnErr: (line: string) => I.UIO<void>
   abstract readonly putStrLnDebug: (line: string) => I.UIO<void>
-
-  static live = L.succeed(ConsoleTag)(
-    new (class extends Console {
-      put           = (...data: any[]) => I.succeedLazy(() => console.log(...data))
-      putStrLn      = (line: string) => I.succeedLazy(() => console.log(line))
-      putStrLnErr   = (line: string) => I.succeedLazy(() => console.error(line))
-      putStrLnDebug = (line: string) => I.succeedLazy(() => console.debug(line))
-    })()
-  )
 
   static put           = I.deriveLifted(ConsoleTag)(['put'], [], []).put
   static putStrLn      = I.deriveLifted(ConsoleTag)(['putStrLn'], [], []).putStrLn
