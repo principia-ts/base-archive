@@ -32,11 +32,9 @@ export class Failure<E> {
   readonly _E!: () => E
   readonly _A!: () => never;
 
-  declare readonly [ExitTypeId]: ExitTypeId
-  readonly _tag = ExitTag.Failure
-  constructor(readonly cause: C.Cause<E>) {
-    this[ExitTypeId] = ExitTypeId
-  }
+  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
+  readonly _tag                     = ExitTag.Failure
+  constructor(readonly cause: C.Cause<E>) {}
 
   get [St.$hash](): number {
     return St.hash(this.cause)
@@ -50,11 +48,9 @@ export class Success<A> implements Hashable, Equatable {
   readonly _E!: () => never
   readonly _A!: () => A;
 
-  declare readonly [ExitTypeId]: ExitTypeId
-  readonly _tag = ExitTag.Success
-  constructor(readonly value: A) {
-    this[ExitTypeId] = ExitTypeId
-  }
+  readonly [ExitTypeId]: ExitTypeId = ExitTypeId
+  readonly _tag                     = ExitTag.Success
+  constructor(readonly value: A) {}
 
   get [St.$hash](): number {
     return St.hash(this.value)

@@ -48,7 +48,7 @@ export interface Hub<RA, RB, EA, EB, A, B> {
  */
 
 export abstract class HubInternal<RA, RB, EA, EB, A, B> implements Hub<RA, RB, EA, EB, A, B> {
-  declare readonly [HubTypeId]: HubTypeId
+  readonly [HubTypeId]: HubTypeId = HubTypeId
   readonly _RA!: (_: RA) => void
   readonly _RB!: (_: RB) => void
   readonly _EA!: () => EA
@@ -56,10 +56,6 @@ export abstract class HubInternal<RA, RB, EA, EB, A, B> implements Hub<RA, RB, E
   readonly _A!: (_: A) => void
   readonly _B!: () => B
   readonly _U = 'Hub'
-
-  constructor() {
-    this[HubTypeId] = HubTypeId
-  }
 
   /**
    * Waits for the hub to be shut down.

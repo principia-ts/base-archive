@@ -10,11 +10,9 @@ export const RenderAssertionMTypeId = Symbol()
 export type RenderAssertionMTypeId = typeof RenderAssertionMTypeId
 
 export class RenderAssertionM {
-  declare readonly [RenderAssertionMTypeId]: RenderAssertionMTypeId
+  readonly [RenderAssertionMTypeId]: RenderAssertionMTypeId = RenderAssertionMTypeId
 
-  constructor(readonly assertion: AssertionIO<any>) {
-    this[RenderAssertionMTypeId] = RenderAssertionMTypeId
-  }
+  constructor(readonly assertion: AssertionIO<any>) {}
 
   get rendered(): string {
     return this.assertion.rendered
@@ -29,11 +27,9 @@ export const RenderValueTypeId = Symbol('@principia/test/Render/RenderValue')
 export type RenderValueTypeId = typeof RenderValueTypeId
 
 export class RenderValue<A> {
-  declare readonly [RenderValueTypeId]: RenderValueTypeId
+  readonly [RenderValueTypeId]: RenderValueTypeId = RenderValueTypeId
 
-  constructor(readonly value: A, readonly show?: S.Show<A>) {
-    this[RenderValueTypeId] = RenderValueTypeId
-  }
+  constructor(readonly value: A, readonly show?: S.Show<A>) {}
 
   get rendered(): string {
     return this.show ? this.show.show(this.value) : Sh.show(this.value)

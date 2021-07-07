@@ -29,14 +29,10 @@ export type AsyncTypeId = typeof AsyncTypeId
  * Unlike `IO`, `Async` uses Promises internally and does not provide the power of `Fibers`.
  */
 export abstract class Async<R, E, A> {
-  declare readonly [AsyncTypeId]: AsyncTypeId
+  readonly [AsyncTypeId]: AsyncTypeId = AsyncTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-
-  constructor() {
-    this[AsyncTypeId] = AsyncTypeId
-  }
 }
 
 export const AsyncTag = {

@@ -47,12 +47,8 @@ const _emptyHash = St.opt(St.randomInt())
 export class Empty {
   readonly _E!: () => never;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Empty
-
-  constructor() {
-    this[CauseTypeId] = CauseTypeId
-  }
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Empty
 
   get [St.$hash](): number {
     return _emptyHash
@@ -79,12 +75,10 @@ export class Empty {
 export class Fail<E> {
   readonly _E!: () => E;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Fail
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Fail
 
-  constructor(readonly value: E) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly value: E) {}
 
   get [St.$hash](): number {
     return St._combineHash(St.hash(this._tag), St.hash(this.value))
@@ -114,12 +108,10 @@ export class Fail<E> {
 export class Die {
   readonly _E!: () => never;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Die
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Die
 
-  constructor(readonly value: unknown) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly value: unknown) {}
 
   get [St.$hash](): number {
     return St._combineHash(St.hash(this._tag), St.hash(this.value))
@@ -149,12 +141,10 @@ export class Die {
 export class Interrupt {
   readonly _E!: () => never;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Interrupt
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Interrupt
 
-  constructor(readonly fiberId: FiberId) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly fiberId: FiberId) {}
 
   get [St.$hash](): number {
     return St._combineHash(St.hash(this._tag), St.hash(this.fiberId))
@@ -185,12 +175,10 @@ export class Interrupt {
 export class Then<E> {
   readonly _E!: () => E;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Then
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Then
 
-  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
   get [St.$hash](): number {
     return hashCode(this)
@@ -219,12 +207,10 @@ export class Then<E> {
 export class Both<E> {
   readonly _E!: () => E;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Both
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Both
 
-  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
   get [St.$hash](): number {
     return hashCode(this)
@@ -253,12 +239,10 @@ export class Both<E> {
 export class Traced<E> {
   readonly _E!: () => E;
 
-  declare readonly [CauseTypeId]: CauseTypeId
-  readonly _tag = CauseTag.Traced
+  readonly [CauseTypeId]: CauseTypeId = CauseTypeId
+  readonly _tag                       = CauseTag.Traced
 
-  constructor(readonly cause: Cause<E>, readonly trace: Trace) {
-    this[CauseTypeId] = CauseTypeId
-  }
+  constructor(readonly cause: Cause<E>, readonly trace: Trace) {}
 
   get [St.$hash](): number {
     return this.cause[St.$hash]

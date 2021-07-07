@@ -49,15 +49,11 @@ export const EvalTag = {
  * use `Sync`, `Async`, or `IO` from the `io` package
  */
 export abstract class Eval<A> {
-  declare readonly [EvalTypeId]: EvalTypeId
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   readonly _A!: () => A
 
   abstract get value(): A
   abstract get memoize(): Eval<A>
-
-  constructor() {
-    this[EvalTypeId] = EvalTypeId
-  }
 }
 
 class Now<A> extends Eval<A> {

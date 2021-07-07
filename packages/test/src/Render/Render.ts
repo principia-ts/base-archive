@@ -8,11 +8,9 @@ export const RenderFunctionTypeId = Symbol('@principia/test/Render/RenderFunctio
 export type RenderFunctionTypeId = typeof RenderFunctionTypeId
 
 export class RenderFunction {
-  declare readonly [RenderFunctionTypeId]: RenderFunctionTypeId
+  readonly [RenderFunctionTypeId]: RenderFunctionTypeId = RenderFunctionTypeId
 
-  constructor(readonly name: string, readonly paramLists: List<List<RenderParam>>) {
-    this[RenderFunctionTypeId] = RenderFunctionTypeId
-  }
+  constructor(readonly name: string, readonly paramLists: List<List<RenderParam>>) {}
   get rendered(): string {
     return `${this.name}(${pipe(
       this.paramLists,
@@ -35,10 +33,8 @@ export const RenderInfixTypeId = Symbol('@principia/test/Render/RenderInfix')
 export type RenderInfixTypeId = typeof RenderInfixTypeId
 
 export class RenderInfix {
-  declare readonly [RenderInfixTypeId]: RenderInfixTypeId
-  constructor(readonly left: RenderParam, readonly op: string, readonly right: RenderParam) {
-    this[RenderInfixTypeId] = RenderInfixTypeId
-  }
+  readonly [RenderInfixTypeId]: RenderInfixTypeId = RenderInfixTypeId
+  constructor(readonly left: RenderParam, readonly op: string, readonly right: RenderParam) {}
 
   get rendered(): string {
     return `(${this.left.rendered} ${this.op} ${this.right.rendered})`

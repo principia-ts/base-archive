@@ -126,16 +126,15 @@ export const IOTypeId = Symbol('@principia/base/IO')
 export type IOTypeId = typeof IOTypeId
 
 export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
-  declare readonly [IOTypeId]: IOTypeId;
-  declare readonly [_U]: IOURI;
-  readonly [_E]!: () => E;
-  readonly [_A]!: () => A;
-  readonly [_R]!: (_: R) => void
+  readonly [IOTypeId]: IOTypeId = IOTypeId;
+  readonly [_U]: IOURI;
+  readonly [_E]: () => E;
+  readonly [_A]: () => A;
+  readonly [_R]: (_: R) => void
 
   constructor() {
     super()
-    this[_U]       = IOURI
-    this[IOTypeId] = IOTypeId
+    this[_U] = IOURI
   }
 
   get [_I](): Instruction {

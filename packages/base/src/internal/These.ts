@@ -10,11 +10,9 @@ const _leftHash  = hashString('@principia/base/These/Left')
 const _rightHash = hashString('@principia/base/These/Right')
 
 export class Both<E, A> {
-  declare readonly [TheseTypeId]: TheseTypeId
-  readonly _tag = 'Both'
-  constructor(readonly left: E, readonly right: A) {
-    this[TheseTypeId] = TheseTypeId
-  }
+  readonly [TheseTypeId]: TheseTypeId = TheseTypeId
+  readonly _tag                       = 'Both'
+  constructor(readonly left: E, readonly right: A) {}
   [$equals](that: unknown): boolean {
     return isBoth(that) && equals(this.left, that.left) && equals(this.right, that.right)
   }
@@ -24,11 +22,9 @@ export class Both<E, A> {
 }
 
 export class Left<E> {
-  declare readonly [TheseTypeId]: TheseTypeId
-  readonly _tag = 'Left'
-  constructor(readonly left: E) {
-    this[TheseTypeId] = TheseTypeId
-  }
+  readonly [TheseTypeId]: TheseTypeId = TheseTypeId
+  readonly _tag                       = 'Left'
+  constructor(readonly left: E) {}
   [$equals](that: unknown): boolean {
     return isLeft(that) && equals(this.left, that.left)
   }
@@ -38,11 +34,9 @@ export class Left<E> {
 }
 
 export class Right<A> {
-  declare readonly [TheseTypeId]: TheseTypeId
-  readonly _tag = 'Right'
-  constructor(readonly right: A) {
-    this[TheseTypeId] = TheseTypeId
-  }
+  readonly [TheseTypeId]: TheseTypeId = TheseTypeId
+  readonly _tag                       = 'Right'
+  constructor(readonly right: A) {}
   [$equals](that: unknown): boolean {
     return isRight(that) && equals(this.right, that.right)
   }

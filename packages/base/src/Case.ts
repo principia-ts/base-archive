@@ -33,8 +33,8 @@ const h0 = hashString('@principia/base/Case')
 
 // @ts-expect-error
 export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatable, CaseArgs {
-  private declare [$args]: T
-  private declare [$keys]: ReadonlyArray<string>
+  private [$args]: T
+  private [$keys]: ReadonlyArray<string> = []
   constructor(args: T) {
     this[$args] = args
     if (isObject(args)) {
@@ -43,8 +43,6 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
         this[keys[i]] = args[keys[i]]
       }
       this[$keys] = keys.sort()
-    } else {
-      this[$keys] = []
     }
   }
 
@@ -106,12 +104,7 @@ export function Tagged<Tag extends string | symbol, Key extends string | symbol>
   if (key) {
     class X extends CaseClass<{}> {
       // @ts-expect-error
-      declare readonly [key]
-      constructor(...args: any[]) {
-        super(...args)
-        // @ts-expect-error
-        this[key] = tag
-      }
+      readonly [key] = tag
     }
     // @ts-expect-error
     return X

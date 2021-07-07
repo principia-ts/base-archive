@@ -14,13 +14,9 @@ export const ChannelStateTypeId = Symbol()
 export type ChannelStateTypeId = typeof ChannelStateTypeId
 
 export abstract class ChannelState<R, E> {
-  declare readonly [ChannelStateTypeId]: ChannelStateTypeId
+  readonly [ChannelStateTypeId]: ChannelStateTypeId = ChannelStateTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
-
-  constructor() {
-    this[ChannelStateTypeId] = ChannelStateTypeId
-  }
 
   get effect(): IO<R, E, any> {
     concrete(this)

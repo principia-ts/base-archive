@@ -12,11 +12,9 @@ export const AssertionMTypeId = Symbol('@principia/test/AssertionM')
 export type AssertionMTypeId = typeof AssertionMTypeId
 
 export class AssertionIO<A> {
-  declare readonly [AssertionMTypeId]: AssertionMTypeId
+  readonly [AssertionMTypeId]: AssertionMTypeId = AssertionMTypeId
 
-  constructor(readonly render: Render, readonly runIO: (actual: A) => AssertResultM<A>) {
-    this[AssertionMTypeId] = AssertionMTypeId
-  }
+  constructor(readonly render: Render, readonly runIO: (actual: A) => AssertResultM<A>) {}
 
   ['&&'](this: AssertionIO<A>, that: AssertionIO<A>): AssertionIO<A> {
     return new AssertionIO(infix(param(this), '&&', param(that)), (actual) =>

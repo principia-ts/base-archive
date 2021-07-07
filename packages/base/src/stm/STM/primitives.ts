@@ -18,14 +18,10 @@ export const STMTypeId = Symbol('@principia/base/stm/STM')
 export type STMTypeId = typeof STMTypeId
 
 export abstract class STM<R, E, A> {
-  declare readonly [STMTypeId]: STMTypeId
+  readonly [STMTypeId]: STMTypeId = STMTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-
-  constructor() {
-    this[STMTypeId] = STMTypeId
-  }
 }
 
 export class Effect<R, E, A> extends STM<R, E, A> {
@@ -100,10 +96,8 @@ export const FailExceptionTypeId = Symbol()
 export type FailExceptionTypeId = typeof FailExceptionTypeId
 
 export class FailException<E> {
-  declare readonly [FailExceptionTypeId]: FailExceptionTypeId
-  constructor(readonly e: E) {
-    this[FailExceptionTypeId] = FailExceptionTypeId
-  }
+  readonly [FailExceptionTypeId]: FailExceptionTypeId = FailExceptionTypeId
+  constructor(readonly e: E) {}
 }
 
 export function isFailException(u: unknown): u is FailException<unknown> {
@@ -114,10 +108,8 @@ export const DieExceptionTypeId = Symbol()
 export type DieExceptionTypeId = typeof DieExceptionTypeId
 
 export class DieException<E> {
-  declare readonly [DieExceptionTypeId]: DieExceptionTypeId
-  constructor(readonly e: E) {
-    this[DieExceptionTypeId] = DieExceptionTypeId
-  }
+  readonly [DieExceptionTypeId]: DieExceptionTypeId = DieExceptionTypeId
+  constructor(readonly e: E) {}
 }
 
 export function isDieException(u: unknown): u is DieException<unknown> {
@@ -128,10 +120,7 @@ export const RetryExceptionTypeId = Symbol()
 export type RetryExceptionTypeId = typeof RetryExceptionTypeId
 
 export class RetryException {
-  declare readonly [RetryExceptionTypeId]: RetryExceptionTypeId
-  constructor() {
-    this[RetryExceptionTypeId] = RetryExceptionTypeId
-  }
+  readonly [RetryExceptionTypeId]: RetryExceptionTypeId = RetryExceptionTypeId
 }
 
 export function isRetryException(u: unknown): u is RetryException {

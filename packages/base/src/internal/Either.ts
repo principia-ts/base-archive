@@ -9,11 +9,9 @@ const _leftHash  = hashString('@principia/base/Either/Left')
 const _rightHash = hashString('@principia/base/Either/Right')
 
 export class Left<E> {
-  declare readonly [EitherTypeId]: EitherTypeId
-  readonly _tag = 'Left'
-  constructor(readonly left: E) {
-    this[EitherTypeId] = EitherTypeId
-  }
+  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
+  readonly _tag                         = 'Left'
+  constructor(readonly left: E) {}
   [$equals](that: unknown): boolean {
     return isEither(that) && isLeft(that) && equals(this.left, that.left)
   }
@@ -23,11 +21,9 @@ export class Left<E> {
 }
 
 export class Right<A> {
-  declare readonly [EitherTypeId]: EitherTypeId
-  readonly _tag = 'Right'
-  constructor(readonly right: A) {
-    this[EitherTypeId] = EitherTypeId
-  }
+  readonly [EitherTypeId]: EitherTypeId = EitherTypeId
+  readonly _tag                         = 'Right'
+  constructor(readonly right: A) {}
   [$equals](that: unknown): boolean {
     return isEither(that) && isRight(that) && equals(this.right, that.right)
   }

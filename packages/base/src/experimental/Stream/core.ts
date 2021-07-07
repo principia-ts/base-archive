@@ -60,14 +60,12 @@ export type StreamTypeId = typeof StreamTypeId
  * for rich and expressive composition of streams.
  */
 export class Stream<R, E, A> {
-  declare readonly [StreamTypeId]: StreamTypeId
+  readonly [StreamTypeId]: StreamTypeId = StreamTypeId
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>) {
-    this[StreamTypeId] = StreamTypeId
-  }
+  constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>) {}
 
   ['@@']<R, E extends EC, A extends A1, R1, E1, A1, EC>(
     this: Stream<R, E, A>,
