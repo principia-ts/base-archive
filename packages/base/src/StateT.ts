@@ -21,7 +21,7 @@ export function getStateT<F>(M: Monad<HKT.UHKT<F>>): MonadState<StateTURI<HKT.UH
     pipe(fa, F.andThen(M.map(([a, s]) => [f(a), s])))
 
   const chain_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['chain_'] = (ma, f) =>
-    pipe(ma, F.andThen(M.chain(([a, s1]) => f(a).run(s1))))
+    pipe(ma, F.andThen(M.chain(([a, s1]) => f(a)(s1))))
 
   const crossWith_: MonadState<StateTURI<HKT.UHKT<F>>, V<HKT.Auto>>['crossWith_'] = (fa, fb, f) =>
     pipe(
@@ -29,7 +29,7 @@ export function getStateT<F>(M: Monad<HKT.UHKT<F>>): MonadState<StateTURI<HKT.UH
       F.andThen(
         M.chain(([a, s1]) =>
           pipe(
-            fb.run(s1),
+            fb(s1),
             M.map(([b, s2]) => [f(a, b), s2])
           )
         )
