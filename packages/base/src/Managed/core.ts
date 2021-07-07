@@ -38,11 +38,13 @@ export const ManagedTypeId = Symbol('@principia/base/Managed')
 export type ManagedTypeId = typeof ManagedTypeId
 
 export class Managed<R, E, A> {
-  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId;
-  readonly [I._R]: (_: R) => void;
-  readonly [I._E]: () => E;
-  readonly [I._A]: () => A
-  constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
+  declare readonly [ManagedTypeId]: ManagedTypeId;
+  readonly [I._R]!: (_: R) => void;
+  readonly [I._E]!: () => E;
+  readonly [I._A]!: () => A
+  constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {
+    this[ManagedTypeId] = ManagedTypeId
+  }
 
   ['>>=']<R1, E1, B>(f: (a: A) => Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
     return chain_(this, f)

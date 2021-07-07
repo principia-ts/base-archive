@@ -38,10 +38,12 @@ export const FreeSemiringTag = {
 } as const
 
 export class Single<A> {
-  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Single
+  declare readonly [FreeSemiringTypeId]: FreeSemiringTypeId
+  readonly _tag = FreeSemiringTag.Single
 
-  constructor(readonly value: A) {}
+  constructor(readonly value: A) {
+    this[FreeSemiringTypeId] = FreeSemiringTypeId
+  }
 
   get [Ha.$hash](): number {
     return Ha.hash(this.value)
@@ -56,10 +58,12 @@ export class Single<A> {
 }
 
 export class Then<Z, A> {
-  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Then
+  declare readonly [FreeSemiringTypeId]: FreeSemiringTypeId
+  readonly _tag = FreeSemiringTag.Then
 
-  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
+  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {
+    this[FreeSemiringTypeId] = FreeSemiringTypeId
+  }
 
   get [Ha.$hash](): number {
     return hashCode(this)
@@ -84,8 +88,12 @@ export class Then<Z, A> {
 const _emptyHash = Ha.opt(Ha.randomInt())
 
 export class Empty {
-  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Empty
+  declare readonly [FreeSemiringTypeId]: FreeSemiringTypeId
+  readonly _tag = FreeSemiringTag.Empty
+
+  constructor() {
+    this[FreeSemiringTypeId] = FreeSemiringTypeId
+  }
 
   get [Ha.$hash](): number {
     return _emptyHash
@@ -100,10 +108,12 @@ export class Empty {
 }
 
 export class Both<Z, A> {
-  readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Both
+  declare readonly [FreeSemiringTypeId]: FreeSemiringTypeId
+  readonly _tag = FreeSemiringTag.Both
 
-  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
+  constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {
+    this[FreeSemiringTypeId] = FreeSemiringTypeId
+  }
 
   get [Ha.$hash](): number {
     return hashCode(this)

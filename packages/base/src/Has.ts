@@ -46,9 +46,11 @@ export type TagTypeId = typeof TagTypeId
  * Tag Encodes capabilities of reading and writing a service T into a generic environment
  */
 export class Tag<T> {
-  readonly [TagTypeId]: TagTypeId = TagTypeId
+  declare readonly [TagTypeId]: TagTypeId
   readonly _T!: T
-  constructor(readonly def: boolean = false, readonly key: PropertyKey = Symbol()) {}
+  constructor(readonly def: boolean = false, readonly key: PropertyKey = Symbol()) {
+    this[TagTypeId] = TagTypeId
+  }
   readonly overridable = (): Tag<T> => new Tag(true, this.key)
   readonly fixed       = (): Tag<T> => new Tag(false, this.key)
   readonly refine      = <T1 extends T>(): Tag<T1> => new Tag(this.def, this.key)

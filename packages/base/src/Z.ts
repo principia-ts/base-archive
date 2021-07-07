@@ -71,7 +71,7 @@ abstract class ZSyntax<W, S1, S2, R, E, A> {
  * @since 1.0.0
  */
 export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> {
-  readonly [ZTypeId]: ZTypeId = ZTypeId
+  declare readonly [ZTypeId]: ZTypeId
 
   readonly _W!: () => W
   readonly _S1!: (_: S1) => void
@@ -82,6 +82,7 @@ export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> 
 
   constructor() {
     super()
+    this[ZTypeId] = ZTypeId
   }
 }
 

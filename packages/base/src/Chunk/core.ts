@@ -42,14 +42,15 @@ export const ChunkTag = {
 } as const
 
 export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Equ.Equatable {
-  readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
+  declare readonly [ChunkTypeId]: ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
   abstract [Symbol.iterator](): Iterator<A>
 
   constructor() {
-    this['++'] = this['++'].bind(this)
-    this[':+'] = this[':+'].bind(this)
+    this[ChunkTypeId] = ChunkTypeId
+    this['++']        = this['++'].bind(this)
+    this[':+']        = this[':+'].bind(this)
   }
 
   get [Ha.$hash](): number {

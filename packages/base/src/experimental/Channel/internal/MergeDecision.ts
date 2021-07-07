@@ -9,12 +9,16 @@ export const MergeDecisionTag = {
 export const MergeDecisionTypeId = Symbol()
 export type MergeDecisionTypeId = typeof MergeDecisionTypeId
 export abstract class MergeDecision<R, E0, Z0, E, Z> {
-  readonly [MergeDecisionTypeId]: MergeDecisionTypeId = MergeDecisionTypeId
+  declare readonly [MergeDecisionTypeId]: MergeDecisionTypeId
   readonly _R!: (_: R) => void
   readonly _E0!: (_: E0) => void
   readonly _Z0!: (_: Z0) => void
   readonly _E!: () => E
   readonly _Z!: () => Z
+
+  constructor() {
+    this[MergeDecisionTypeId] = MergeDecisionTypeId
+  }
 }
 
 export function concrete<R, E0, Z0, E, Z>(

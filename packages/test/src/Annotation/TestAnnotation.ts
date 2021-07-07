@@ -17,14 +17,16 @@ export type TestAnnotationTypeId = typeof TestAnnotationTypeId
 export class TestAnnotation<V> {
   readonly _V!: () => V;
 
-  readonly [TestAnnotationTypeId]: TestAnnotationTypeId = TestAnnotationTypeId
+  declare readonly [TestAnnotationTypeId]: TestAnnotationTypeId
 
   constructor(
     readonly tag: Tag<V>,
     readonly identifier: string,
     readonly initial: V,
     readonly combine: (v1: V, v2: V) => V
-  ) {}
+  ) {
+    this[TestAnnotationTypeId] = TestAnnotationTypeId
+  }
 
   get [St.$hash](): number {
     return St.combineHash(St.hashString(this.identifier), St.hash(this.tag))

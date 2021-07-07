@@ -31,7 +31,7 @@ export type ListTypeId = typeof ListTypeId
  * Represents a list of elements.
  */
 export class List<A> implements Iterable<A> {
-  readonly [ListTypeId]: ListTypeId = ListTypeId
+  declare readonly [ListTypeId]: ListTypeId
   constructor(
     /** @private */
     readonly bits: number,
@@ -44,7 +44,9 @@ export class List<A> implements Iterable<A> {
     readonly root: Node | undefined,
     /** @private */
     readonly suffix: A[]
-  ) {}
+  ) {
+    this[ListTypeId] = ListTypeId
+  }
 
   [Symbol.iterator](): Iterator<A> {
     return new ForwardListIterator(this)
