@@ -5,7 +5,7 @@
     "declaration": false,
     "sourceMap": true,
     "module": "esnext",
-    "target": "es2017",
+    "target": "es2018",
     "rootDir": "../src-esm",
     "outDir": "../dist/dist-traced/esm",
     "tsBuildInfoFile": "../tsbuildinfo/traced-esm.tsbuildinfo",

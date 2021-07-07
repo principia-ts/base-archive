@@ -5,7 +5,7 @@
     "declaration": false,
     "sourceMap": true,
     "module": "commonjs",
-    "target": "es2017",
+    "target": "es2018",
     "rootDir": "../src-cjs",
     "outDir": "../dist/dist-traced/cjs",
     "tsBuildInfoFile": "../tsbuildinfo/traced-cjs.tsbuildinfo",
