@@ -1524,7 +1524,7 @@ export function asLazy_<R, E, A, B>(ma: IO<R, E, A>, b: () => B): IO<R, E, B> {
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst as_
+ * @dataFirst asLazy_
  * @trace 0
  */
 export function asLazy<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B> {
