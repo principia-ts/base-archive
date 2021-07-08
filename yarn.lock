@@ -1798,10 +1798,10 @@
   dependencies:
     "@octokit/openapi-types" "^7.3.2"
 
-"@principia/compile@0.9.21", "@principia/compile@^0.9.21":
-  version "0.9.21"
-  resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.9.21.tgz#254e4e9502387aba5ca43492f287b11ddc69f1d0"
-  integrity sha512-XD2O2ki4gML25CTCgalQPf7ImnEAo1ecSsgxA16B7kOS9sHTFzhOLWyJKEfMbiDOsDWJ2HssrIr5U6ssV1HAHw==
+"@principia/compile@0.9.22", "@principia/compile@^0.9.22":
+  version "0.9.22"
+  resolved "https://registry.yarnpkg.com/@principia/compile/-/compile-0.9.22.tgz#3b8b59b0c4c436eeb219bff9a93a58aae0a56bbc"
+  integrity sha512-OjT0cDCMMgtbScnpOYuBYImAFK/kT/0sXN5KFSYxexp31FntDP2Tz8n0T8a9aLmTHlBrM7HeWtUDmXnDSXAKBw==
 
 "@tootallnate/once@1":
   version "1.1.2"

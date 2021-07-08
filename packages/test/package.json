@@ -86,7 +86,7 @@
   },
   "dependencies": {
     "@principia/base": "^0.11.28",
-    "@principia/compile": "0.9.21"
+    "@principia/compile": "0.9.22"
   },
   "publishConfig": {
     "access": "public",

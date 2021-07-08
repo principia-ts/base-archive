@@ -20,7 +20,7 @@
     "@babel/cli": "^7.14.5",
     "@babel/core": "^7.14.6",
     "@babel/preset-env": "^7.14.7",
-    "@principia/compile": "^0.9.21",
+    "@principia/compile": "^0.9.22",
     "@types/benchmark": "^2.1.1",
     "@types/cpx": "^1.5.1",
     "@types/node": "^16.0.1",
